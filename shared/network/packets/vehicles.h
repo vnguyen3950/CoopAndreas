@@ -65,6 +65,8 @@ public:
     uint8_t color2{};
     int8_t paintjob{};
 
+    float dirtLevel{};
+
     float health{};
 
     float planeGearState{};
@@ -111,6 +113,12 @@ public:
 
         serialize_uint8(stream, color1);
         serialize_uint8(stream, color2);
+
+        if (Stream::IsWriting)
+        {
+            dirtLevel = std::clamp(dirtLevel, 0.0f, 15.0f);
+        }
+        serialize_compressed_float(stream, dirtLevel, 0.0f, 15.0f, 1.0f);
 
         if (Stream::IsWriting)
         {
@@ -193,6 +201,8 @@ public:
     Packets::Players::SWeaponSnapshot playerWeapon{};
     Packets::Players::SKeySnapshot playerKeys{};
 
+    float dirtLevel{};
+
     float health{};
 
     float bikeLean{};
@@ -244,6 +254,12 @@ private:
 
         serialize_uint8(stream, color1);
         serialize_uint8(stream, color2);
+
+        if (Stream::IsWriting)
+        {
+            dirtLevel = std::clamp(dirtLevel, 0.0f, 15.0f);
+        }
+        serialize_compressed_float(stream, dirtLevel, 0.0f, 15.0f, 1.0f);
 
         if (Stream::IsWriting)
         {
