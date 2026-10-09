@@ -18,10 +18,12 @@ struct Factory { std::unordered_map<int,std::unique_ptr<Packet>> packets; void R
 Factory& GetPacketFactory();
 #include "network/packets/map.h"
 #include "network/packets/vitals.h"
+#include "network/packets/player_animation.h"
 #include "semver.h"
 #include "sender.inc"
 struct CVector2D { float x = 0, y = 0; CVector2D(float a = 0, float b = 0) : x(a), y(b) {} };
 #include "waypoint.inc"
+#include "respawn.inc"
 #include "system.inc"
 Factory& GetPacketFactory() { static Factory factory; return factory; }
 void Factory::RegisterPacket(Packet* p) { packets[int(p->GetType())].reset(p); }
@@ -33,6 +35,8 @@ struct Client
     int id = -1, hostId = -1;
     std::vector<Packets::Map::Discovery> maps;
     std::vector<Packets::Players::PlayerPlaceWaypoint> waypoints;
+    std::vector<Packets::Players::PlayerAnimationState> animations;
+    std::vector<Packets::Players::RespawnPlayer> respawns;
     std::array<uint32_t,8> generations{};
     void Process()
     {
@@ -52,11 +56,14 @@ struct Client
                     bool framed = packet->GetChannel() == ePacketChannel::SYSTEM || stream.SerializeBits(time,32);
                     if (framed && packet->SerializeRead(stream))
                     {
+                        packet->serverTime = time;
                         if (auto* p = dynamic_cast<Packets::System::PlayerHandshake*>(packet.get())) id = p->yourid;
                         else if (auto* p = dynamic_cast<Packets::System::PlayerAssignHost*>(packet.get())) hostId = p->playerid;
                         else if (auto* p = dynamic_cast<Packets::Map::Discovery*>(packet.get())) maps.push_back(*p);
                         else if (auto* p = dynamic_cast<Packets::Players::PlayerPlaceWaypoint*>(packet.get())) waypoints.push_back(*p);
                         else if (auto* p = dynamic_cast<Packets::Players::Vitals*>(packet.get())) generations[p->playerid] = p->generation;
+                        else if (auto* p = dynamic_cast<Packets::Players::PlayerAnimationState*>(packet.get())) animations.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Players::RespawnPlayer*>(packet.get())) respawns.push_back(*p);
                     }
                 }
             }
@@ -67,7 +74,7 @@ struct Client
     {
         std::array<uint32_t,2560> words{}; serialize::WriteStream stream(reinterpret_cast<uint8_t*>(words.data()),sizeof(words));
         uint16_t type = uint16_t(packet.GetType()); if (!stream.SerializeBits(type,16)) return false;
-        if (packet.GetChannel() != ePacketChannel::SYSTEM && !stream.SerializeBits(0,32)) return false;
+        if (packet.GetChannel() != ePacketChannel::SYSTEM && !stream.SerializeBits(packet.serverTime,32)) return false;
         if (!packet.SerializeWrite(stream)) return false; stream.Flush();
         auto* wire = enet_packet_create(stream.GetData(),stream.GetBytesProcessed(),ENET_PACKET_FLAG_RELIABLE);
         if (!wire || enet_peer_send(peer,uint8_t(packet.GetChannel()),wire) != 0) return false;
@@ -112,13 +119,47 @@ int main(int argc, char** argv)
     Packets::Players::PlayerPlaceWaypoint waypoint; waypoint.playerid.value = guest.id; waypoint.sequence = 1; waypoint.place = true; waypoint.position = CVector2D(50,60);
     expect(guest.Send(waypoint) && Wait([&]{return !host.waypoints.empty();}), "Real waypoint relay succeeds with omitted C2S owner field.");
     expect(host.waypoints.back().playerid.value == guest.id && host.waypoints.back().generation == host.generations[guest.id], "Server waypoint owner/generation match ordered real vitals identity.");
+    Packets::Players::PlayerAnimationState animation;
+    animation.playerid = guest.id; animation.life = {0,1,1,0,0,100};
+    animation.state = {1,.2f,3,1,1,true,1}; animation.sampledAt = animation.serverTime = 0x7fffffff;
+    expect(guest.Send(animation) && Wait([&]{return !host.animations.empty() && !guest.animations.empty();}),
+        "Real owner animation reaches host and receives exact life acknowledgment.");
+    if (host.animations.empty()) return 1;
+    expect(host.animations.back().life.generation == host.generations[guest.id]
+        && host.animations.back().serverTime != 0x7fffffff && host.animations.back().sampledAt != 0x7fffffff,
+        "Actual server stamps vitals generation and replaces arbitrary EVENT/sample timestamps.");
+    auto animationCount = host.animations.size();
+    expect(guest.Send(animation), "Duplicate animation remains a valid wire packet.");
+    Wait([]{return false;},150); expect(host.animations.size() == animationCount, "Actual server rejects repeated actor sequence.");
+    animation.life.sequence = 2; animation.playerid = host.id; guest.Send(animation); Wait([]{return false;},150);
+    expect(host.animations.size() == animationCount, "Authenticated guest cannot publish another player's visual life.");
+    animation.playerid = guest.id; animation.life.generation = host.generations[guest.id]; guest.Send(animation); Wait([]{return false;},150);
+    expect(host.animations.size() == animationCount, "Actual server rejects client-chosen connection generation.");
+    animation.life.generation = 0; animation.life.birth = 2;
+    expect(guest.Send(animation) && Wait([&]{return host.animations.back().life.birth == 2;}), "New owner actor birth is accepted through real EVENT transport.");
+    animationCount = host.animations.size(); animation.life.birth = 1; animation.life.sequence = 3;
+    guest.Send(animation); Wait([]{return false;},150);
+    expect(host.animations.size() == animationCount, "Old actor birth cannot overwrite current server life despite newer sequence.");
     expect(Connect(late,port,"fixture_late"), "Third real peer authenticates.");
     expect(Wait([&]{return !late.waypoints.empty();}) && late.maps.back().cells.Has(4) && late.maps.back().cells.Has(8), "Late join receives discovery and existing waypoint.");
+    expect(Wait([&]{return !late.animations.empty();}) && late.animations.back().life.birth == 2
+        && late.animations.back().life.sequence == 2, "Late join receives the exact current actor life rather than a stale visual.");
+    Packets::Players::RespawnPlayer respawn; respawn.playerid.value = guest.id;
+    respawn.life = {0,3,3,0,0,100,false}; respawn.serverTime = 0x7fffffff;
+    expect(guest.Send(respawn) && Wait([&]{return !host.respawns.empty();})
+        && host.respawns.back().playerid.value == guest.id && host.respawns.back().life.birth == 3
+        && !host.respawns.back().life.ready && host.respawns.back().life.generation == host.generations[guest.id]
+        && host.respawns.back().serverTime != 0x7fffffff,
+        "Direction-dependent native respawn carries a stamped dormant boundary through real transport.");
+    animation.life.birth = 3; animation.life.sequence = 4; animation.state = {};
+    expect(guest.Send(animation) && Wait([&]{return host.animations.back().life.birth == 3 && host.animations.back().life.ready;}),
+        "Ready owner publication acknowledges the new post-respawn life.");
     auto oldGeneration = host.waypoints.back().generation; auto guestId = guest.id;
     enet_peer_disconnect(guest.peer,0); enet_host_flush(guest.host); Wait([&]{return !guest.connected;});
     expect(Connect(replacement,port,"fixture_replacement"), "Replacement peer authenticates.");
     expect(replacement.id == guestId && host.generations[guestId] != oldGeneration, "Reused slot gets a distinct connection generation.");
     expect(replacement.waypoints.empty(), "Reused slot does not inherit departed waypoint.");
+    expect(replacement.animations.empty(), "Reused slot does not inherit departed actor life or animation replay.");
     enet_peer_disconnect(host.peer,0); enet_host_flush(host.host);
     expect(Wait([&]{return late.hostId == late.id;}), "Host departure promotes earliest remaining real peer.");
     expect(late.maps.back().epoch == epoch && late.maps.back().cells.Has(8), "Actual server migration keeps room discoveries.");

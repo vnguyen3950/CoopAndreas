@@ -1,4 +1,4 @@
-"""Run isolated real-server ENet map tests; never launch GTA or touch user processes."""
+"""Run isolated real-server ENet map and actor-life tests; never launch GTA."""
 import argparse
 import hashlib
 import json
@@ -26,6 +26,8 @@ def main():
              "shared/network/packets/map.h", "shared/network/map_sync.h", "shared/network/packets/vitals.h",
              "shared/network/player_vitals.h", "shared/network/packets/players.h", "shared/network/packets/system.h",
              "shared/network/serializable_types.h", "third_party/serialize.h", "server/src/CMapSync.cpp",
+             "shared/network/player_animation_sync.h", "shared/network/packets/player_animation.h",
+             "server/src/CPlayerAnimationSync.cpp", "server/src/PacketHandlers/player_animation.cpp",
              "server/src/CNetwork.cpp", "server/src/CNetworkPlayerManager.cpp", "server/src/PacketHandlers/map.cpp",
              "server/src/PacketHandlers/players.cpp", "tests/server_transport/map_transport.cpp")
     before = {name:digest(ROOT / name) for name in names}
@@ -35,6 +37,8 @@ def main():
     (output / "sender.inc").write_text(extract_class((output / "source/shared/network/serializable_types.h").read_text(),"struct SenderPlayerId"))
     waypoint = extract_class((output / "source/shared/network/packets/players.h").read_text(),"class PlayerPlaceWaypoint")
     (output / "waypoint.inc").write_text("namespace Packets::Players {\n" + waypoint + "\n}\n")
+    respawn = extract_class((output / "source/shared/network/packets/players.h").read_text(),"class RespawnPlayer")
+    (output / "respawn.inc").write_text("namespace Packets::Players {\n" + respawn + "\n}\n")
     system = (output / "source/shared/network/packets/system.h").read_text()
     (output / "system.inc").write_text("namespace Packets::System {\n" + "\n".join(extract_class(system,"class " + name) for name in ("PlayerConnected","PlayerHandshake","PlayerAssignHost")) + "\n}\n")
     shutil.copyfile(output / "source/tests/server_transport/map_transport.cpp",output / "test.cpp")
