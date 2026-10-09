@@ -15,7 +15,7 @@ Reviewed the upstream inventory of 71 pull requests: 8 open, 40 merged and 23 cl
 
 Original upstream authorship is preserved through cherry-picks for the four complete PRs. Local follow-up commits record compatibility and lifetime/validation repairs. The stat extraction credits #112 as its reference and is intentionally scoped independently from shared pickup/session policy.
 
-The current combined gameplay packet changes require local protocol **0.4.0-alpha** on both clients and server. The existing version handshake rejects earlier builds. Mission scripts and the reviewed matched SCM/IMG pair retain their existing source/content; this review adds no mission completion claims.
+The current combined gameplay packet changes require local protocol **0.5.0-alpha** on both clients and server. The existing version handshake rejects earlier builds. Mission scripts and the reviewed matched SCM/IMG pair retain their existing source/content; this review adds no mission completion claims.
 
 ## Deferred or superseded proposals
 

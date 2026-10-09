@@ -1,6 +1,6 @@
 # Non-mission synchronization tests
 
-The current development batch uses **0.4.0-alpha** on every client and the server. Earlier 0.3.x binaries fail the exact-version handshake. The reviewed mission script pair is unchanged; no additional stories were added in this batch. Native gameplay and visuals remain human validation work.
+The current development batch uses **0.5.0-alpha** on every client and the server. Earlier 0.4.x and 0.3.x binaries fail the exact-version handshake. The reviewed mission script pair is unchanged; no additional stories were added in this batch. Native gameplay and visuals remain human validation work. See [the newer world synchronization checks](WORLD_SYNC.md) for NPC lifetimes, fire, shared maps and gang wars.
 
 ## Changes prepared
 

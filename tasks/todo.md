@@ -9,9 +9,9 @@ This is the operational list for non-mission development. README retains the bro
 - [x] Shared map discovery, player positions and connection-safe waypoints.
 - [x] Host-controlled gang wars, pinned native wave NPCs and shared territory densities/colors.
 - [x] Independent review and combined 0.5.0-alpha client/server build/regression checks.
-- [ ] Freeze the matched package and verify its updater without touching the actual lab.
+- [x] Freeze the matched package and verify its updater without touching the actual lab.
 
-Native gameplay testing remains with the user. The prepared 0.4.0-alpha package stays selected until the next combined package passes its checks.
+Native gameplay testing remains with the user. Prepared `mission-batch-007` selects matching 0.5.0-alpha binaries and the same reviewed mission scripts. The updater passed on a separate filesystem fixture; the actual lab remains untouched.
 
 ## Next authorized non-mission increment
 
