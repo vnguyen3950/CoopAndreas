@@ -48,6 +48,9 @@ inline void Factory::SendToAll(Packet&p,CNetworkPlayer*){Send(p);}
 #include "server_handlers.inc"
 // Actual client timestamp sorting with only the unrelated SYSTEM/cutscene dependencies doubled.
 struct CCutsceneVotes {static void Queue(Packet&) {}};
+// Fire queue behavior is covered by its actual-service suite; NPC replay uses
+// the unchanged buffer body with a non-fire packet here.
+struct CFireSync {static void Queue(Packet&) {}};
 struct BufferHandler {void ProcessPacket(Packet*){}};
 BufferHandler&GetBufferHandler(){static BufferHandler h;return h;}
 struct CPacketBuffer {std::deque<Packet*>m_packets;void Receive(Packet*);~CPacketBuffer(){for(auto*p:m_packets)delete p;}};

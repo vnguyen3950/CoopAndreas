@@ -118,6 +118,7 @@ struct CCutsceneVotes { static void Reset(){} };
 // Map behavior has its own production-service suite; this collaborator merely
 // permits the unchanged handshake body to run in the registry-only fixture.
 struct CMapSync { static void Reset(){} };
+struct CFireSync { static void Reset(){} };
 // NPC teardown is verified by its own actual manager/handler suite.
 struct CNetworkPedManager { static void Clear(){} };
 namespace logger { template<class... T>void info(T...){} }

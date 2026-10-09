@@ -48,6 +48,8 @@ static Factory& GetPacketFactory() { return factory; }
 static server_time_t g_serverTime = 100;
 // Non-cutscene packets have no vote queue adjustment; voting has its own suites.
 struct CCutsceneVotes { static void Queue(Packet&) {} };
+// This suite's non-fire packets do not need the separately tested fire ordering.
+struct CFireSync { static void Queue(Packet&) {} };
 #include "extracted_packet_buffer.inc"
 
 static void expect(bool value, const char* description) {
