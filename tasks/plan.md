@@ -1,6 +1,18 @@
 # Non-mission synchronization batch
 
-## Current batch: NPCs, fires, maps and gang wars
+## Current increment: animations, trailers and ordinary pickups
+
+The reviewed world batch is frozen as `mission-batch-007`, protocol `0.5.0-alpha`, and pushed to the development fork. The user authorized further non-mission work while away. Three existing Herdr lanes now own isolated `player-animation-sync` (w1:p3), `trailer-sync` (w1:p4), and `pickup-lifecycle` (w1:p7) worktrees. Root owns independent review, shared lifetime integration, enum/version selection and the next matched testing package. Gameplay remains user-owned.
+
+Animation synchronization is limited to five verified native idle/chat visual associations. It supplies an authenticated connection and actor-birth API shared with pickups; script restart, respawn, readiness and departing-player queues must agree before owner operations are allowed. Native task history is outside this slice.
+
+Trailers use actual native tow links for supported cabs/tractors and trailer models. Vehicle birth, creation nonce, full pool reference and local script scene protect attachment and ordinary vehicle replay. Menu spawns are bounded and deferred; removal must cancel the matching pending birth. Driver authority controls the pair, including validated NPC drivers. Root checks existing fire attachment/ownership against the new vehicle validity API before import is considered complete.
+
+Pickups cover supported exterior consumables outside active missions. Host registration assigns non-reused IDs; atomic reservation permits one outstanding grant per collector. Native eligibility and exact actor life are checked again before calling the original pickup update. A known pre-apply decline may release a reservation; any uncertain post-apply outcome retires it. Native money benefits flow through existing wallet observation once. Mission pickups, collectibles, shops, interiors, respawning types and partial weapon benefits remain outside this slice.
+
+Each lane hands off stable commits, actual codec/service regressions and isolated SDK builds. Root reviews shared startup/join/leave/reset ordering, reruns affected prior suites, builds all four x86 release targets and records native runtime limits. The approved 0.5 package and actual game lab stay unchanged during implementation. The next protocol must reject mismatched prior clients because vehicle and player lifecycle payloads change.
+
+## Completed batch: NPCs, fires, maps and gang wars
 
 The user requested these four systems and explicitly skipped gamepad support. Base is `5ab497658d1649f520395e88248c92f78dc251c1`. Three existing Herdr agents work in isolated branches: `npc-world-sync` (w1:p3), `fire-sync` (w1:p4), and `gang-war-sync` (w1:p7). Root owns map discovery, waypoint safety, player-marker rendering and integration. Gameplay stays with the user.
 
