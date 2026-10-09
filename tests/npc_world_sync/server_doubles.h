@@ -33,6 +33,7 @@ class CNetworkPed;
 class CNetworkPlayer {public:ENetPeer* m_pPeer=nullptr;int m_iPlayerId=0;bool m_bIsHost=false;std::vector<CNetworkPed*> m_vPedClaims;std::string GetName(){return "recorded";}};
 struct CNetworkPlayerManager {static inline std::vector<CNetworkPlayer*>m_pPlayers;static CNetworkPlayer*GetPlayer(ENetPeer* p){for(auto* player:m_pPlayers)if(player->m_pPeer==p)return player;return nullptr;}};
 struct CNetworkVehicle {int m_nVehicleId=0;bool m_bUsedByPed=false;CVector m_vecPosition{},m_vecRotation{};CNetworkPlayer*m_pPlayers[8]{};};
+struct CTrailerSync {static void Queue(Packet&) {} static void NpcDriver(CNetworkVehicle*,CNetworkPed*) {}};
 struct CNetworkVehicleManager {static inline CNetworkVehicle* current=nullptr;static CNetworkVehicle*GetVehicle(int id){return current&&current->m_nVehicleId==id?current:nullptr;}};
 namespace logger {template<class...T>void warn(const char*,T...) {}}
 static uint32_t g_serverTime=1000;
@@ -51,7 +52,6 @@ struct CCutsceneVotes {static void Queue(Packet&) {}};
 // Fire queue behavior is covered by its actual-service suite; NPC replay uses
 // the unchanged buffer body with a non-fire packet here.
 struct CFireSync {static void Queue(Packet&) {}};
-struct CTrailerSync {static void Queue(Packet&) {} static void NpcDriver(CNetworkVehicle*,CNetworkPed*) {}};
 struct BufferHandler {void ProcessPacket(Packet*){}};
 BufferHandler&GetBufferHandler(){static BufferHandler h;return h;}
 struct CPacketBuffer {std::deque<Packet*>m_packets;void Receive(Packet*);~CPacketBuffer(){for(auto*p:m_packets)delete p;}};
