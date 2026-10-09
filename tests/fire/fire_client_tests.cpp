@@ -151,5 +151,14 @@ int main() {
         "Matching later receipt promotes already staged EVENT birth and applies legitimate native burn");
     ack.recipientBirth=1;CFireSync::Receive(ack);
     expect(acknowledgedBirth==2,"Stale same-game receipt cannot roll acknowledged actor birth backwards");
+    // Cross-feature boundary: repeated native ref/model with an old vehicle scene.
+    Setup(local,1,1);CVehicle staleCar;staleCar.m_nModelIndex=400;staleCar.m_pDriver=&local;CPools::car.refs[&staleCar]=901;
+    CNetworkVehicle staleMapping;staleMapping.m_nVehicleId=0;staleMapping.m_pVehicle=&staleCar;staleMapping.m_bSyncing=true;
+    CNetworkVehicleManager::m_pVehicles={&staleMapping};
+    carBind.entity={FireSync::Kind::Vehicle,0,21,1,1,400};carBind.live=true;carBind.epoch=1;CFireSync::Receive(carBind);
+    staleMapping.nativeValid=false;
+    expect(!Owned(&staleCar),"Invalid vehicle scene cannot fall back to host-owned world burn authority");
+    expect(Capture(&staleCar).kind==FireSync::Kind::World,"Fire capture rejects stale mapped vehicle despite repeated native ref/model");
+    expect(!Resolve(carBind.entity),"Fire attachment resolution waits for a valid current vehicle binding");
     std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;
 }

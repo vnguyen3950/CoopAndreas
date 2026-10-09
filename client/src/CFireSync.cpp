@@ -69,11 +69,14 @@ bool Owned(CEntity* entity) {
     if (CNetworkPlayerManager::GetPlayer(entity)) return false;
     if (auto* ped = CNetworkPedManager::GetPed(entity)) return ped->HasValidPed() && ped->m_bSyncing && ped->m_generation;
     if (auto* car = CNetworkVehicleManager::GetVehicle(entity)) {
+        if (!car->HasValidVehicle()) return false;
         const int index = car->m_nVehicleId >= 0 ? BindingIndex(FireSync::Kind::Vehicle,uint32_t(car->m_nVehicleId)) : -1;
         if (index >= 0 && Bindings()[index].live && Bindings()[index].entity.owner != CNetworkPlayerManager::m_nMyId) return false;
         return car->m_pVehicle && (car->m_pVehicle->m_pDriver == FindPlayerPed(0) ||
             (!car->m_pVehicle->m_pDriver && car->m_bSyncing));
     }
+    // A stale mapped car cannot become host-owned scenery after script reset.
+    if (CNetworkVehicleManager::FindVehicle(entity)) return false;
     return CFireSync::IsHost(); // Host-only unnetworked world targets.
 }
 FireSync::Entity Capture(CEntity* entity) {
@@ -89,7 +92,10 @@ FireSync::Entity Capture(CEntity* entity) {
     int id = -1; FireSync::Kind kind = FireSync::Kind::World;
     if (entity == FindPlayerPed(0)) { id = CNetworkPlayerManager::m_nMyId; kind = FireSync::Kind::Player; }
     else if (auto* p = CNetworkPlayerManager::GetPlayer(entity)) { id = p->m_iPlayerId; kind = FireSync::Kind::Player; }
-    else if (auto* car = CNetworkVehicleManager::GetVehicle(entity)) { id = car->m_nVehicleId; kind = FireSync::Kind::Vehicle; }
+    else if (auto* car = CNetworkVehicleManager::GetVehicle(entity)) {
+        if (!car->HasValidVehicle()) return e;
+        id = car->m_nVehicleId; kind = FireSync::Kind::Vehicle;
+    }
     const int index = id >= 0 ? BindingIndex(kind,uint32_t(id)) : -1;
     if (index >= 0 && Bindings()[index].live && Bindings()[index].entity.model == entity->m_nModelIndex) {
         auto& binding = Bindings()[index];
@@ -124,7 +130,10 @@ CEntity* Resolve(const FireSync::Entity& e) {
                 target = FindPlayerPed(0);
             }
             else if (auto* p = CNetworkPlayerManager::GetPlayer(int(e.id))) target = p->m_pPed;
-        } else if (auto* car = CNetworkVehicleManager::GetVehicle(int(e.id))) target = car->m_pVehicle;
+        } else if (auto* car = CNetworkVehicleManager::GetVehicle(int(e.id))) {
+            if (!car->HasValidVehicle()) return nullptr;
+            target = car->m_pVehicle;
+        }
         if (!ValidNative(target)) return nullptr;
         auto& binding = Bindings()[index];
         if (binding.reference < 0) binding.reference = Reference(target);

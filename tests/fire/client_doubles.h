@@ -99,11 +99,16 @@ struct CNetworkPlayerManager {
     static CNetworkPlayer* GetPlayer(int id) { for(auto* p:players)if(p->m_iPlayerId==id)return p;return nullptr; }
     static CNetworkPlayer* GetPlayer(CEntity* e) { for(auto* p:players)if(p->m_pPed==e)return p;return nullptr; }
 };
-struct CNetworkVehicle { int m_nVehicleId=0; CVehicle* m_pVehicle=nullptr; bool m_bSyncing=false; };
+struct CNetworkVehicle { int m_nVehicleId=0; CVehicle* m_pVehicle=nullptr; bool m_bSyncing=false,nativeValid=true;
+    // Vehicle scene/ref policy is exercised by the actual trailer suite. This
+    // collaborator tests fire's rejection of an invalid registered binding.
+    bool HasValidVehicle() const { return nativeValid && m_pVehicle && CPools::car.IsObjectValid(m_pVehicle); }
+};
 struct CNetworkVehicleManager {
     static inline std::vector<CNetworkVehicle*> m_pVehicles;
-    static CNetworkVehicle* GetVehicle(int id) { for(auto* p:m_pVehicles)if(p->m_nVehicleId==id)return p;return nullptr; }
-    static CNetworkVehicle* GetVehicle(CEntity* e) { for(auto* p:m_pVehicles)if(p->m_pVehicle==e)return p;return nullptr; }
+    static CNetworkVehicle* FindVehicle(CEntity* e) { for(auto* p:m_pVehicles)if(p->m_pVehicle==e)return p;return nullptr; }
+    static CNetworkVehicle* GetVehicle(int id) { for(auto* p:m_pVehicles)if(p->m_nVehicleId==id&&p->HasValidVehicle())return p;return nullptr; }
+    static CNetworkVehicle* GetVehicle(CEntity* e) { for(auto* p:m_pVehicles)if(p->m_pVehicle==e&&p->HasValidVehicle())return p;return nullptr; }
 };
 struct CNetworkObjectManager { static int GetNetworkId(CEntity*) { return -1; } static int GetHandle(uint32_t) { return -1; } };
 struct CWorld { static inline int PlayerInFocus=0; struct Info { CPed* m_pPed=nullptr; }; static inline Info Players[8]; };

@@ -15,6 +15,7 @@ def main():
             'shared/network/object_sync.h','third_party/serialize.h','client/src/CFireSync.cpp','client/src/CFireSync.h',
             'client/src/CFireSyncNative.cpp','server/src/CFireSync.cpp','server/src/CFireSync.h']
     if a.protocol_only: inputs=[n for n in inputs if n.startswith('shared/') or n=='third_party/serialize.h']
+    else: inputs+=['client/src/CNetworkVehicle.h','client/src/CNetworkVehicle.cpp','client/src/CNetworkVehicleManager.cpp','client/src/CTrailerSync.cpp']
     hashes={n:sha(source/n) for n in inputs}
     for n in inputs:
         (snapshot/n).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source/n,snapshot/n)
@@ -52,6 +53,10 @@ def main():
         if t.count(needle)!=1:parser.error('Damage guard mutation shape changed')
         p.write_text(t.replace(needle,'    if (ped) return true; // targeted mutation: disable owner/lifetime gate\n    if (!Ready()) return true;\n    if (!ValidNative(ped)',1))
         shutil.copyfile(out/'fire_client_tests.cpp',out/'fire_mutation_tests.cpp');build_run('fire_mutation_tests',True);p.write_text(t)
+        needle='    if (CNetworkVehicleManager::FindVehicle(entity)) return false;'
+        if t.count(needle)!=1:parser.error('Vehicle fallback guard mutation shape changed')
+        p.write_text(t.replace(needle,'',1))
+        shutil.copyfile(out/'fire_client_tests.cpp',out/'fire_vehicle_mutation_tests.cpp');build_run('fire_vehicle_mutation_tests',True);p.write_text(t)
     stable=all(sha(source/n)==h for n,h in hashes.items()) and all(sha(owned/n)==h for n,h in supports.items())
     passed=stable and all(x.get('CompileExitCode')==0 and ((x.get('TestExitCode')!=0) if x.get('ExpectedFailure') else x.get('TestExitCode')==0) for x in results)
     report={'ProductionHashes':hashes,'SupportHashes':supports,'ExtractionHashes':extraction,'InputsStable':stable,'GTA_SA_DIR_Cleared':True,
