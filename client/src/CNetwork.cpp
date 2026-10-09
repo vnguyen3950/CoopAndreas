@@ -1,4 +1,5 @@
 #include "CPacketFactory.h"
+#include "CPacketBuffer.h"
 #include "enet/enet.h"
 #include "stdafx.h"
 #include "../shared/semver.h"
@@ -135,6 +136,7 @@ void CNetwork::SendPacket(
 
 void CNetwork::Disconnect()
 {
+    GetPacketBuffer().Clear();
     if (!m_bConnected)
         return;
 

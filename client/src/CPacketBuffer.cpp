@@ -30,15 +30,17 @@ void CPacketBuffer::Process()
 {
     uint32_t renderTime = GetRenderTime(g_serverTime);
 
-    for (auto it = m_packets.begin(); it != m_packets.end();)
+    while (!m_packets.empty())
     {
-        Packet* pPacket = *it;
+        Packet* pPacket = m_packets.front();
         if (pPacket->serverTime > renderTime)
         {
             break;
         }
 
-        it = m_packets.erase(it);
+        // A handler can disconnect and clear the remaining queue. Remove this
+        // packet first and retain no iterator across the callback.
+        m_packets.pop_front();
 
         GetPacketHandler().ProcessPacket(pPacket);
 
@@ -52,5 +54,15 @@ void CPacketBuffer::Process()
         GetPacketFactory().AddPacketRecord(packetRecord, renderTime);
 
         delete pPacket;
+    }
+}
+
+void CPacketBuffer::Clear()
+{
+    while (!m_packets.empty())
+    {
+        Packet* packet = m_packets.front();
+        m_packets.pop_front();
+        delete packet;
     }
 }
