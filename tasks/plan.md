@@ -1,5 +1,17 @@
 # Non-mission synchronization batch
 
+## Current batch: NPCs, fires, maps and gang wars
+
+The user requested these four systems and explicitly skipped gamepad support. Base is `5ab497658d1649f520395e88248c92f78dc251c1`. Three existing Herdr agents work in isolated branches: `npc-world-sync` (w1:p3), `fire-sync` (w1:p4), and `gang-war-sync` (w1:p7). Root owns map discovery, waypoint safety, player-marker rendering and integration. Gameplay stays with the user.
+
+NPCs retain their owner's native AI. Generations, owner epochs and state sequences protect recycled slots and ownership changes; reliable replay supplies retained on-foot/driver/passenger state to joiners. Gang-war wave NPCs are pinned to the native host through a dedicated API. Fire world simulation stays on the host; replicas cannot spread or independently apply world damage, and owner-target effects require valid attachments. Gang wars keep native host progression and rewards, with guest suppression, shared territory and actual guest hits on the mapped host actors. Host departure cancels the active war rather than pretending to transfer native AI.
+
+Map discovery uses the native 100-cell bitmap. The host's initialized loaded game seeds it; initialized outdoor players reveal their current cell. Reliable SYSTEM packets order snapshots with host assignment and connection identity. Menu/loading guests cache the room state, including when promoted, before applying native state. A deliberate later load by a controlling host starts a new campaign epoch. Waypoints use existing authenticated connection generations, increasing owner sequences and ordered replay. Terrain discovery and gang density/color ownership are separate native fields.
+
+Root owns the final packet enum and matched `0.5.0-alpha` protocol. Do not install this batch or replace the approved package during implementation. New tests exercise actual codecs/services with explicitly recorded native/transport doubles, plus targeted mutations; review committed changes before import, preserve all prior regression suites and run all four x86 release targets. Reuse the reviewed SCM pair only after confirming source/SDK identity.
+
+The sections below record the completed earlier batch and its original verification contract.
+
 Base: `7a09780151c984a37e74e7075546b74b326d7e24`, development branch `coop-missions`.
 
 The user prioritizes the non-mission README backlog. Implement independent gameplay slices in isolated worktrees, review their real packet/native boundaries, and combine them into one matched client/server testing package. Game launches and runtime testing belong to the user; source preparation, tests and builds belong to the agents.
