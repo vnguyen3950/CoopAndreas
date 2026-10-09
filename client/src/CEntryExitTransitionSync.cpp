@@ -13,6 +13,8 @@ constexpr float CLOSED_MATRIX_DIFFERENCE_SQ = 0.0004f;
 struct DoorGuard
 {
     CEntity* m_pDoor = nullptr;
+    int m_nDoorPoolRef = -1;
+    int m_nModelId = -1;
     CBuilding* m_pBlocker = nullptr;
     CMatrix m_matrixClosed{};
     int m_nActiveTransitions = 0;
@@ -22,6 +24,7 @@ struct DoorGuard
 struct CollisionParticipant
 {
     CEntity* m_pPed = nullptr;
+    int m_nPedPoolRef = -1;
     CEntity* m_pPreviousIgnoredCollision = nullptr;
     DoorGuard* m_pGuard = nullptr;
 };
@@ -29,7 +32,8 @@ struct CollisionParticipant
 struct RemoteTransition
 {
     CollisionParticipant m_participant{};
-    CPlayerPed* m_pPed = nullptr;
+    CEntity* m_pPed = nullptr;
+    int m_nPedPoolRef = -1;
     CTask* m_pTask = nullptr;
 };
 
@@ -39,6 +43,21 @@ using RemoteTransitionMap = std::unordered_map<int, RemoteTransition>;
 DoorGuardMap g_doorGuards;
 RemoteTransitionMap g_remoteTransitions;
 CollisionParticipant g_localParticipant;
+
+bool HasValidPed(CEntity* pPed, int poolRef)
+{
+    return pPed && poolRef >= 0 && CPools::ms_pPedPool
+        && CPools::ms_pPedPool->GetAtRef(poolRef) == pPed;
+}
+
+bool HasValidDoor(const DoorGuard& guard)
+{
+    return guard.m_pDoor && guard.m_nDoorPoolRef >= 0 && CPools::ms_pObjectPool
+        && CPools::ms_pObjectPool->GetAtRef(guard.m_nDoorPoolRef) == guard.m_pDoor;
+}
+
+void DetachParticipant(CollisionParticipant& participant);
+void DetachGuardParticipants(DoorGuard& guard);
 
 float VectorDifferenceSq(const CVector& vecLeft, const CVector& vecRight)
 {
@@ -50,7 +69,7 @@ float VectorDifferenceSq(const CVector& vecLeft, const CVector& vecRight)
 
 float GetDoorMatrixDifferenceSq(const DoorGuard& guard)
 {
-    if (!guard.m_pDoor)
+    if (!HasValidDoor(guard))
     {
         return FLT_MAX;
     }
@@ -69,7 +88,7 @@ float GetDoorMatrixDifferenceSq(const DoorGuard& guard)
 
 bool IsRealDoorClosed(const DoorGuard& guard)
 {
-    if (!guard.m_pDoor || guard.m_pDoor->m_nType != ENTITY_TYPE_OBJECT)
+    if (!HasValidDoor(guard))
     {
         return false;
     }
@@ -88,8 +107,11 @@ void SetRemotePrimaryTask(CPlayerPed* pPlayerPed, CTask* pTask)
 {
     CPad* pPad = CPad::GetPad(0);
     uint16_t localDisablePlayerControls = pPad->DisablePlayerControls;
+    const bool localInteriorTransition = pPad->bPlayerOnInteriorTransition;
     pPlayerPed->m_pIntelligence->m_TaskMgr.SetTask(pTask, TASK_PRIMARY_PRIMARY, false);
     pPad->DisablePlayerControls = localDisablePlayerControls;
+    // A completed remote door task clears this global pad bit in its destructor.
+    pPad->bPlayerOnInteriorTransition = localInteriorTransition;
 }
 
 DoorGuardMap::iterator DestroyDoorGuard(DoorGuardMap::iterator it)
@@ -105,9 +127,16 @@ DoorGuardMap::iterator DestroyDoorGuard(DoorGuardMap::iterator it)
         guard.m_pBlocker = nullptr;
     }
 
-    if (guard.m_pDoor)
+    if (HasValidDoor(guard))
     {
         guard.m_pDoor->CleanUpOldReference(&guard.m_pDoor);
+    }
+
+    // The invisible blocker has no RW object, so SetModelIndexNoCreate did not
+    // acquire the reference that normal model instances acquire/release.
+    if (guard.m_nModelId >= 0 && CModelInfo::ms_modelInfoPtrs[guard.m_nModelId])
+    {
+        CModelInfo::ms_modelInfoPtrs[guard.m_nModelId]->RemoveRef();
     }
 
     return g_doorGuards.erase(it);
@@ -115,13 +144,26 @@ DoorGuardMap::iterator DestroyDoorGuard(DoorGuardMap::iterator it)
 
 DoorGuard* AcquireDoorGuard(CObject* pDoor)
 {
+    if (!pDoor || !CPools::ms_pObjectPool || !CPools::ms_pObjectPool->IsObjectValid(pDoor)) return nullptr;
+    const int poolRef = CPools::GetObjectRef(pDoor);
     auto existing = g_doorGuards.find(pDoor);
     if (existing != g_doorGuards.end())
     {
         DoorGuard& guard = existing->second;
-        guard.m_nNoLeaseSince = 0;
-        return &guard;
+        if (HasValidDoor(guard) && guard.m_nDoorPoolRef == poolRef)
+        {
+            guard.m_nNoLeaseSince = 0;
+            return &guard;
+        }
+        // An old door's registered reference may have been nulled while its
+        // active lease kept the map node alive. Never lease it to a recycled slot.
+        DetachGuardParticipants(guard);
+        DestroyDoorGuard(existing);
     }
+
+    if (!CPools::ms_pBuildingPool || !CPools::ms_pBuildingPool->GetNoOfFreeSpaces()) return nullptr;
+    CMatrixLink* pClosedMatrix = pDoor->GetMatrix();
+    if (!pClosedMatrix || !CModelInfo::ms_modelInfoPtrs[pDoor->m_nModelIndex]) return nullptr;
 
     CBuilding* pBlocker = nullptr;
     DoorGuardMap::iterator it;
@@ -148,9 +190,10 @@ DoorGuard* AcquireDoorGuard(CObject* pDoor)
     }
 
     guard.m_pDoor = pDoor;
+    guard.m_nDoorPoolRef = poolRef;
     pDoor->RegisterReference(&guard.m_pDoor);
     guard.m_pBlocker = pBlocker;
-    guard.m_matrixClosed = *pDoor->GetMatrix();
+    guard.m_matrixClosed = *pClosedMatrix;
 
     pBlocker->SetModelIndexNoCreate(pDoor->m_nModelIndex);
     pBlocker->SetMatrix(guard.m_matrixClosed);
@@ -162,6 +205,8 @@ DoorGuard* AcquireDoorGuard(CObject* pDoor)
     pBlocker->m_bDontStream = true;
     pBlocker->m_bDontCastShadowsOn = true;
     pBlocker->m_bHasPreRenderEffects = false;
+    guard.m_nModelId = pDoor->m_nModelIndex;
+    CModelInfo::ms_modelInfoPtrs[guard.m_nModelId]->AddRef();
     CWorld::Add(pBlocker);
 
     return &guard;
@@ -176,7 +221,7 @@ void DetachParticipant(CollisionParticipant& participant)
 
     DoorGuard* pGuard = participant.m_pGuard;
 
-    if (participant.m_pPed && participant.m_pPed->m_nType == ENTITY_TYPE_PED)
+    if (HasValidPed(participant.m_pPed, participant.m_nPedPoolRef))
     {
         CPed* pPed = static_cast<CPed*>(participant.m_pPed);
         if (pPed->m_pEntityIgnoredCollision == pGuard->m_pBlocker)
@@ -189,7 +234,7 @@ void DetachParticipant(CollisionParticipant& participant)
     {
         participant.m_pPreviousIgnoredCollision->CleanUpOldReference(&participant.m_pPreviousIgnoredCollision);
     }
-    if (participant.m_pPed)
+    if (HasValidPed(participant.m_pPed, participant.m_nPedPoolRef))
     {
         participant.m_pPed->CleanUpOldReference(&participant.m_pPed);
     }
@@ -206,6 +251,13 @@ void DetachParticipant(CollisionParticipant& participant)
     participant = {};
 }
 
+void DetachGuardParticipants(DoorGuard& guard)
+{
+    if (g_localParticipant.m_pGuard == &guard) DetachParticipant(g_localParticipant);
+    for (auto& item : g_remoteTransitions)
+        if (item.second.m_participant.m_pGuard == &guard) DetachParticipant(item.second.m_participant);
+}
+
 void AttachParticipant(CollisionParticipant& participant, DoorGuard* pGuard, CPed* pPed)
 {
     if (participant.m_pGuard)
@@ -214,6 +266,7 @@ void AttachParticipant(CollisionParticipant& participant, DoorGuard* pGuard, CPe
     }
 
     participant.m_pPed = pPed;
+    participant.m_nPedPoolRef = CPools::GetPedRef(pPed);
     pPed->RegisterReference(&participant.m_pPed);
     participant.m_pPreviousIgnoredCollision = pPed->m_pEntityIgnoredCollision;
     if (participant.m_pPreviousIgnoredCollision == pGuard->m_pBlocker)
@@ -237,7 +290,8 @@ bool ProcessParticipant(CollisionParticipant& participant)
     {
         return true;
     }
-    if (!participant.m_pPed || participant.m_pPed->m_nType != ENTITY_TYPE_PED)
+    if (!HasValidPed(participant.m_pPed, participant.m_nPedPoolRef)
+        || !HasValidDoor(*participant.m_pGuard))
     {
         DetachParticipant(participant);
         return false;
@@ -281,9 +335,10 @@ RemoteTransitionMap::iterator ClearRemoteTransition(
     RemoteTransitionMap::iterator it, CNetworkPlayer* pNetworkPlayer)
 {
     RemoteTransition& transition = it->second;
-    CPlayerPed* pPlayerPed = transition.m_pPed;
+    CPlayerPed* pPlayerPed = static_cast<CPlayerPed*>(transition.m_pPed);
 
-    if (pNetworkPlayer && pNetworkPlayer->m_pPed == pPlayerPed)
+    if (pNetworkPlayer && pNetworkPlayer->m_pPed == pPlayerPed
+        && HasValidPed(pPlayerPed, transition.m_nPedPoolRef))
     {
         CTaskManager& taskManager = pPlayerPed->m_pIntelligence->m_TaskMgr;
         if (taskManager.m_aPrimaryTasks[TASK_PRIMARY_PRIMARY] == transition.m_pTask)
@@ -293,6 +348,8 @@ RemoteTransitionMap::iterator ClearRemoteTransition(
     }
 
     DetachParticipant(transition.m_participant);
+    if (HasValidPed(transition.m_pPed, transition.m_nPedPoolRef))
+        transition.m_pPed->CleanUpOldReference(&transition.m_pPed);
     return g_remoteTransitions.erase(it);
 }
 
@@ -342,6 +399,8 @@ void StartRemoteTransition(CNetworkPlayer* pNetworkPlayer, CEntryExit* pEntryExi
 
     SetRemotePrimaryTask(pPlayerPed, pTask);
     transition.m_pPed = pPlayerPed;
+    transition.m_nPedPoolRef = CPools::GetPedRef(pPlayerPed);
+    pPlayerPed->RegisterReference(&transition.m_pPed);
     transition.m_pTask = pTask;
 }
 
@@ -374,14 +433,15 @@ void ProcessDoorGuards()
     for (auto it = g_doorGuards.begin(); it != g_doorGuards.end();)
     {
         DoorGuard& guard = it->second;
+        if (!HasValidDoor(guard))
+        {
+            DetachGuardParticipants(guard);
+            it = DestroyDoorGuard(it);
+            continue;
+        }
         if (guard.m_nActiveTransitions > 0)
         {
             ++it;
-            continue;
-        }
-        if (!guard.m_pDoor)
-        {
-            it = DestroyDoorGuard(it);
             continue;
         }
         if (IsRealDoorClosed(guard))
@@ -473,6 +533,7 @@ void CEntryExitTransitionSync::Receive(const Packets::Players::EnExTransition& p
     }
 
     CPlayerPed* pPlayerPed = pNetworkPlayer->m_pPed;
+    if (!CPools::ms_pPedPool || !CPools::ms_pPedPool->IsObjectValid(pPlayerPed)) return;
     CEntryExit* pEntryExit = nullptr;
     if (!packet.bFinished)
     {
@@ -513,9 +574,10 @@ void CEntryExitTransitionSync::Process()
     {
         CNetworkPlayer* pNetworkPlayer = CNetworkPlayerManager::GetPlayer(it->first);
         RemoteTransition& transition = it->second;
-        CPlayerPed* pTransitionPed = transition.m_pPed;
+        CPlayerPed* pTransitionPed = static_cast<CPlayerPed*>(transition.m_pPed);
 
-        if (!pNetworkPlayer || !pNetworkPlayer->m_pPed || pNetworkPlayer->m_pPed != pTransitionPed)
+        if (!pNetworkPlayer || pNetworkPlayer->m_pPed != pTransitionPed
+            || !HasValidPed(pTransitionPed, transition.m_nPedPoolRef))
         {
             it = ClearRemoteTransition(it, pNetworkPlayer);
             continue;
@@ -525,7 +587,11 @@ void CEntryExitTransitionSync::Process()
             it = ClearRemoteTransition(it, pNetworkPlayer);
             continue;
         }
-        ProcessParticipant(transition.m_participant);
+        if (!ProcessParticipant(transition.m_participant))
+        {
+            it = ClearRemoteTransition(it, pNetworkPlayer);
+            continue;
+        }
 
         CTask* pPrimaryTask = pTransitionPed->m_pIntelligence->m_TaskMgr.m_aPrimaryTasks[TASK_PRIMARY_PRIMARY];
         if (transition.m_pTask && pPrimaryTask != transition.m_pTask && !pPrimaryTask)

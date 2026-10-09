@@ -53,6 +53,7 @@ public:
         {
             CEntryExitTransitionSync::Shutdown();
         };
+        Events::shutdownRwEvent.before += [] { CEntryExitTransitionSync::Shutdown(); };
         Events::shutdownRwEvent += []
 			{
 				
