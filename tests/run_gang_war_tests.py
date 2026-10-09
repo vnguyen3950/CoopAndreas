@@ -69,7 +69,7 @@ def main():
         build=subprocess.run(["cmd.exe","/d","/c",str(out/"compile.cmd")],cwd=out,capture_output=True,text=True)
         (out/"compile.log").write_text(build.stdout+build.stderr,encoding="utf-8");report["CompileExitCode"]=build.returncode
         if build.returncode==0:
-            cases=["client","native","server"]if args.suite=="service"else [None]
+            cases=["client","native","server","shutdown"]if args.suite=="service"else [None]
             runs=[]
             for case in cases:
                 run=subprocess.run([str(out/"tests.exe")]+([case]if case else []),capture_output=True,text=True)

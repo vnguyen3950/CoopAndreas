@@ -122,9 +122,23 @@ static void ServerCase()
         "Actual host departure and reassignment retain campaign under new authority epoch");
     CGangWarServer::Leave(&guest);expect(!CGangWarServer::Room().state.ready,"Last peer ends room state without reusing lifetime epoch");
 }
+static void ShutdownCase()
+{
+    CGangWarSync::Init(); CNetwork::m_pPeer=&peer; CNetwork::m_bAuthenticated=true; CLocalPlayer::m_bIsHost=true;
+    zones[0].info=0; zones[1].info=1;
+    GangWarSync::Room room; room.SetHost(0,1); Replay(room); Ready();
+    CGangWars::bGangWarsActive=true; CGangWarSync::NativeUpdate();
+    const auto seed=worlds.back(); room.PublishWorld(0,seed.epoch,seed.campaign,seed.sequence,seed.reset,seed.world);
+    Replay(room); CGangWarSync::NativeUpdate();
+    expect(nativeAuthority&&initializedScripts,"Actual seeded owner is ready before shutdown callback");
+    const auto old=CGangWars::cancels;
+    gameShutdownEvent.before.Fire();
+    expect(CGangWars::cancels==old+1,"Shutdown callback releases owner wave before disarming script readiness");
+    expect(!initializedScripts&&!nativeAuthority,"Shutdown disarms native progression after cleanup");
+}
 int main(int argc,char** argv)
 {
     if(argc!=2)return 2;std::string mode=argv[1];
-    if(mode=="client")ClientCase();else if(mode=="native")NativeCase();else if(mode=="server")ServerCase();else return 2;
+    if(mode=="client")ClientCase();else if(mode=="native")NativeCase();else if(mode=="server")ServerCase();else if(mode=="shutdown")ShutdownCase();else return 2;
     std::cout<<checks<<" assertions, "<<failures<<" failures ("<<mode<<")\n";return failures?1:0;
 }

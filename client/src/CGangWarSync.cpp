@@ -162,7 +162,7 @@ void CGangWarSync::Init()
         seedPending=false;sentWorld=sentWar=false;pins.clear();ClearGuidance();
     };
     Events::processScriptsEvent.after+=[]{if(gGameState==9)initializedScripts=true;};
-    gameShutdownEvent.before+=[]{initializedScripts=false;CancelNative();};
+    gameShutdownEvent.before+=[]{CancelNative();initializedScripts=false;};
 }
 void CGangWarSync::Receive(const Packets::Gangs::State& packet)
 {
