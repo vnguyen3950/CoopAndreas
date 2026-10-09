@@ -5,10 +5,11 @@ param(
     [ValidateSet('client', 'server', 'proxy', 'launcher')]
     [string[]]$Targets = @('client', 'server', 'proxy', 'launcher'),
     [string]$MapFile = '',
-    [string]$WorkspaceRoot = (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+    [string]$WorkspaceRoot = ''
 )
 
 $ErrorActionPreference = 'Stop'
+if (-not $WorkspaceRoot) { $WorkspaceRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot) }
 $labDirectory = [IO.Path]::GetFullPath($WorkspaceRoot)
 $repositoryDirectory = Split-Path -Parent $PSScriptRoot
 $xmakeExecutable = Join-Path $labDirectory 'tools\xmake\xmake\xmake.exe'
