@@ -2,7 +2,7 @@
 
 This development fork adds mission participation and synchronization fixes. Its adapted menu contains **26 story mission candidates**; multiplayer mission playtesting is still pending. See [development status and build instructions](docs/DEVELOPMENT.md) and the [testing checklist](docs/TESTING.md). Upstream project: [Tornamic/CoopAndreas](https://github.com/Tornamic/CoopAndreas).
 
-The non-mission development batches prepare NPC lifetime/state replay, shared fire, player maps/discovery, native host-controlled gang wars, NPC vehicle-state parity, cutscene skip voting, per-player health/breath bars and reconnect cleanup. See [current tasks](tasks/todo.md), [world synchronization checks](docs/WORLD_SYNC.md) and [earlier checks](docs/NON_MISSION_SYNC.md). The broad TODO list below retains upstream history; a source-prepared feature does not imply completed multiplayer playtesting.
+The non-mission development batches prepare NPC lifetime/state replay, shared fire, player maps/discovery, native host-controlled gang wars, NPC vehicle-state parity, cutscene skip voting, per-player health/breath bars and reconnect cleanup. Development protocol 0.6 adds bounded idle/chat visuals, native trailer synchronization and ordinary pickup accounting. See [current tasks](tasks/todo.md), [new checks and limits](docs/ANIMATION_TRAILER_PICKUP_TESTING.md), [world checks](docs/WORLD_SYNC.md) and [earlier checks](docs/NON_MISSION_SYNC.md). The broad TODO list below retains upstream history; a source-prepared feature does not imply completed multiplayer playtesting.
 
 [![Made in Ukraine](https://img.shields.io/badge/made_in-ukraine-ffd700.svg?labelColor=0057b7)](https://stand-with-ukraine.pp.ua)
 

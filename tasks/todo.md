@@ -16,8 +16,8 @@ Native gameplay testing remains with the user. Prepared `mission-batch-007` sele
 ## Next authorized non-mission increment
 
 - [x] Player idle/gesture animation synchronization (`player-animation-sync`): bounded source review, codec/service tests and combined SDK build passed; native gameplay remains pending.
-- [ ] Native trailer/tractor attachment, articulation and lifetime synchronization (`trailer-sync`).
-- [ ] Ordinary pickup lifecycle and collector accounting (`pickup-lifecycle`).
+- [x] Native trailer/tractor attachment, articulation and lifetime synchronization (`trailer-sync`): reviewed source, lifetime corrections and combined SDK/regression checks pass.
+- [x] Ordinary pickup lifecycle and collector accounting (`pickup-lifecycle`): reviewed exterior consumable slice, exact grants and terminal accounting pass; native merge arithmetic remains outside this slice.
 
 All three use isolated worktrees from the reviewed world source. Contracts precede implementation; the next enum/version and shared hooks remain root-owned. Gamepad support stays skipped. Mission work remains queued.
 
