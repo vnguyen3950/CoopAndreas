@@ -22,3 +22,5 @@ Run `python tests/run_map_sync_tests.py --output .cache/map-sync/<new-directory>
 4. Let the host leave while another connected participant is still in menus. After that participant initializes a game, confirm it adopts the room discovery. Then deliberately load a different save as the controlling initialized host and check the new campaign replaces the old discovery.
 
 Native rendering, save/load event timing and real ENet/gameplay remain unvalidated by the headless suite.
+
+An additional live-server test uses real ENet clients and the production server executable in its own temporary directory and UDP port. Run `python tests/server_transport/run_map_transport.py --output .cache/map-transport/<new-directory> --server <built-server.exe> --enet-lib <matching-enet.lib>`. It checks host announcement, authenticated seed/reveal handling, actual join replay, waypoint connection generations, host migration and empty-room reset. It launches only its own hidden server fixture, stops only that process handle and launches no GTA client. This supplies real server/transport evidence; native gameplay and rendering remain separate human checks.

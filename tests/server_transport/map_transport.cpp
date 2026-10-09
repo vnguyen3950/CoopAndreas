@@ -1,0 +1,137 @@
+// Real ENet clients talk to the unmodified production server executable.
+// Native gameplay is not exercised. Complete production packets are frozen by
+// the runner; unsupported packet types are ignored, never emulated.
+#include <winsock2.h>
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <cstring>
+#include <iostream>
+#include <memory>
+#include <string>
+#include <thread>
+#include <unordered_map>
+#include <vector>
+#include "enet/enet.h"
+class Packet;
+struct Factory { std::unordered_map<int,std::unique_ptr<Packet>> packets; void RegisterPacket(Packet*); };
+Factory& GetPacketFactory();
+#include "network/packets/map.h"
+#include "network/packets/vitals.h"
+#include "semver.h"
+#include "sender.inc"
+struct CVector2D { float x = 0, y = 0; CVector2D(float a = 0, float b = 0) : x(a), y(b) {} };
+#include "waypoint.inc"
+#include "system.inc"
+Factory& GetPacketFactory() { static Factory factory; return factory; }
+void Factory::RegisterPacket(Packet* p) { packets[int(p->GetType())].reset(p); }
+static unsigned checks = 0, failures = 0;
+void expect(bool value, const char* text) { ++checks; if (!value) { ++failures; std::cout << "FAIL: " << text << '\n'; } }
+struct Client
+{
+    ENetHost* host = nullptr; ENetPeer* peer = nullptr; bool connected = false;
+    int id = -1, hostId = -1;
+    std::vector<Packets::Map::Discovery> maps;
+    std::vector<Packets::Players::PlayerPlaceWaypoint> waypoints;
+    std::array<uint32_t,8> generations{};
+    void Process()
+    {
+        ENetEvent event;
+        while (enet_host_service(host,&event,0) > 0)
+        {
+            if (event.type == ENET_EVENT_TYPE_CONNECT) connected = true;
+            if (event.type == ENET_EVENT_TYPE_DISCONNECT) connected = false;
+            if (event.type != ENET_EVENT_TYPE_RECEIVE) continue;
+            serialize::ReadStream stream(event.packet->data,int(event.packet->dataLength)); uint32_t type = 0;
+            if (stream.SerializeBits(type,16))
+            {
+                auto found = GetPacketFactory().packets.find(int(type));
+                if (found != GetPacketFactory().packets.end())
+                {
+                    std::unique_ptr<Packet> packet(found->second->Clone()); uint32_t time = 0;
+                    bool framed = packet->GetChannel() == ePacketChannel::SYSTEM || stream.SerializeBits(time,32);
+                    if (framed && packet->SerializeRead(stream))
+                    {
+                        if (auto* p = dynamic_cast<Packets::System::PlayerHandshake*>(packet.get())) id = p->yourid;
+                        else if (auto* p = dynamic_cast<Packets::System::PlayerAssignHost*>(packet.get())) hostId = p->playerid;
+                        else if (auto* p = dynamic_cast<Packets::Map::Discovery*>(packet.get())) maps.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Players::PlayerPlaceWaypoint*>(packet.get())) waypoints.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Players::Vitals*>(packet.get())) generations[p->playerid] = p->generation;
+                    }
+                }
+            }
+            enet_packet_destroy(event.packet);
+        }
+    }
+    bool Send(Packet& packet)
+    {
+        std::array<uint32_t,2560> words{}; serialize::WriteStream stream(reinterpret_cast<uint8_t*>(words.data()),sizeof(words));
+        uint16_t type = uint16_t(packet.GetType()); if (!stream.SerializeBits(type,16)) return false;
+        if (packet.GetChannel() != ePacketChannel::SYSTEM && !stream.SerializeBits(0,32)) return false;
+        if (!packet.SerializeWrite(stream)) return false; stream.Flush();
+        auto* wire = enet_packet_create(stream.GetData(),stream.GetBytesProcessed(),ENET_PACKET_FLAG_RELIABLE);
+        if (!wire || enet_peer_send(peer,uint8_t(packet.GetChannel()),wire) != 0) return false;
+        enet_host_flush(host); return true;
+    }
+};
+std::vector<Client*> clients;
+template<class Predicate> bool Wait(Predicate predicate, int milliseconds = 2000)
+{
+    auto until = std::chrono::steady_clock::now() + std::chrono::milliseconds(milliseconds);
+    do { for (auto* client : clients) client->Process(); if (predicate()) return true; std::this_thread::sleep_for(std::chrono::milliseconds(5)); }
+    while (std::chrono::steady_clock::now() < until);
+    return false;
+}
+bool Connect(Client& client, uint16_t port, const char* name)
+{
+    client.host = enet_host_create(nullptr,1,4,0,0); if (!client.host) return false;
+    clients.push_back(&client); ENetAddress address; enet_address_set_host(&address,"127.0.0.1"); address.port = port;
+    client.peer = enet_host_connect(client.host,&address,4,0); if (!client.peer || !Wait([&]{return client.connected;},4000)) return false;
+    Packets::System::PlayerConnected hello; hello.payload = {}; strcpy_s(hello.payload.name,name);
+    hello.payload.version = semver_parse(COOPANDREAS_VERSION,nullptr);
+    return client.Send(hello) && Wait([&]{return client.id >= 0 && !client.maps.empty();},4000);
+}
+int main(int argc, char** argv)
+{
+    if (argc != 2 || enet_initialize() != 0) return 2;
+    Client host, guest, late, replacement, fresh; const auto port = uint16_t(std::stoi(argv[1]));
+    expect(Connect(host,port,"fixture_host"), "First real peer authenticates and receives initial map state.");
+    if (host.id < 0 || host.maps.empty()) return 1;
+    expect(host.hostId == host.id && host.maps.back().epoch == 0, "First peer is announced as host before unseeded state.");
+    expect(Connect(guest,port,"fixture_guest"), "Second real peer authenticates.");
+    if (guest.id < 0) return 1;
+    expect(guest.hostId == host.id, "Joining guest receives existing unchanged host assignment.");
+    Packets::Map::Discovery seed; seed.mode = Packets::Map::Mode::Seed; seed.playerid = host.id; seed.sequence = 1; seed.cells.Add(4);
+    expect(host.Send(seed) && Wait([&]{return !host.maps.empty() && host.maps.back().epoch != 0 && guest.maps.back().epoch != 0;}), "Actual server accepts host seed and broadcasts room discovery.");
+    const auto epoch = host.maps.back().epoch; auto prior = host.maps.size();
+    seed.playerid = guest.id; seed.cells.Add(99); expect(guest.Send(seed), "Guest invalid seed is well-formed on the wire.");
+    Wait([]{return false;},150); expect(host.maps.size() == prior && !guest.maps.back().cells.Has(99), "Actual server rejects guest campaign replacement.");
+    Packets::Map::Discovery reveal; reveal.mode = Packets::Map::Mode::Reveal; reveal.playerid = guest.id; reveal.sequence = 1; reveal.epoch = epoch; reveal.cells.Add(8);
+    expect(guest.Send(reveal) && Wait([&]{return host.maps.back().cells.Has(8);}), "Actual guest reveal reaches real host through server registration.");
+    expect(host.maps.back().cells.Has(4), "Host seed is retained when guest explores.");
+    Packets::Players::PlayerPlaceWaypoint waypoint; waypoint.playerid.value = guest.id; waypoint.sequence = 1; waypoint.place = true; waypoint.position = CVector2D(50,60);
+    expect(guest.Send(waypoint) && Wait([&]{return !host.waypoints.empty();}), "Real waypoint relay succeeds with omitted C2S owner field.");
+    expect(host.waypoints.back().playerid.value == guest.id && host.waypoints.back().generation == host.generations[guest.id], "Server waypoint owner/generation match ordered real vitals identity.");
+    expect(Connect(late,port,"fixture_late"), "Third real peer authenticates.");
+    expect(Wait([&]{return !late.waypoints.empty();}) && late.maps.back().cells.Has(4) && late.maps.back().cells.Has(8), "Late join receives discovery and existing waypoint.");
+    auto oldGeneration = host.waypoints.back().generation; auto guestId = guest.id;
+    enet_peer_disconnect(guest.peer,0); enet_host_flush(guest.host); Wait([&]{return !guest.connected;});
+    expect(Connect(replacement,port,"fixture_replacement"), "Replacement peer authenticates.");
+    expect(replacement.id == guestId && host.generations[guestId] != oldGeneration, "Reused slot gets a distinct connection generation.");
+    expect(replacement.waypoints.empty(), "Reused slot does not inherit departed waypoint.");
+    enet_peer_disconnect(host.peer,0); enet_host_flush(host.host);
+    expect(Wait([&]{return late.hostId == late.id;}), "Host departure promotes earliest remaining real peer.");
+    expect(late.maps.back().epoch == epoch && late.maps.back().cells.Has(8), "Actual server migration keeps room discoveries.");
+    enet_peer_disconnect(late.peer,0); enet_host_flush(late.host);
+    expect(Wait([&]{return !late.connected && replacement.hostId == replacement.id;}), "Remaining peer receives second host migration.");
+    enet_peer_disconnect(replacement.peer,0); enet_host_flush(replacement.host);
+    expect(Wait([&]{return !replacement.connected;}), "All fixture peers depart cleanly.");
+    expect(Connect(fresh,port,"fixture_fresh") && fresh.maps.back().epoch == 0 && fresh.maps.back().cells.Count() == 0,
+        "Actual last departure clears map for a new room.");
+    seed.playerid = fresh.id; seed.sequence = 1; seed.epoch = 0; seed.cells = {}; seed.cells.Add(15);
+    expect(fresh.Send(seed) && Wait([&]{return fresh.maps.back().epoch > epoch;}), "New room receives a distinct monotonic campaign epoch.");
+    expect(fresh.maps.back().cells.Has(15) && !fresh.maps.back().cells.Has(8), "New room does not retain prior guest discoveries.");
+    for (auto* client : clients) if (client->host) enet_host_destroy(client->host);
+    enet_deinitialize(); std::cout << checks << " assertions, " << failures << " failures\n";
+    return failures ? 1 : 0;
+}
