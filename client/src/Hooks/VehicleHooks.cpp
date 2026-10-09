@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CPlayerVitalsSync.h"
 #include "VehicleHooks.h"
 #include "CKeySync.h"
 #include "CAimSync.h"
@@ -102,6 +103,7 @@ void __fastcall CVehicle__ProcessControl_Hook()
     CKeySync::ApplyLocalContext();
     CAimSync::ApplyLocalContext();
     // CStatsSync::ApplyLocalContext();
+    CPlayerVitalsSync::ApplyRemote(player);
 
     *(bool*)0xB6F1A4 = savedLookingLeft;
     *(bool*)0xB6F1A5 = savedLookingRight;

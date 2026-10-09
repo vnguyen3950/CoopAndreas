@@ -1,10 +1,12 @@
 #pragma once
+#include "network/player_vitals.h"
 
 class CNetworkPlayer
 {
 public:
 	CPlayerPed* m_pPed = nullptr;
 	int m_nPedRef = -1;
+	PlayerVitals::Cache m_vitals;
 	int m_iPlayerId;
 
 	Packets::Players::OnFootUpdate m_onFootSnapshotInterpolated{};

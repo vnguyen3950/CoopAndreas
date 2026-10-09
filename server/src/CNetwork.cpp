@@ -6,6 +6,7 @@
 #include "network/packets/system.h"
 #include "serialize.h"
 #include "stdafx.h"
+#include "CPlayerVitalsSync.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
 #include "CNetworkObjectManager.h"
@@ -171,7 +172,14 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
     }
 
     int freeId = CNetworkPlayerManager::GetFreeID();
+    const uint32_t vitalsGeneration = CPlayerVitalsServer::AllocateGeneration();
+    if (freeId < 0 || !vitalsGeneration)
+    {
+        enet_peer_disconnect_later(pENetPeer, 0);
+        return;
+    }
     CNetworkPlayer* pNewNetworkPlayer = new CNetworkPlayer(pENetPeer, freeId);
+    pNewNetworkPlayer->m_vitals.Bind(freeId, vitalsGeneration);
     strcpy_s(pNewNetworkPlayer->m_Name, playerConnected.payload.name);
     CNetworkPlayerManager::Add(pNewNetworkPlayer);
 
@@ -180,6 +188,7 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
     // Send the NEW player TO OLD players
     playerConnected.payload.playerid = freeId;
     GetPacketFactory().SendToAll(playerConnected, pNewNetworkPlayer);
+    CPlayerVitalsServer::Announce(pNewNetworkPlayer);
 
     // Let the new player know his id
     Packets::System::PlayerHandshake playerHandshake{};
@@ -199,6 +208,7 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
         oldPlayerConnected.payload.playerid = pNetworkPlayer->m_iPlayerId;
         strcpy_s(oldPlayerConnected.payload.name, pNetworkPlayer->m_Name);
         GetPacketFactory().Send(oldPlayerConnected, pNewNetworkPlayer);
+        CPlayerVitalsServer::Replay(pNetworkPlayer, pNewNetworkPlayer);
     }
 
     for (auto i : CNetworkPlayerManager::m_pPlayers)

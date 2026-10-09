@@ -1,0 +1,63 @@
+Per-player maximum health and breath synchronization
+
+Scope
+PLAYER_VITALS uses reliable SYSTEM ordering with existing connection lifecycle
+notifications. Those legacy payloads are unchanged. The server validates the
+registered sender, claimed slot, finite/ranged values and monotonic sequence;
+it stamps a monotonic connection generation and caches each peer independently.
+Join replay sends identity before a full sample. No session maxima or saved
+player identities are added. Existing fourteen-float weapon stats and their
+three reserved zero fields are unchanged.
+
+Native storage and verified envelope
+PlayerInfo::m_nMaxHealth is an independent byte, 1..255. CPed::m_fMaxHealth is
+an independent finite float, 1..255; the fields need not match. PlayerData stores
+remaining m_fBreath. Stock CStats modifier 8 computes capacity as
+1000 + (int lung-capacity stat 225 + float stamina stat 22) * .0005 * 3000.
+Both stock stats cap at 1000, giving capacity 1000..4000. The protocol allows
+1000..4001 to cover float rounding. Remaining air must be finite, 0..capacity.
+Finite native refill overshoot/negative transient is clamped only before send;
+non-finite/out-of-envelope receive data is rejected without clamping.
+
+The compatible executable's getter at 0x559AF0 dispatches modifier 8 to
+0x559DE4 and modifier 9 to 0x559E05. Modifier 9 scales max-health stat 24 by
+.001 * 176. Native HUD health divides by PlayerInfo's byte maximum; breath
+divides by modifier 8. SDK declarations and gta-reversed PlayerPed/Hud source
+agree on storage. Executable disk SHA256:
+A559AA772FD136379155EFA71F00C47AAD34BBFEAE6196B0FE1047D0645CBD26.
+No game executable bytes or extracted native code are committed.
+
+Application and visible state
+Only the initialized, pool-valid real local player is sampled with focus zero.
+The local getter supplies that owner's capacity; no remote stats are polled.
+Remote data is buffered on its network wrapper before ped spawn. Application
+checks the full ped reference, registered wrapper and correct remote PlayerInfo
+binding. It sets remote ped max health, that remote slot's maximum and remaining
+breath, and restores them after native control. Native current health is not
+fabricated or rewritten by this feature. Name-tag and player-list health fractions
+use the owner's PlayerInfo maximum; blue air fractions use the owner's cached
+capacity and are shown for submerged or depleted-air state. Local HUD remains native.
+
+Global lung/stamina/max-health CStats are never changed. Raw lung skill and
+native swimming progression, drowning timing and bubble effects are not rewritten.
+Remote remaining air is an owner-authored representation; this is not a claim
+that all native swimming computations now use per-player skill context.
+
+Reproduction
+python tests/run_player_vitals_tests.py --suite codec --output .cache/<new name>
+python tests/run_player_vitals_tests.py --suite service --output .cache/<new name>
+The runner freezes/hashes real headers and service/renderer source, uses the real
+serializer, and extracts unchanged actual service, binding and bar bodies. Native
+storage/transport/rendering are recorded doubles, not a replacement synchronization
+algorithm. Actual SDK client/server builds are separate evidence. Root must rerun
+against final enum/config and combine the registry repair with packet-buffer Clear.
+
+Human checklist for root's matched final package
+- Two players with different maximum health: each remote health fraction is correct.
+- Dive with different lung/stamina progress: each blue bar follows its owner's air.
+- Air depletion/recovery, infinite-oxygen toggle, death and respawn.
+- Join before native spawn, then start New Game: metadata applies when spawned.
+- Disconnect/reconnect into a reused server slot: no old wrapper, actor or vitals.
+- Mission camera/control changes and vehicle driving: local stats remain unchanged.
+- Check visible row spacing at supported resolutions and multiplayer latency.
+Source tests/SDK compilation do not prove native ABI execution, visuals or ENet timing.

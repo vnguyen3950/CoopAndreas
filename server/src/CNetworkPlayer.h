@@ -7,6 +7,7 @@
 #include <string>
 #include <network/packets/players.h>
 #include <CPedClothesDesc.h>
+#include "network/player_vitals.h"
 class CNetworkPed;
 class CNetworkPlayer
 {
@@ -23,6 +24,7 @@ public:
     int m_nVehicleId = -1;
     bool m_bCorrectVersion = false;
     float m_afStats[14]{};
+    PlayerVitals::Cache m_vitals;
     Packets::Players::PlayerPlaceWaypoint m_waypointState{};
     CPedClothesDesc m_pPedClothesDesc{};
 

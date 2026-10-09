@@ -4,6 +4,7 @@
 #include "CDiscordRPC.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
+#include "CPlayerVitalsSync.h"
 #include <COpCodeSync.h>
 #include <CCustomMenuManager.h>
 #include <winuser.h>
@@ -79,6 +80,7 @@ void CCore::Init()
     COpCodeSync::Init();
     CSessionSync::Init();
     CCutsceneVotes::Init();
+    CPlayerVitalsSync::Init();
     Events::initGameEvent.after += []
     {
         CPatch::TemporaryPatches();

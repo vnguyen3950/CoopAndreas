@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CPlayerVitalsSync.h"
 #include "CNetworkPlayerList.h"
 #include "CHudColours.h"
 
@@ -116,7 +117,9 @@ void CNetworkPlayerList::DrawName(CNetworkPlayer* pNetworkPlayer, float fX, floa
 
 void CNetworkPlayerList::DrawBars(CPlayerPed* pPlayerPed, float fX, float fY)
 {
-    if (!pPlayerPed) return;
+    if (!pPlayerPed || CWorld::PlayerInFocus != 0) return;
+    auto* remote = CNetworkPlayerManager::GetPlayer(pPlayerPed);
+    if (remote && !CPlayerVitalsSync::HasBoundPed(remote)) return;
     float fBarOffsetX = CUtil::HUD_X(fX + BAR_OFFSET_X + BOX_WIDTH / 2.0f);
     float fBarOffsetY = CUtil::HUD_Y(fY + BAR_OFFSET_Y);
 
@@ -129,8 +132,19 @@ void CNetworkPlayerList::DrawBars(CPlayerPed* pPlayerPed, float fX, float fY)
             barHeight, pPlayerPed->m_fArmour, 0, 0, 1, HudColour.GetRGBA(HUD_COLOUR_WHITE), CRGBA(0, 0, 0, 0));
     }
 
-    CSprite2d::DrawBarChart(fBarOffsetX + barWidth, fBarOffsetY, barWidth, barHeight, pPlayerPed->m_fHealth, 0, 0, 1,
+    CSprite2d::DrawBarChart(fBarOffsetX + barWidth, fBarOffsetY, barWidth, barHeight,
+        CPlayerVitalsSync::HealthPercent(pPlayerPed, pPlayerPed->m_fHealth), 0, 0, 1,
         HudColour.GetRGBA(HUD_COLOUR_RED), CRGBA(0, 0, 0, 0));
+    if (auto* vitals = CPlayerVitalsSync::GetState(remote))
+    {
+        if (PlayerVitals::ShowBreath(*vitals))
+        {
+            const float rows = pPlayerPed->m_fArmour > 0.0f ? 2.0f : 1.0f;
+            CSprite2d::DrawBarChart(fBarOffsetX + barWidth, fBarOffsetY - CUtil::HUD_Y(10.0f * rows),
+                barWidth, barHeight, PlayerVitals::BreathPercent(*vitals), 0, 0, 1,
+                HudColour.GetRGBA(HUD_COLOUR_BLUELIGHT), CRGBA(0, 0, 0, 0));
+        }
+    }
 }
 
 void CNetworkPlayerList::DrawWeaponIcon(CPlayerPed* pPlayerPed, float fX, float fY)

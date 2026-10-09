@@ -32,6 +32,7 @@
 #include <CWeatherSync.h>
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
+#include "CPlayerVitalsSync.h"
 #include <network/packets/scripts.h>
 #include <CNetworkEntityBlip.h>
 
@@ -95,6 +96,7 @@ public:
         {
             CCutsceneVotes::Process();
             CSessionSync::Process();
+            CPlayerVitalsSync::Process();
             CNetworkAnimQueue::Process();
             CEntryExitTransitionSync::Process();
             CDiscordRPCMgr::Update();

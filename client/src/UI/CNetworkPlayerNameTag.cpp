@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CPlayerVitalsSync.h"
 
 #define PROPORION_X(value) (value * RsGlobal.maximumWidth / 1920)
 #define PROPORION_Y(value) (value * RsGlobal.maximumHeight / 1080)
@@ -112,7 +113,7 @@ void CNetworkPlayerNameTag::Process()
 
 	for (auto player : CNetworkPlayerManager::m_pPlayers)
 	{
-		if (!player->m_pPed)
+		if (!CPlayerVitalsSync::HasBoundPed(player))
 			continue;
 
 		CVector localPlayerCamPos = TheCamera.m_aCams[TheCamera.m_nActiveCam].m_vecSource;
@@ -152,7 +153,7 @@ void CNetworkPlayerNameTag::Process()
 				(uint16_t)(PROPORION_X(100.0f * scale)),
 				(uint8_t)(PROPORION_Y(14.0f * scale)),
 				scale,
-				player->m_onFootSnapshotInterpolated.healthSnapshot.iHealth,
+				CPlayerVitalsSync::HealthPercent(player->m_pPed, player->m_onFootSnapshotInterpolated.healthSnapshot.iHealth),
 				CRGBA(180, 25, 29, alpha)
 			);
 		}
@@ -172,6 +173,16 @@ void CNetworkPlayerNameTag::Process()
 		}
 		
 		float nicknameOffsetY = (player->m_onFootSnapshotInterpolated.healthSnapshot.iArmour > 0.0f ? 12.0f * scale + 12.0f * scale : 12.0f * scale);
+		if (auto* vitals = CPlayerVitalsSync::GetState(player))
+		{
+			if (PlayerVitals::ShowBreath(*vitals))
+			{
+				DrawBarChartScale(out.x, out.y - PROPORION_Y(nicknameOffsetY),
+					(uint16_t)PROPORION_X(100.0f * scale), (uint8_t)PROPORION_Y(14.0f * scale),
+					scale, PlayerVitals::BreathPercent(*vitals), CRGBA(172, 203, 241, alpha));
+				nicknameOffsetY += 12.0f * scale;
+			}
+		}
 		DrawNickName(
 			out.x + PROPORION_X(4.8f),
 			out.y - (PROPORION_Y(nicknameOffsetY) + PROPORION_Y(8.0f)),

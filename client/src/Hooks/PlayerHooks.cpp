@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CNetworkObjectManager.h"
 #include "PlayerHooks.h"
+#include "CPlayerVitalsSync.h"
 #include "CKeySync.h"
 #include "CAimSync.h"
 #include <game_sa/CPedDamageResponseInfo.h>
@@ -66,6 +67,7 @@ static void __fastcall CPlayerPed__ProcessControl_Hook(CPlayerPed* This)
     CKeySync::ApplyLocalContext();
     CAimSync::ApplyLocalContext();
     // CStatsSync::ApplyLocalContext();
+    CPlayerVitalsSync::ApplyRemote(player);
 }
 
 static void CollectShotSnapshot(Packets::Players::PlayerBulletShot& packet, CEntity* owner, CVector* startPoint,
