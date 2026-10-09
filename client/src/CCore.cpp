@@ -3,6 +3,7 @@
 #include "Commands/CCustomCommandRegistrar.h"
 #include "CDiscordRPC.h"
 #include "CSessionSync.h"
+#include "CCutsceneVotes.h"
 #include <COpCodeSync.h>
 #include <CCustomMenuManager.h>
 #include <winuser.h>
@@ -77,6 +78,7 @@ void CCore::Init()
     CDXFont::Init();
     COpCodeSync::Init();
     CSessionSync::Init();
+    CCutsceneVotes::Init();
     Events::initGameEvent.after += []
     {
         CPatch::TemporaryPatches();

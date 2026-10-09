@@ -3,6 +3,8 @@
 #include "network/packet_types.h"
 #include "network/packets/system.h"
 #include "stdafx.h"
+#include "CCutsceneVotes.h"
+#include "COpCodeSync.h"
 #include <CWeatherSync.h>
 #include <CMoonSync.h>
 #include <game_sa/CTagManager.h>
@@ -63,6 +65,7 @@ PACKET_HANDLER(ePacketType::PLAYER_DISCONNECTED, Packets::System::PlayerDisconne
 
 PACKET_HANDLER(ePacketType::PLAYER_HANDSHAKE, Packets::System::PlayerHandshake* pPlayerHandshake)
 {
+    CCutsceneVotes::Reset();
     CNetworkPlayerManager::m_nMyId = pPlayerHandshake->yourid;
     CNetwork::m_bAuthenticated = true;
     CPatch::RevertTemporaryPatches();
@@ -89,6 +92,7 @@ PACKET_HANDLER(ePacketType::RTT_BROADCAST, Packets::System::RTTBroadcast* pRTTBr
 
 PACKET_HANDLER(ePacketType::PLAYER_ASSIGN_HOST, Packets::System::PlayerAssignHost* pPlayerAssignHost)
 {
+    CCutsceneVotes::HostChanged(pPlayerAssignHost->playerid);
     if (pPlayerAssignHost->playerid == CNetworkPlayerManager::m_nMyId)
     {
         CLocalPlayer::m_bIsHost = true;

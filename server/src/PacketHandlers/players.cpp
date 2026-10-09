@@ -1,12 +1,14 @@
 #include "network/packets/players.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CCutsceneVotes.h"
 #include "CNetworkObjectManager.h"
 #include "network/packet_handler.h"
 
 PACKET_HANDLER(
     ePacketType::PLAYER_ONFOOT_UPDATE, Packets::Players::OnFootUpdate* pOnFootUpdate, CNetworkPlayer* pNetworkPlayer)
 {
+    CCutsceneVotes::GameplayReady(pNetworkPlayer);
     pOnFootUpdate->playerid.value = pNetworkPlayer->m_iPlayerId;
     GetPacketFactory().SendToAll(*pOnFootUpdate, pNetworkPlayer);
 }

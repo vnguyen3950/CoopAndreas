@@ -31,6 +31,7 @@
 #include <CCompatibilityChecker.h>
 #include <CWeatherSync.h>
 #include "CSessionSync.h"
+#include "CCutsceneVotes.h"
 #include <network/packets/scripts.h>
 #include <CNetworkEntityBlip.h>
 
@@ -90,6 +91,7 @@ public:
         };
         Events::gameProcessEvent += []
         {
+            CCutsceneVotes::Process();
             CSessionSync::Process();
             CNetworkAnimQueue::Process();
             CEntryExitTransitionSync::Process();
@@ -271,6 +273,7 @@ public:
             CNetworkPlayerNameTag::Process();
             CChat::Draw();
             CChat::DrawInput();
+            CCutsceneVotes::Draw();
 
             if (FrontEndMenuManager.m_bPrefsShowHud)
             {

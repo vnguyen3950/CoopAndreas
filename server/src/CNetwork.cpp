@@ -7,6 +7,7 @@
 #include "serialize.h"
 #include "stdafx.h"
 #include "CSessionSync.h"
+#include "CCutsceneVotes.h"
 #include "CNetworkObjectManager.h"
 #include <network/packets/vehicles.h>
 #include <network/packets/peds.h>
@@ -119,6 +120,7 @@ void CNetwork::HandlePlayerDisconnected(ENetEvent& event)
     CNetworkPedManager::RemoveAllHostedAndNotify(pNetworkPlayer);
     CNetworkVehicleManager::RemoveAllHostedAndNotify(pNetworkPlayer);
     CNetworkObjectManager::RemoveOwner(pNetworkPlayer);
+    CCutsceneVotes::Leave(pNetworkPlayer);
     CSessionSync::Leave(pNetworkPlayer);
 
     CNetworkPlayerManager::Remove(pNetworkPlayer);
@@ -279,6 +281,7 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
 
     CNetworkPlayerManager::AssignHostToFirstPlayer();
     CSessionSync::Join(pNewNetworkPlayer);
+    CCutsceneVotes::Join(pNewNetworkPlayer);
 }
 
 void CNetwork::SendPacketNoAuth_ENet(ENetPeer* pENetPeer, const uint8_t* data, int dataSize,

@@ -33,6 +33,7 @@
 
 
 #include "stdafx.h"
+#include "CCutsceneVotes.h"
 #include "COpCodeSync.h"
 #include <Commands/CCustomCommandMgr.h>
 #include "CEntryExitMarkerSync.h"
@@ -427,6 +428,9 @@ void BuildAndSendOpcode()
         reinterpret_cast<const int*>(COpCodeSync::scriptParamsBuffer), scriptParamCount))
     { scriptParamCount = 0; textParamCount = 0; return; }
 
+    if (activeOpcodeScope && lastOpCodeProcessed == 0x0701 && COpCodeSync::IsOpcodeSyncable(0x02E7))
+        CCutsceneVotes::ObserveOpcode(0x0701, true);
+
     int idx = 0;
     if (!COpCodeSync::IsOpcodeSyncable(lastOpCodeProcessed, &idx))
         return;
@@ -454,6 +458,8 @@ void BuildAndSendOpcode()
     packet.size = dataSize;
     memcpy(packet.buffer, buffer.data(), dataSize);
     GetPacketFactory().Send(packet);
+    if (activeOpcodeScope && CLocalPlayer::m_bIsHost)
+        CCutsceneVotes::ObserveOpcode(uint16_t(lastOpCodeProcessed), true);
 
     memset(textParamBuffer, 0, sizeof textParamBuffer);
     memset(textLengthBuffer, 0, sizeof textLengthBuffer);
@@ -747,6 +753,7 @@ void COpCodeSync::HandlePacket(const uint8_t* buffer, int bufferSize)
     //    //CChat::AddMessage("0x%04x", header.opcode);
     //}
     
+    CCutsceneVotes::ObserveOpcode(uint16_t(lastOpCodeProcessed), false);
     // TODO: refactor
     if (lastOpCodeProcessed == 0x0701) // end_scene_skip
     {

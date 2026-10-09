@@ -2,6 +2,8 @@
 #include "CPacketBuffer.h"
 #include "enet/enet.h"
 #include "stdafx.h"
+#include "CCutsceneVotes.h"
+#include "COpCodeSync.h"
 #include "../shared/semver.h"
 #include <cassert>
 #include <windows.h>
@@ -137,6 +139,8 @@ void CNetwork::SendPacket(
 void CNetwork::Disconnect()
 {
     GetPacketBuffer().Clear();
+    CCutsceneVotes::Reset();
+    COpCodeSync::ms_bLoadingCutscene = false;
     if (!m_bConnected)
         return;
 

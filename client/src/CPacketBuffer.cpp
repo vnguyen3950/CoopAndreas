@@ -4,9 +4,11 @@
 #include "network/packets/system.h"
 #include "stdafx.h"
 #include "CPacketBuffer.h"
+#include "CCutsceneVotes.h"
 
 void CPacketBuffer::Receive(Packet* pPacket)
 {
+    CCutsceneVotes::Queue(*pPacket);
     if (pPacket->GetChannel() == ePacketChannel::SYSTEM)
     {
         GetPacketHandler().ProcessPacket(pPacket);

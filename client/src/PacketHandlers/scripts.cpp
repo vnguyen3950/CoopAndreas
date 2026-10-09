@@ -1,6 +1,7 @@
 #include "network/packets/scripts.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CCutsceneVotes.h"
 #include <CNetworkCheckpoint.h>
 #include <CNetworkEntityBlip.h>
 #include <CEntryExitMarkerSync.h>
@@ -20,6 +21,7 @@ PACKET_HANDLER(ePacketType::ON_MISSION_FLAG_SYNC, Packets::Scripts::OnMissionFla
 		{
 			// cleanup
 			COpCodeSync::ms_bLoadingCutscene = false;
+			CCutsceneVotes::Cancel();
 			CNetworkCheckpoint::Remove();
 			CNetworkEntityBlip::ClearEntityBlips();
 			TheCamera.SetWideScreenOff();

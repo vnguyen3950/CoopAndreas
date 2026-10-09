@@ -1,5 +1,6 @@
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CCutsceneVotes.h"
 #include "network/packet_handler.h"
 #include "network/packets/vehicles.h"
 #include "network/vehicle_authority.h"
@@ -83,6 +84,7 @@ PACKET_HANDLER(ePacketType::VEHICLE_DRIVER_UPDATE, Packets::Vehicles::VehicleDri
             logger::warn("%s tried to update someone else's vehicle (driver)", pNetworkPlayer->GetName().c_str());
             return;
         }
+        CCutsceneVotes::GameplayReady(pNetworkPlayer);
         pNetworkVehicle->SetOccupant(0, pNetworkPlayer);
         pNetworkVehicle->m_vecPosition = pVehicleDriverUpdate->pos;
         pNetworkVehicle->m_vecRotation = pVehicleDriverUpdate->rot;
@@ -186,6 +188,7 @@ PACKET_HANDLER(ePacketType::VEHICLE_PASSENGER_UPDATE,
 {
     if (auto pNetworkVehicle = CNetworkVehicleManager::GetVehicle(pVehiclePassengerUpdate->vehicleid))
     {
+        CCutsceneVotes::GameplayReady(pNetworkPlayer);
         pVehiclePassengerUpdate->playerid = pNetworkPlayer->m_iPlayerId;
         GetPacketFactory().SendToAll(*pVehiclePassengerUpdate, pNetworkPlayer);
 
