@@ -4,7 +4,7 @@ Use a separate compatible installation that you own, the normal CoopAndreas laun
 
 Close lab games, the launcher and server before updating. Start the server, then launch both clients with distinct names. For this follow-up, start a fresh **New Game**: the persistent main script changed for the race handoff, and existing saves have not been validated against the changed instruction offsets.
 
-The local gameplay synchronization protocol is **0.4.0-alpha**. Restart the server after replacing its executable; earlier 0.3.x versions are rejected by the version handshake.
+The local gameplay synchronization protocol is **0.5.0-alpha**. Restart the server after replacing its executable; earlier 0.4.x and 0.3.x versions are rejected by the version handshake. The [world synchronization checklist](WORLD_SYNC.md) covers NPCs, fires, maps and gang wars.
 
 ## Mission launch
 

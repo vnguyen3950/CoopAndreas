@@ -1,6 +1,6 @@
 # NPCs, fires, maps and gang wars
 
-This development batch targets matching 0.5.0-alpha clients and server. Integration is in progress; the approved updater still selects the earlier 0.4.0-alpha package until combined validation finishes. Gameplay testing belongs to the user. Gamepad support is skipped.
+This development batch uses matching 0.5.0-alpha clients and server. Source integration, independent review, headless checks and all four x86 release targets passed; package/updater validation is the final preparation step. Gameplay testing belongs to the user. Gamepad support is skipped.
 
 ## NPC state and lifetime
 

@@ -4,13 +4,22 @@ This is the operational list for non-mission development. README retains the bro
 
 ## Current world synchronization batch
 
-- [ ] NPC lifetime generations, explicit ownership, retained state and reliable join replay.
-- [ ] Host-controlled native fire lifecycle, owner-target effects and validated guest requests.
-- [ ] Shared map discovery, player positions and connection-safe waypoints.
-- [ ] Host-controlled gang wars, pinned native wave NPCs and shared territory densities/colors.
-- [ ] Independent review, combined regression checks and matched 0.5.0-alpha client/server package.
+- [x] NPC lifetime generations, explicit ownership, retained state and reliable join replay.
+- [x] Host-controlled native fire lifecycle, owner-target effects and validated guest requests.
+- [x] Shared map discovery, player positions and connection-safe waypoints.
+- [x] Host-controlled gang wars, pinned native wave NPCs and shared territory densities/colors.
+- [x] Independent review and combined 0.5.0-alpha client/server build/regression checks.
+- [ ] Freeze the matched package and verify its updater without touching the actual lab.
 
 Native gameplay testing remains with the user. The prepared 0.4.0-alpha package stays selected until the next combined package passes its checks.
+
+## Next authorized non-mission increment
+
+- [ ] Player idle/gesture animation synchronization (`player-animation-sync`).
+- [ ] Native trailer/tractor attachment, articulation and lifetime synchronization (`trailer-sync`).
+- [ ] Ordinary pickup lifecycle and collector accounting (`pickup-lifecycle`).
+
+All three use isolated worktrees from the reviewed world source. Contracts precede implementation; the next enum/version and shared hooks remain root-owned. Gamepad support stays skipped. Mission work remains queued.
 
 ## NPC-driven vehicle state
 

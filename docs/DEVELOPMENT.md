@@ -17,7 +17,7 @@ This is a source development branch. All four x86 release targets and the full s
 - Replace PR #106's balance/star/cheat mirroring with a server-owned wallet, explicit wanted policy and a bounded shared-cheat subset. See [session policy and native checks](SHARED_SESSION.md) for accounting, migration and coverage limits.
 - Add NPC-driven vehicle state parity, unanimous native cutscene voting, per-player maximum health/air state and bars, guarded reconnect cleanup and proportional map pins. See [non-mission checks](NON_MISSION_SYNC.md).
 
-The current gameplay extension uses local protocol **0.4.0-alpha**. Clients and server must match; the existing handshake rejects earlier 0.3.x builds. Launcher authentication is unchanged.
+The current gameplay extension uses local protocol **0.5.0-alpha**. Clients and server must match; the existing handshake rejects earlier 0.4.x and 0.3.x builds. Launcher authentication is unchanged. The reviewed world batch adds NPC lifetimes/replay, canonical fire, shared discovery/waypoints and host-controlled gang wars; see [world tests and limits](WORLD_SYNC.md).
 
 ## Adapted story candidates
 
