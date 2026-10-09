@@ -5,6 +5,7 @@
 #include "CPlayerAnimationSync.h"
 #include "CFireSync.h"
 #include "CTrailerSync.h"
+#include "CPickupSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
 #include "COpCodeSync.h"
@@ -143,6 +144,7 @@ void CNetwork::SendPacket(
 void CNetwork::Disconnect()
 {
     GetPacketBuffer().Clear();
+    CPickupSync::Reset();
     CPlayerAnimationSync::Reset();
     CCutsceneVotes::Reset();
     CMapSync::Reset();

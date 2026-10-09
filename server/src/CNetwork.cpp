@@ -10,6 +10,7 @@
 #include "CGangWarSync.h"
 #include "CFireSync.h"
 #include "CTrailerSync.h"
+#include "CPickupSync.h"
 #include "CPlayerVitalsSync.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
@@ -124,6 +125,7 @@ void CNetwork::HandlePlayerDisconnected(ENetEvent& event)
     }
 
     CTrailerSync::Leave(pNetworkPlayer);
+    CPickupServer::Leave(pNetworkPlayer);
     CNetworkPedManager::RemoveAllHostedAndNotify(pNetworkPlayer);
     CNetworkVehicleManager::RemoveAllHostedAndNotify(pNetworkPlayer);
     CNetworkObjectManager::RemoveOwner(pNetworkPlayer);
@@ -313,6 +315,7 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
     CMapSyncServer::Replay(pNewNetworkPlayer);
     CFireSync::Join(pNewNetworkPlayer);
     CTrailerSync::Join(pNewNetworkPlayer);
+    CPickupServer::Join(pNewNetworkPlayer);
 }
 
 void CNetwork::SendPacketNoAuth_ENet(ENetPeer* pENetPeer, const uint8_t* data, int dataSize,

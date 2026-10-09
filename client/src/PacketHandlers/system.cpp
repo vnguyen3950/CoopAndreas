@@ -6,6 +6,7 @@
 #include "CPlayerAnimationSync.h"
 #include "CFireSync.h"
 #include "CTrailerSync.h"
+#include "CPickupSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
 #include "COpCodeSync.h"
@@ -75,6 +76,7 @@ PACKET_HANDLER(ePacketType::PLAYER_DISCONNECTED, Packets::System::PlayerDisconne
 
 PACKET_HANDLER(ePacketType::PLAYER_HANDSHAKE, Packets::System::PlayerHandshake* pPlayerHandshake)
 {
+    CPickupSync::Reset();
     CCutsceneVotes::Reset();
     CMapSync::Reset();
     CFireSync::Reset();
@@ -110,6 +112,7 @@ PACKET_HANDLER(ePacketType::PLAYER_ASSIGN_HOST, Packets::System::PlayerAssignHos
     CCutsceneVotes::HostChanged(pPlayerAssignHost->playerid);
     CMapSync::HostChanged(pPlayerAssignHost->playerid);
     CFireSync::HostChanged(pPlayerAssignHost->playerid);
+    CPickupSync::HostChanged(pPlayerAssignHost->playerid);
     if (pPlayerAssignHost->playerid == CNetworkPlayerManager::m_nMyId)
     {
         CLocalPlayer::m_bIsHost = true;

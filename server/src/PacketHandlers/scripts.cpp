@@ -2,6 +2,7 @@
 #include "network/packet_types.h"
 #include "stdafx.h"
 #include "CCutsceneVotes.h"
+#include "CPickupSync.h"
 #include "CNetworkObjectManager.h"
 #include "network/session_sync.h"
 
@@ -10,6 +11,7 @@ PACKET_HANDLER(ePacketType::ON_MISSION_FLAG_SYNC, Packets::Scripts::OnMissionFla
 {
     if (pNetworkPlayer->m_bIsHost)
     {
+        CPickupServer::Mission(pNetworkPlayer,pOnMissionFlagSync->bOnMission);
         if (!pOnMissionFlagSync->bOnMission) CCutsceneVotes::MissionEnded();
         GetPacketFactory().SendToAll(*pOnMissionFlagSync, pNetworkPlayer);
     }

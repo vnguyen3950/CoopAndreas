@@ -11,11 +11,13 @@ def main():
                   'third_party/plugin-sdk/plugin_sa/game_sa/eWeaponType.h','third_party/plugin-sdk/plugin_sa/game_sa/CPickup.h',
                   'third_party/plugin-sdk/plugin_sa/game_sa/CWeaponInfo.h')if args.native else INPUTS
     if args.server:inputs+=('server/src/CPickupSync.h','server/src/CPickupSync.cpp')
+    if args.native or args.server:inputs+=('shared/network/player_animation_sync.h',)
     out.mkdir(parents=True);before={name:sha(ROOT/name)for name in inputs}
     for name in inputs:
         target=out/'source'/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/name,target)
     enum=out/'source/shared/network/packet_types.h';text=enum.read_text(encoding='utf-8-sig')
-    if 'PICKUP_HELLO'not in text:
+    enumOverlayApplied='PICKUP_HELLO'not in text
+    if enumOverlayApplied:
         text=text.replace('    PACKET_ID_MAX','    PICKUP_HELLO,\n    PICKUP_STATE,\n    PICKUP_ACTION,\n    PACKET_ID_MAX')
         text=text.replace('"FIRE_BIND"};','"FIRE_BIND", "PICKUP_HELLO", "PICKUP_STATE", "PICKUP_ACTION"};')
         enum.write_text(text,encoding='utf-8')
@@ -27,8 +29,7 @@ def main():
         assert text.count(needle)==1;path.write_text(text.replace(needle,'(row->stage!=Stage::Reserved&&!(row->stage==Stage::Removed&&row->reason==Reason::Ambiguous))',1),encoding='utf-8')
     animationHash=None;supportHash=None;nativeReferenceHash=None;nativeMergeHash=None
     if args.native or args.server:
-        actorPath='shared/network/player_animation_sync.h';animation=ROOT.parent/'player-animation-sync'
-        data=subprocess.check_output(['git','-C',str(animation),'show','9ef6bbb2fcc2e40ffef137fc29da5588e35f738c:'+actorPath]);p=out/'source'/actorPath;p.write_bytes(data);animationHash=sha(p)
+        actorPath='shared/network/player_animation_sync.h';animationHash=sha(out/'source'/actorPath)
     if args.server:
         text=(out/'source/server/src/CPickupSync.cpp').read_text(encoding='utf-8-sig');(out/'pickup_server.inc').write_text(re.sub(r'^#include[^\n]*\n?','',text,flags=re.M),encoding='utf-8')
         support=ROOT/'tests/pickup_server_doubles.h';supportHash=sha(support);shutil.copyfile(support,out/support.name)
@@ -56,7 +57,7 @@ def main():
     env=r'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat'
     (out/'compile.cmd').write_text('@echo off\ncall "'+env+'" -arch=x86 -host_arch=x64 > environment.log 2>&1\nif errorlevel 1 exit /b 1\n'+subprocess.list2cmdline(cmd)+'\n')
     c=subprocess.run(['cmd.exe','/d','/c',str(out/'compile.cmd')],cwd=out,capture_output=True,text=True);(out/'compile.log').write_text(c.stdout+c.stderr,encoding='utf-8')
-    record={'ProductionHashes':before,'TestHash':testHash,'TestSource':str(test),'CompilerCommand':cmd,'CompileExitCode':c.returncode,'RuntimeValidated':False,'EnumOverlayOnly':'Reserved names added to frozen test copy; production enum untouched','Mutation':args.mutation or args.terminal_mutation,'TerminalMutation':args.terminal_mutation,'Native':args.native,'AnimationHeaderCommit':'9ef6bbb2fcc2e40ffef137fc29da5588e35f738c','AnimationHeaderHash':animationHash,'DoubleHash':supportHash}
+    record={'ProductionHashes':before,'TestHash':testHash,'TestSource':str(test),'CompilerCommand':cmd,'CompileExitCode':c.returncode,'RuntimeValidated':False,'EnumOverlayApplied':enumOverlayApplied,'Mutation':args.mutation or args.terminal_mutation,'TerminalMutation':args.terminal_mutation,'Native':args.native,'AnimationHeaderSource':'Current checkout frozen with other inputs','AnimationHeaderHash':animationHash,'DoubleHash':supportHash}
     record.update(NativeReferenceHash=nativeReferenceHash,ExtractedNativeMergeHash=nativeMergeHash,NativeMergeEdits='Only unused parameter name omitted; native body unchanged'if args.native else None)
     if not c.returncode:
         run=subprocess.run([str(out/'tests.exe')],cwd=out,capture_output=True,text=True);record.update(TestExitCode=run.returncode,Output=run.stdout+run.stderr);(out/'test.log').write_text(record['Output'],encoding='utf-8')

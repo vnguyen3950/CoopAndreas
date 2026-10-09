@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CGangWarSync.h"
 #include "CFireSync.h"
+#include "CPickupSync.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
@@ -93,4 +94,5 @@ void CNetworkPlayerManager::AssignHostToFirstPlayer()
     CSessionSync::HostChanged(player);
     CMapSyncServer::HostChanged();
     CGangWarServer::HostChanged(player);
+    CPickupServer::HostChanged(player);
 }

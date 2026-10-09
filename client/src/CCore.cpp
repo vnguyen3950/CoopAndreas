@@ -2,6 +2,7 @@
 #include "CPlayerAnimationSync.h"
 #include "CFireSync.h"
 #include "CTrailerSync.h"
+#include "CPickupSync.h"
 #include "CCrashLog.h"
 #include "Commands/CCustomCommandRegistrar.h"
 #include "CDiscordRPC.h"
@@ -92,6 +93,7 @@ void CCore::Init()
     CGangWarSync::Init();
     CFireSync::Init();
     CTrailerSync::Init();
+    CPickupSync::Init();
     Events::initGameEvent.after += []
     {
         CPatch::TemporaryPatches();
