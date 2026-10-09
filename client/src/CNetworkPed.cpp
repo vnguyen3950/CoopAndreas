@@ -84,7 +84,9 @@ CNetworkPed::~CNetworkPed()
     }
     else
     {
-        if (pPed && pPed->m_matrix && pPed->m_matrix->m_pOwner)
+        // The full pool reference validates ownership; a live ped may have no
+        // matrix yet, so matrix allocation must not decide whether it is deleted.
+        if (pPed)
         {
             if (m_nBlipHandle != -1)
             {
