@@ -49,6 +49,8 @@ void CStatsSync::ApplyLocalContext()
 void CStatsSync::NotifyChanged()
 {
     Packets::Players::PlayerStats packet{};
+    static_assert(SYNCED_STATS_COUNT <= sizeof(packet.stats) / sizeof(packet.stats[0]),
+        "Mapped stats must fit the unchanged PlayerStats wire payload");
     
     for (uint8_t i = 0; i < CStatsSync::SYNCED_STATS_COUNT; i++)
     {

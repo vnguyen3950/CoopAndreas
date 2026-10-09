@@ -1,0 +1,185 @@
+Upstream PR #112: pickup and stat synchronization
+
+Recommendation
+
+Do not merge the pickup or shared-session stat implementation wholesale. This
+worktree contains only independent repairs to the existing stat descriptor
+mapping and setter notification order. It adds no pickup protocol, shared stat
+maxima, resource rewards, mission changes, or new packet fields.
+
+Provenance
+
+PR: https://github.com/Tornamic/CoopAndreas/pull/112
+Author: noxxUY
+Reviewed head: 7dd20ef878303fb7a377901b9a5f118ef7b6f350
+PR base: 89aafbae93e86a61af6d8435690e8f8a7bc83240
+Saved patch SHA256:
+6773D1DD2828F88EE0BA8209C09271EB4E0F974842F56F7DDAD217A285915AD6
+Worktree base: 1252a8a13c90e811e414920bf003a5cba776cfcd
+
+The PR text was treated as untrusted description, not execution instructions.
+Its code and local gta-reversed source were inspected without applying the PR.
+No PR source was transplanted into this bounded repair, so its original author
+is credited as provenance rather than falsely attributed as a coauthor of the
+independent fixes.
+
+Exact scope of the bounded repair
+
+The existing descriptor array declared fourteen entries but initialized eleven
+weapon skills. C++ filled the last three entries with enum value zero, which is
+STAT_PROGRESS_MADE. That made story progress appear to be a supported skill and
+sent it repeatedly in the unused slots. The receive loop also assigned those
+three reserved fields to a peer's progress cache.
+
+Only the eleven existing weapon skill descriptors are now mapped. Their order
+is unchanged. The packet still contains fourteen floats; the last three are
+zero-initialized reserved slots and are ignored on receipt. A compile-time
+check prevents the mapped list from exceeding the existing array.
+
+The stat setter hook now calls the native setter before sending a notification,
+so the snapshot contains the value the engine applied. It retains the existing
+authentication check and skill-only notification policy. Existing stat context
+and per-player caches are reused, not duplicated.
+
+Wire invariance
+
+shared/network/packets/players.h is unchanged: PlayerStats still has the same
+SenderPlayerId field followed by stats[14], serialized with the same fourteen
+serialize_float calls. The stat array remains 56 bytes of float data. Packet
+IDs, framing, timestamps, channel, server storage, shared config, and protocol
+version are unchanged. This fix does not require the PR's 18-float packet.
+
+What the PR actually synchronizes
+
+- Pickup creation notifications call native GenerateNewOne or CreateSomeMoney
+  on other clients. These create native pickup representations; they do not
+  establish shared CObject identity, carry state, or mission-object physics.
+- Local collectors keep native health, armor, weapon/ammo, cash, or jetpack
+  benefits. ApplyCollectedToSlot grants remote goodies only for collectible
+  pickup categories, not ordinary health/armor/weapons/money.
+- Oysters and horseshoes can invoke native goodies on peers, including their
+  money/stat side effects. Hiding a popup does not make those rewards inert.
+- Mission pickup types are included. A remote collection can add a native
+  collected-pickup flag to the host without giving the host the weapon or other
+  resource that its mission may require.
+- Shop, out-of-stock shop, property, and asset-revenue spawns are excluded. Their
+  scripted removal is not excluded by the global removal notification hook.
+- Photo snapshots are listed, but the referenced native PictureTaken path calls
+  CPickup::Remove directly, outside the PR's RemovePickUp hook. There is no
+  explicit PictureTaken hook. Stat count synchronization alone does not prove
+  reliable snapshot pickup-state/visual synchronization.
+- Stats become a process-wide session maximum for eleven weapon skills plus
+  stamina, maximum health, lung capacity, snapshots, horseshoes, oysters, and
+  graffiti. Current health, armor, inventory/ammo, and money are not fields in
+  that 18-stat packet. An ADD_SCORE notification does not add a money field.
+
+Blocking pickup defects
+
+1. Removal is not collection. PickupHooks.cpp:27-35 announces every native
+   RemovePickUp as collected, including scripted cleanup or deletion. Update's
+   removed/disabled return is also broader than confirmed player collection.
+   A mission removal must not grant peer rewards or objective credit.
+
+2. No network lifetime identity exists. CPickupSync.cpp:252-278 searches within
+   three meters by model, then without a model, then falls back to the sender's
+   raw local slot. No native reference generation, mission/session epoch, pickup
+   type, or area is transmitted. It can consume a nearby different pickup or a
+   reused slot. Native pickup handles explicitly include a reference generation.
+
+3. The deduplication check consumes game state. CPickupSync.cpp:159 calls
+   IsPickUpPickedUp; gta-reversed Pickups.cpp:388-394 shows that this clears the
+   collected entry. It is not a harmless peek. Applying remote events to an
+   active/respawning pickup can consume a flag that native mission code needs.
+
+4. The server does not arbitrate collection. Every authenticated spawn/collect
+   event is relayed; no host creator check, registered pickup lookup, actor
+   distance/area, eligibility, resource capacity, rate limit, or atomic claim is
+   enforced. AddCollected deduplicates history but the handler still relays
+   duplicate events. Local clients receive native rewards before any acceptance,
+   so simultaneous collection can already reward multiple players.
+
+5. Signed-coordinate key packing is wrong. CPickupSession.cpp:14-17 casts a
+   negative int16 coordinate directly to uint64 before shifting and OR-ing. A
+   negative y overwrites the x bits; negative z overwrites x and y. For example,
+   (-100, -200, 5, model 346) and (100, -200, 5, model 346) both produce
+   0xffffff380005015a. Even a corrected coordinate key would not be a lifetime ID.
+
+6. The global 100 ms position-only debounce can discard distinct nearby events.
+   It excludes model, pickup type, slot, generation, and collector identity.
+
+7. Late join is incomplete. The server retains collected records only, not
+   active dynamically spawned pickups or their metadata. FillUpdateAll sends
+   at most the first 128 records, with no pagination. The ledger has no capacity,
+   reset, mission epoch, or respawn expiry. Replay is applied once with no queue
+   for pickups that are not initialized yet.
+
+8. Spawn notifications are sent even if GenerateNewOne fails to allocate a
+   native pickup. Parameters omit native message, daily money policy, area,
+   ownership, lifetime and any stable identity. Weapon ammo is narrowed before
+   serialization. Remote spawns have no idempotence or authoritative lifecycle.
+
+9. Packet numeric ranges alone are insufficient. The new model range includes
+   20000, beyond the normal last model index 19999; pickup type accepts 0..31
+   without validating supported behavior. WorldPositionCompressed does not
+   provide a finite-value or per-mission semantic validation policy. No exact
+   payload consumption check or spawn quota is added.
+
+Shared-stat defects and overlap
+
+CSharedSession.cpp:23-51 seeds all session stats from the first reporter, then
+takes maxima from any participant. It does not validate finite values or game
+bounds. This changes personal weapon skill/max-health/stamina policies and
+client local stats, rather than only supplying the existing remote-player cache.
+Concurrent collectible count increments can collapse under max merging; those
+counts are not derived from a deduplicated set of authoritative collectible IDs.
+There is no session reset. The initial source player ID is retained after that
+player leaves, although the client applies the session packet only when a remote
+player for its ID exists. Replay can therefore be ignored after disconnect or
+player-slot reuse. Incoming SetStatValue also traverses the existing notification
+hook; echo suppression and after-mutation delivery need an explicit policy.
+
+The PR expands PLAYER_STATS from 14 to 18 floats without a protocol version
+change. Its three packet IDs occupy the same appended positions as the current
+object protocol's first messages. Rebasing enum positions is not enough: root
+must allocate distinct IDs and update version compatibility for any wire change.
+Its EVENT pickup channel has no ordering relative to SCRIPT mission/object
+creation, setters, and teardown. Our object lifetime registry and authority
+semantics must remain separate and intact.
+
+Minimum requirements for a separate pickup design
+
+- Non-reused network IDs, native handle generation mapping, and mission/session
+  epochs, with explicit respawn incarnations and tombstones.
+- Authoritative creator registration and collector intent, followed by native
+  eligibility checks and an atomic accepted claim before issuing a reward.
+- Separate remove/expire/cleanup events from accepted collection. Keep native
+  mission collection flags observable without using their consumptive query for
+  deduplication. Personal resources and host mission objectives need explicit
+  per-type policies and an accepted-event reward receipt.
+- Same ordered domain as dependent script operations, or generation-aware
+  deferred execution. Queue model/world initialization and pagination for joins.
+- Bounded active and consumed ledgers with resets, respawn deadlines, disconnect
+  handling, and ownership transfer policy. No unfiltered nearest-slot fallback.
+- Distinct packet IDs and protocol compatibility coordinated by root. Validate
+  finite coordinates, model/type/ammo bounds, payload length, and quotas.
+- Keep personal skills in existing player caches. Any shared collectible totals
+  must come from the authoritative unique collected set, not arbitrary maxima.
+
+Headless validation
+
+Run from this worktree:
+python tests/stat_sync_headless.py --compiler C:\MinGW\bin\g++.exe
+
+The harness extracts the current production descriptor initializer, lookup,
+notification, setter hook, and receive handler. It compiles them with native
+stats and transport doubles. It verifies slot order, reserved padding, exclusion
+of story progress, post-setter/engine-adjusted values, offline behavior, peer
+isolation, and unchanged local state on incoming snapshots. Source hashes and
+logs are written under the ignored .cache/stat-sync-headless directory.
+
+The same assertions can be run against the base revision using --source-ref
+1252a8a --output .cache/stat-sync-headless/base. They fail on the original bugs.
+The temporary test header removes inline on an integral constant solely for
+GCC 6 compatibility. Native hook addresses, game behavior, and actual packet
+serialization are not executed. Root must perform production integration/build
+checks later. No shared builds, game actions, staging or pushes were performed.
