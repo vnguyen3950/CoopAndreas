@@ -1,0 +1,123 @@
+{
+  "Status": "READY",
+  "RuntimeValidated": false,
+  "SourceCommit": "0b2d9a454b81f8db94e1df8dbe893f603d3148fe",
+  "ProtocolCoreCommit": "2e5c617828f5c690df98aa34c07e140ab59d6dcd",
+  "Command": "python tests/fire/run_tests.py --output .cache/fire-headless/final-003",
+  "HeadlessEvidence": ".cache/fire-headless/final-003/result.json",
+  "HeadlessEvidenceSHA256": "ac238a3ca441c6b5787adcd3ed93da53aa3cf5859c0e057a46bcc1c46d4c3afb",
+  "Assertions": {
+    "Core": 22,
+    "Codec": 69310,
+    "ActualClientService": 279,
+    "ActualServerService": 22,
+    "TotalUnmutated": 69633,
+    "Failures": 0,
+    "MutationDetectedFailures": 6
+  },
+  "ProductionHashes": {
+    "client/src/CCore.cpp": "95c50bc07890a70e7d6b93530e87889a23edd9565d8720a58757946656e703c5",
+    "client/src/CNetwork.cpp": "044d0e236f9b1e2364856601d9736226d1ced9e6048eaf522abe881197c73687",
+    "client/src/CNetworkVehicle.cpp": "3d05a56e6e5923369422348c3235cd20347e281444190c045a43f6596a45eeb5",
+    "client/src/CPacketBuffer.cpp": "47be4bb286120aaf88de6c4fd3ac6c1eadd98863d1fe4aa660dfc068cc1dcd7a",
+    "client/src/Main.cpp": "48d2058aaec7e6300189f04a3f3928b11c7213d13a965672815284f2bb61681c",
+    "client/src/PacketHandlers/system.cpp": "a3d079a2b16cb54706ab97a4f76132198f47d8d77fbf8e2092b477e852fdcc8f",
+    "client/src/PacketHandlers/vehicles.cpp": "e5989e5715579ee16f7b4637bb1ac7c1014ca6132a5eb91283da704ab3d79e6e",
+    "server/src/CNetwork.cpp": "cc2d6d829a7f3f34c9d1648d00e78daf00aabfd283265fb3c38f86b32f1558d5",
+    "server/src/CNetworkPlayerManager.cpp": "edb4a984d56a208896eb89ab3cbc782ab3e622ed37621652181dc791a67fb932",
+    "server/src/CNetworkVehicleManager.cpp": "c0ee346e709122176729b6c2b03331b80aef130f4847101e719c432d1a789931",
+    "server/src/PacketHandlers/players.cpp": "f1f8e71e6c461829dc2f43a5c578277279ac9b390d07fe17abcb2b817ede7665",
+    "server/src/PacketHandlers/vehicles.cpp": "c3af5d59fb7590a2db1f41d4463b28fdc55c14abff6ce5a0e968b11f363dbe17",
+    "client/src/CFireSync.cpp": "3fcbbc36d219cfe790f46946b1ddc94947eb73ed09cd30a914166a1cc30b3287",
+    "client/src/CFireSync.h": "5a20d48d9cf789e3fbd1b4d2e3223e83b7776c13ef586a9072b370e1d95f1f01",
+    "client/src/CFireSyncNative.cpp": "77073e632b6b3503aff214faf41be31b3dc32ac9eb352d7a32f6267092bb2d56",
+    "client/src/PacketHandlers/fires.cpp": "3e5f3516dbd1b40a1d72e30f19600bb565a218beedb98cf4d5f33f835e349861",
+    "server/src/CFireSync.cpp": "2cd02ddaed2624a3b1dcc943cb2ff33d4481aa566e5f907dcc43e3a6b4873839",
+    "server/src/CFireSync.h": "097c4586960d5fe74bd5df78eababd07e58e6baf651e4c511560ab563c0073a1",
+    "server/src/PacketHandlers/fires.cpp": "c89f4706142eb7b4bc765fa61248402d1bab8f5909c709d9cba649627b1400b7",
+    "shared/network/fire_sync.h": "3162c338ab30505ada2c43529af53bc9411eb8ac0612429a267dacf5cfd801ff",
+    "shared/network/packets/fires.h": "f0f3dddc243f887f41bcee31bb9f08954761e706d172f4af785591d7539bf5c8",
+    "shared/network/packet.h": "d793d33984fcaf8c5756414f82765c10552ab0ffccf652590c57c21e59fde750",
+    "shared/network/packet_types.h": "b0ca83bedf9af9704a95c352e23bca6f549b38972b44431bf248b7a0baedb461",
+    "shared/network/object_sync.h": "3ac949b15bc4f3dad1b31aa9fefd7b21df0562579282b693d9dec3a8e249bbaa",
+    "third_party/serialize.h": "54d66abaeefd4cd5385d8a7b717be8a1440dd32ffa7840856a0f09663eb3084e"
+  },
+  "TestHashes": {
+    "client_doubles.h": "869de787196d1be95cf274617781813a14a0b6efe352db90664794be10a9b52a",
+    "fire_client_tests.cpp": "6d88ec9fc43dc4e80c0c2ad540e8747af5a28f9907e0ec95489e20056bc94d7e",
+    "fire_codec_tests.cpp": "60425e08246e0ed92038bd7aa5ccf45effb48779763c3e878d3d303b9fede8df",
+    "fire_core_tests.cpp": "a6a5e9aecb5b2a45fecd06d16d68d095641685021c0bfc1a400dbe8ad9067ccc",
+    "fire_server_tests.cpp": "e66d5ec28e4323c27be4b7d02bfd399f5301362e2a94214ed2dc83248b119e78",
+    "run_tests.py": "49a6f615be37fbf94aa36be4cd58db07cb81822468ba2cd824933a9202c3b70e",
+    "server_doubles.h": "e75b35596bcd92b3da6b10c284f8e94f4a7db724d64a14094122107131ec0db6"
+  },
+  "ExtractionHashes": {
+    "client": "aed5f514713cf1ae7fe52725e650a0e0f72712c20c74548454db0d25672e3b03",
+    "server": "0b699a898771cd83e0d4145b9b7b4a39c4173dcaf155cf19f283e0d7ea3e3ce4",
+    "native_damage": "0c23fb185bc44f67cfddd718fbdcef890cb20e5a5899effde2bf487718aed044"
+  },
+  "Build": {
+    "Architecture": "x86",
+    "Mode": "release",
+    "ClientExitCode": 0,
+    "ServerExitCode": 0,
+    "GTA_SA_DIR_Cleared": true,
+    "Shipping": false,
+    "Artifacts": {
+      "CoopAndreasSA.dll": {
+        "Path": ".cache\\fire-frozen-output\\windows\\x86\\release\\CoopAndreasSA.dll",
+        "SHA256": "4072bcfa3c6c420e19a4391f355c1d6240225e5e9a6639b36a3ca6c5103fb407",
+        "Bytes": 2180608,
+        "PEMachine": "0x14c"
+      },
+      "server.exe": {
+        "Path": ".cache\\fire-frozen-output\\windows\\x86\\release\\server.exe",
+        "SHA256": "a2e7ffbf45e5f2abee2b8635baef8ff68858c9f5e5b29aac3fa1c8707fa4d88d",
+        "Bytes": 492032,
+        "PEMachine": "0x14c"
+      }
+    },
+    "Logs": {
+      "client-build-accepted.log": {
+        "Path": ".cache\\fire-compile-001\\client-build-accepted.log",
+        "SHA256": "a6610d3f5d72bb183f2bf76ae1005597483d69e323a469f8a4ac1c8381c006e6",
+        "ExitCode": 0
+      },
+      "server-build-accepted.log": {
+        "Path": ".cache\\fire-compile-001\\server-build-accepted.log",
+        "SHA256": "efa75b6f54fb6007c2a3d0f134456afe55ee336422e144f26e49505eb93d6c11",
+        "ExitCode": 0
+      }
+    },
+    "NPCPrerequisite": "be6c204c6b61da9b1977fd56374af2a505843b20",
+    "NPCHeaderHashes": {
+      "client/src/CNetworkPed.h": "b586a360d87caa51e4fea2ef54c7966e887087f3aecf6ca4905d3445ececcf3b",
+      "server/src/CNetworkPed.h": "ed1dddef3fa7f3fae714ae5666512a1c5a89168e5aed884a3694b47a084fe6d8",
+      "shared/network/npc_sync.h": "def0df7d5f74de2dd6e552e73a570be2cd0e5dc60abab256bbfdfa3ff3441783",
+      "shared/network/packets/peds.h": "ead89a35e3211a81d3939681ab2b5fbc9699190f37f739bbf4820c0cc3e35d22",
+      "shared/network/CNetworkEntitySerializer.h": "61952c40584c95e62bd37b87a2707d892b25dd8b56568189c18b3fc0b235385a",
+      "shared/network/eNetworkEntityType.h": "3225a1c361d991f28703a9e4baf1f6d127975b782db65503e27e4eda81eb79e8"
+    },
+    "OverlayOnlyChanges": [
+      "Absolute precompiled header paths in xmake.lua",
+      "Reserved PED_REPLAY/PED_PIN appended to local enum",
+      "Explicit absolute private-cache target directory in xmake.lua"
+    ],
+    "DiagnosticLimitation": "A separate automatic project-discovery probe selected baseline NPC headers and failed missing member checks. Accepted -P/-F overlay builds use recorded committed NPC headers and explicit private-cache target paths; no production source repair was needed."
+  },
+  "NativeEvidence": {
+    "ExecutableSHA256": "a559aa772fd136379155efa71f00c47aad34bbfeae6196b0fe1047d0645cbd26",
+    "ScannerDisassemblyPath": ".cache/fire-native-evidence/event-scanner.txt",
+    "ScannerDisassemblySHA256": "15f1061886e17eb84026f4fd9fdb3db6ba383f4dab1909ca54949ae42faf5290"
+  },
+  "RequiredMergedValidation": "Root resolves final packet enum/config and overlapping integration seams, builds actual merged NPC/fire source, and owns packaging. Human native/gameplay checks remain in docs/FIRE_SYNC.md.",
+  "RegressionCoverage": [
+    "Fresh game repeated native player reference cannot adopt delayed old RESET/BIND/STATE before current-game acknowledgment and fresh birth.",
+    "Stop authorization resolves current entity lease, rejecting retained old-owner grant after driver transfer.",
+    "Processed and queued EVENT before SYSTEM host assignment preserves legitimate future state.",
+    "Guest-owned PED burns only on its actual owner; mutation disabling native damage ownership gate fails six assertions.",
+    "125 scripted replica lifecycles release allocation reservations; pre-ready guest pool is reconciled.",
+    "Controlling host load resets room high-water state; guest reload advances attachment birth without clearing other world fires.",
+    "Delegated authenticated request replaces client-provided future serverTime."
+  ]
+}

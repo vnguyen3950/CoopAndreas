@@ -40,7 +40,7 @@ int main() {
         Roundtrip(p);
     }
     Packets::Fires::Hello hello; hello.gameGeneration=MaxCounter; hello.nativeReference=MaxCounter; hello.controllingRestart=true; Roundtrip(hello);
-    Packets::Fires::Reset reset; reset.epoch=MaxCounter; reset.connection=MaxCounter; reset.host=7; Roundtrip(reset);
+    Packets::Fires::Reset reset; reset.epoch=MaxCounter; reset.connection=MaxCounter; reset.gameGeneration=MaxCounter; reset.host=7; Roundtrip(reset);
     expect(static_cast<Packet&>(reset).GetChannel()==ePacketChannel::SYSTEM,"Room reset ordered on reliable SYSTEM");
     Packets::Fires::Bind bind; bind.epoch=1; bind.entity={Kind::Vehicle,254,1,1,0,400}; Roundtrip(bind); bind.live=false; Roundtrip(bind);
     Packets::Fires::Remove remove; remove.key={1,60,1,2}; Roundtrip(remove);
