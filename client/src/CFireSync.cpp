@@ -25,10 +25,16 @@ auto& Bindings() { static std::array<Binding,FireSync::MaxPlayers+FireSync::MaxE
 auto& PendingBindings() { static std::array<Binding,FireSync::MaxPlayers+FireSync::MaxEntities> bindings{}; return bindings; }
 uint32_t connection = 0, requestSequence = 0, lastHello = 0, gameGeneration = 0, networkConnection = 0;
 bool controllingRestart = false, nativeEnabled = false;
-uint32_t acknowledgedGame = 0, ownBirthFloor = 0;
+uint32_t acknowledgedGame = 0, acknowledgedBirth = 0, ownBirthFloor = 0;
 int expectedHost = -1, lastPedRef = -1, replayDepth = 0;
 bool scriptsReady = false;
 bool guestReconciled = false;
+bool CurrentOwnBirth(const FireSync::Entity& e) {
+    const int own = CNetworkPlayerManager::m_nMyId;
+    return acknowledgedGame == gameGeneration && acknowledgedBirth && connection &&
+        e.kind == FireSync::Kind::Player && int(e.id) == own && e.owner == own &&
+        e.generation == acknowledgedBirth && e.ownerEpoch == connection;
+}
 int BindingIndex(FireSync::Kind kind, uint32_t id) {
     if (kind == FireSync::Kind::Player && id < FireSync::MaxPlayers) return int(id);
     if (kind == FireSync::Kind::Vehicle && id < FireSync::MaxEntities) return FireSync::MaxPlayers+int(id);
@@ -87,6 +93,7 @@ FireSync::Entity Capture(CEntity* entity) {
     const int index = id >= 0 ? BindingIndex(kind,uint32_t(id)) : -1;
     if (index >= 0 && Bindings()[index].live && Bindings()[index].entity.model == entity->m_nModelIndex) {
         auto& binding = Bindings()[index];
+        if (entity == FindPlayerPed(0) && !CurrentOwnBirth(binding.entity)) return {};
         if (binding.reference < 0) binding.reference = Reference(entity);
         if (ValidNative(entity,binding.reference)) return binding.entity;
         return {};
@@ -112,7 +119,10 @@ CEntity* Resolve(const FireSync::Entity& e) {
         const int index = BindingIndex(e.kind,e.id);
         if (index < 0 || !Bindings()[index].live || !FireSync::Matches(e,Bindings()[index].entity)) return nullptr;
         if (e.kind == FireSync::Kind::Player) {
-            if (int(e.id) == CNetworkPlayerManager::m_nMyId) target = FindPlayerPed(0);
+            if (int(e.id) == CNetworkPlayerManager::m_nMyId) {
+                if (!CurrentOwnBirth(e)) return nullptr;
+                target = FindPlayerPed(0);
+            }
             else if (auto* p = CNetworkPlayerManager::GetPlayer(int(e.id))) target = p->m_pPed;
         } else if (auto* car = CNetworkVehicleManager::GetVehicle(int(e.id))) target = car->m_pVehicle;
         if (!ValidNative(target)) return nullptr;
@@ -257,7 +267,7 @@ void CFireSync::Init() {
 }
 void CFireSync::Reset() {
     ClearManaged(); Ledger() = {}; Bindings() = {}; PendingBindings() = {}; connection = requestSequence = lastHello = 0;
-    expectedHost = lastPedRef = -1; acknowledgedGame = 0;
+    expectedHost = lastPedRef = -1; acknowledgedGame = acknowledgedBirth = 0;
 }
 void CFireSync::HostChanged(int host) {
     expectedHost = host;
@@ -279,15 +289,20 @@ void CFireSync::VehicleRemoved(int id) {
 }
 void CFireSync::Receive(const Packets::Fires::Reset& p) {
     if (!CNetwork::m_bAuthenticated || !p.epoch || p.epoch > FireSync::MaxCounter || !p.connection || p.connection > FireSync::MaxCounter ||
-        p.host < -1 || p.host >= FireSync::MaxPlayers || p.epoch < Ledger().active.epoch || p.gameGeneration != gameGeneration) return;
+        p.host < -1 || p.host >= FireSync::MaxPlayers || p.epoch < Ledger().active.epoch || p.gameGeneration != gameGeneration ||
+        !p.recipientBirth || p.recipientBirth > FireSync::MaxCounter) return;
     if (p.epoch == Ledger().active.epoch && (p.host != Ledger().active.host || (connection && connection != p.connection))) return;
+    if (acknowledgedGame == gameGeneration && p.recipientBirth < acknowledgedBirth) return;
     if (p.epoch > Ledger().active.epoch) { ClearManaged(); Ledger().Reset(p.epoch,p.host); Bindings() = {}; }
     if (expectedHost == -1) expectedHost = p.host;
-    connection = p.connection; acknowledgedGame = p.gameGeneration;
+    connection = p.connection; acknowledgedGame = p.gameGeneration; acknowledgedBirth = p.recipientBirth;
+    const int own = CNetworkPlayerManager::m_nMyId;
+    if (own >= 0 && own < FireSync::MaxPlayers && !CurrentOwnBirth(Bindings()[own].entity)) Bindings()[own] = {};
     for (int i = 0; i < int(Bindings().size()); ++i) if (PendingBindings()[i].epoch == p.epoch) {
-        if (i != CNetworkPlayerManager::m_nMyId || PendingBindings()[i].entity.generation > ownBirthFloor)
-            Bindings()[i] = PendingBindings()[i];
-        PendingBindings()[i] = {};
+        if (i != own || CurrentOwnBirth(PendingBindings()[i].entity)) {
+            Bindings()[i] = PendingBindings()[i]; PendingBindings()[i] = {};
+        } else if (PendingBindings()[i].entity.generation <= acknowledgedBirth) PendingBindings()[i] = {};
+        // A future own binding can precede its SYSTEM receipt; retain it until that exact birth is acknowledged.
     }
 }
 void CFireSync::Receive(const Packets::Fires::Update& p) { if (CNetwork::m_bAuthenticated) Ledger().State(p.state); }
@@ -295,14 +310,17 @@ void CFireSync::Receive(const Packets::Fires::Remove& p) { if (CNetwork::m_bAuth
 void CFireSync::Receive(const Packets::Fires::Bind& p) {
     if (!CNetwork::m_bAuthenticated || !p.entity.Valid() || p.epoch < Ledger().active.epoch) return;
     const int i = BindingIndex(p.entity.kind,p.entity.id); if (i < 0) return;
-    if (p.entity.kind == FireSync::Kind::Player && int(p.entity.id) == CNetworkPlayerManager::m_nMyId && p.entity.generation <= ownBirthFloor) return;
-    auto& binding = p.epoch == Ledger().active.epoch ? Bindings()[i] : PendingBindings()[i];
+    const bool own = p.entity.kind == FireSync::Kind::Player && int(p.entity.id) == CNetworkPlayerManager::m_nMyId;
+    if (own && (p.entity.generation <= ownBirthFloor ||
+        (acknowledgedGame == gameGeneration && p.entity.generation < acknowledgedBirth))) return;
+    const bool active = p.epoch == Ledger().active.epoch && (!own || CurrentOwnBirth(p.entity));
+    auto& binding = active ? Bindings()[i] : PendingBindings()[i];
     if (binding.epoch > p.epoch || (binding.epoch == p.epoch &&
         (binding.entity.generation > p.entity.generation || (binding.entity.generation == p.entity.generation && binding.entity.ownerEpoch > p.entity.ownerEpoch)))) return;
     const bool same = FireSync::Matches(binding.entity,p.entity);
     if (same && !binding.live && p.live) return; // An equal-birth replay cannot undo an entity removal.
     binding = {p.entity,p.live,same ? binding.reference : -1,p.epoch};
-    if (p.epoch == Ledger().active.epoch && p.live) Resolve(p.entity); // Capture current full native reference when already ready.
+    if (active && p.live) Resolve(p.entity); // Capture current full native reference when already ready.
 }
 void CFireSync::Receive(const Packets::Fires::Request& p) {
     if (IsHost() && p.request.Valid() && p.request.epoch == Ledger().active.epoch) ExecuteRequest(p.request);

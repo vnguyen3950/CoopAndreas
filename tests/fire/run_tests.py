@@ -18,7 +18,7 @@ def main():
     hashes={n:sha(source/n) for n in inputs}
     for n in inputs:
         (snapshot/n).parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(source/n,snapshot/n)
-    tests=['fire_core_tests','fire_codec_tests','fire_client_tests','fire_server_tests']
+    tests=['fire_core_tests','fire_codec_tests','fire_client_tests','fire_server_tests','fire_unseen_birth_tests']
     if a.protocol_only: tests=['fire_core_tests','fire_codec_tests']
     support=([] if a.protocol_only else ['client_doubles.h','server_doubles.h'])+[n+'.cpp' for n in tests]
     supports={n:sha(owned/n) for n in support}

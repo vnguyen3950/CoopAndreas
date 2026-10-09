@@ -13,6 +13,13 @@ int main(){
     CFireSync::Update(u,&guest);expect(!Room().slots[0].live,"Guest cannot publish world fire state");
     CFireSync::Update(u,&host);expect(Room().slots[0].live,"Authenticated host publishes canonical fire");
     auto oldPlayer=players[1];Hello(guest,2);
+    const Packets::Fires::Reset* receipt=nullptr;
+    for (const auto& sent : GetPacketFactory().sent) if (sent.first==1 && sent.second->GetType()==ePacketType::FIRE_RESET)
+        receipt=static_cast<const Packets::Fires::Reset*>(sent.second.get());
+    expect(receipt && receipt->recipientBirth==players[1].generation && receipt->gameGeneration==2,
+        "Actual server reset acknowledges exact new recipient birth and script generation");
+    expect(receipt && receipt->recipientBirth!=oldPlayer.generation && receipt->connection==players[1].ownerEpoch,
+        "Repeated native reference cannot reuse old birth receipt or mismatched connection");
     expect(Room().epoch==epoch && Room().slots[0].live,"Guest script restart preserves host's world burns");
     expect(players[1].generation>oldPlayer.generation,"Guest restart advances attachment incarnation despite repeated pool reference/model");
     auto oldHost=players[0];Hello(host,2,true);

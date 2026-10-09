@@ -21,7 +21,7 @@ static void Setup(CPlayerPed& local,int id=1,int host=0) {
     localPed=&local; CPools::ped.refs[&local]=100; CWorld::Players[0].m_pPed=&local;
     CNetworkPlayerManager::m_nMyId=id; CLocalPlayer::m_bIsHost=id==host;
     CFireSync::EnableNative(); scriptsReady=true; gameGeneration=1; controllingRestart=false; networkConnection=1; ownBirthFloor=0;
-    Packets::Fires::Reset reset; reset.epoch=1; reset.host=host; reset.connection=10;reset.gameGeneration=1; CFireSync::Receive(reset);
+    Packets::Fires::Reset reset; reset.epoch=1; reset.host=host; reset.connection=10;reset.gameGeneration=1;reset.recipientBirth=1; CFireSync::Receive(reset);
     lastHello=CTimer::m_snTimeInMilliseconds; lastPedRef=100;
     Packets::Fires::Bind bind; bind.epoch=1; bind.entity={FireSync::Kind::Player,uint32_t(id),1,10,id,0}; CFireSync::Receive(bind);
 }
@@ -68,7 +68,7 @@ int main() {
     int active=0;reserved=0;for(auto& f:gFireManager.m_aFires){active+=f.m_nFlags.bActive;reserved+=f.m_nFlags.bCreatedByScript;}
     expect(active==1 && reserved==0,"Pre-ready untracked guest fires reconciled before canonical replica creation");
 
-    Setup(local);Packets::Fires::Reset next;next.epoch=2;next.host=2;next.connection=10;next.gameGeneration=1;
+    Setup(local);Packets::Fires::Reset next;next.epoch=2;next.host=2;next.connection=10;next.gameGeneration=1;next.recipientBirth=1;
     update.state=Sample();update.state.key.epoch=2;CFireSync::Receive(update);
     expect(Ledger().pending.slots[0].live && !Ledger().active.slots[0].live,"Future EVENT state staged before SYSTEM reset");
     CFireSync::Receive(next);CFireSync::HostChanged(2);
@@ -111,17 +111,45 @@ int main() {
     expect(CFireSync::NativeStart(nullptr,nullptr,CVector{}),"Uninitialized boundary remains original rather than globally suppressing offline setup");
     // Independent fire-actor-birth-001: old reset/binding/burn arrives after a
     // real script-generation change, with the same native ref 100 and model 0.
-    scriptsReady=true;Packets::Fires::Reset oldReset;oldReset.epoch=1;oldReset.connection=10;oldReset.host=0;oldReset.gameGeneration=before;
+    scriptsReady=true;Packets::Fires::Reset oldReset;oldReset.epoch=1;oldReset.connection=10;oldReset.host=0;oldReset.gameGeneration=before;oldReset.recipientBirth=1;
     CFireSync::Receive(oldReset);
     Packets::Fires::Bind oldBind;oldBind.epoch=1;oldBind.entity={FireSync::Kind::Player,1,1,10,1,0};CFireSync::Receive(oldBind);
     update.state=Sample();update.state.target=oldBind.entity;CFireSync::Receive(update);
     local.burningTask=false;CFireSync::Process();
     expect(!local.m_pFire && !local.burningTask,"Delayed old-game RESET/BIND/STATE cannot initialize fresh player's native burn");
     expect(acknowledgedGame!=gameGeneration,"Own burn adoption waits for explicit current-game acknowledgement");
-    auto ack=oldReset;ack.gameGeneration=gameGeneration;CFireSync::Receive(ack);CFireSync::Process();
+    auto ack=oldReset;ack.gameGeneration=gameGeneration;ack.recipientBirth=2;CFireSync::Receive(ack);CFireSync::Process();
     expect(!local.m_pFire,"Current ACK alone cannot adopt an old avatar birth from staged events");
     oldBind.entity.generation=2;CFireSync::Receive(oldBind);
     update.state.key.generation=2;update.state.target=oldBind.entity;CFireSync::Receive(update);CFireSync::Process();
     expect(local.m_pFire && local.burningTask,"Matching current-game ACK and fresh birth permit legitimate burn replay");
+    // Independent unseen_birth_probe: first HELLO's binding has never arrived.
+    Setup(local);CFireSync::Reset();gameGeneration=1;ownBirthFloor=0;scriptsReady=true;
+    local.burningTask=false;local.m_pFire=nullptr;CFireSync::Process();
+    Events::initScriptsEvent.Run();scriptsReady=true;
+    expect(gameGeneration==2 && ownBirthFloor==0,"Reload before first binding keeps unseen previous birth floor zero");
+    oldBind.epoch=1;oldBind.live=true;oldBind.entity={FireSync::Kind::Player,1,1,10,1,0};CFireSync::Receive(oldBind);
+    update.state=Sample();update.state.target=oldBind.entity;CFireSync::Receive(update);
+    ack.epoch=1;ack.host=0;ack.connection=10;ack.gameGeneration=2;ack.recipientBirth=2;CFireSync::Receive(ack);
+    const int beforeOldBurn=originalDamage;CFireSync::Process();
+    expect(!local.m_pFire && !local.burningTask,"Current-game ACK cannot adopt unseen old birth staged before fresh binding");
+    TaskDamage(&local);expect(originalDamage==beforeOldBurn,"Unseen old birth cannot damage fresh local player");
+    oldBind.entity.generation=2;CFireSync::Receive(oldBind);
+    update.state.key.generation=2;update.state.target=oldBind.entity;CFireSync::Receive(update);CFireSync::Process();
+    expect(local.m_pFire && local.burningTask,"Fresh birth binding completes deferred replay after SYSTEM acknowledgment");
+    TaskDamage(&local);expect(originalDamage==beforeOldBurn+1,"Acknowledged current birth applies native damage exactly once");
+    // A valid future own EVENT binding must survive an older same-game receipt.
+    Setup(local);oldBind.entity={FireSync::Kind::Player,1,2,10,1,0};CFireSync::Receive(oldBind);
+    expect(PendingBindings()[1].entity.generation==2 && Bindings()[1].entity.generation==1,
+        "Future own EVENT birth stages without replacing currently acknowledged binding");
+    update.state=Sample();update.state.target=oldBind.entity;CFireSync::Receive(update);
+    ack.gameGeneration=1;ack.recipientBirth=1;CFireSync::Receive(ack);CFireSync::Process();
+    expect(PendingBindings()[1].entity.generation==2 && !local.m_pFire,
+        "Repeated older receipt preserves future binding without granting future burn authority");
+    ack.recipientBirth=2;CFireSync::Receive(ack);CFireSync::Process();
+    expect(Bindings()[1].entity.generation==2 && local.m_pFire && local.burningTask,
+        "Matching later receipt promotes already staged EVENT birth and applies legitimate native burn");
+    ack.recipientBirth=1;CFireSync::Receive(ack);
+    expect(acknowledgedBirth==2,"Stale same-game receipt cannot roll acknowledged actor birth backwards");
     std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;
 }

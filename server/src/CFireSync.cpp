@@ -45,6 +45,7 @@ void Reset(CNetworkPlayer* recipient) {
     if (!Auth(recipient) || !Room().epoch) return;
     Packets::Fires::Reset packet; packet.epoch = Room().epoch; packet.host = Room().host;
     packet.connection = peers[recipient->m_iPlayerId].connection; packet.gameGeneration = peers[recipient->m_iPlayerId].gameGeneration;
+    packet.recipientBirth = players[recipient->m_iPlayerId].generation;
     GetPacketFactory().Send(packet,recipient);
 }
 }
