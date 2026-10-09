@@ -1,0 +1,197 @@
+{
+  "Status": "READY",
+  "RuntimeValidated": false,
+  "SourceCommit": "a98ab0b6a2646b1f9a7a853c04e20d6f1e03fc57",
+  "Base": "f1c149a90473f3e8c9e7f677caac5bbd9f8a68b3",
+  "CoreCommit": "2d53659",
+  "ServiceCommit": "74dd0b34f53176786c648779c23bca0097a40f63",
+  "Command": "python tests/trailer/run_tests.py --output .cache/trailer-headless/orphan-001",
+  "HeadlessEvidence": ".cache/trailer-headless/orphan-001/result.json",
+  "Assertions": {
+    "Core": 26,
+    "FullTrailerCodec": 3753,
+    "ActualClientServiceHandlersLookup": 31,
+    "ActualServerService": 24,
+    "ActualConstructorCreateAndHosted": 15,
+    "ActualBirthCodecSections": 661,
+    "TotalUnmutated": 4510,
+    "Failures": 0,
+    "MutationDetectedFailures": 2
+  },
+  "ProductionHashes": {
+    "client/src/CCore.cpp": "1614f78b15e1b89cd9f64b09d68e8c2bd1418f6321df0e4320b2e0fbbbc57b9a",
+    "client/src/CNetwork.cpp": "752f89da0b810e725b4bd6e8130aa9961028e9d61b4928f089fc59f8f5493f1f",
+    "client/src/CNetworkVehicle.cpp": "abb9fdb6019e9ceecde0d981bac774a5c799814c2adf794ba16bfb21636a8084",
+    "client/src/CNetworkVehicle.h": "90efa4c67d32854aa21eb26aafb39f1cbb08b27313869be7cc7ae638ef681865",
+    "client/src/CNetworkVehicleManager.cpp": "a7ac30eb0c47cec78887945f1775709a28e12cb12fb9e009d9ee466a5743231a",
+    "client/src/CNetworkVehicleManager.h": "c9bad0f7c080ca5b81f4157094159da63d981221b1c71a96627b1f0556966055",
+    "client/src/CPacketBuffer.cpp": "a6007fd0d825848ac6a4110eee822ba7a538fb3990dc3e1732c178487fce8727",
+    "client/src/CTrailerSync.cpp": "26221c9aab85369e51efa69ef40526c2ffb1b8a552889ff867a50b2817220d30",
+    "client/src/CTrailerSync.h": "616279cc317c4764b8139c04df1ed62ceb8a97d16305218937de495e679b2acb",
+    "client/src/CTrailerSyncNative.cpp": "8daea2781ac3f95000ab822cd6da24c6928333139a8c86bfdcfdcbf8e0fe8e40",
+    "client/src/Hooks/WorldHooks.cpp": "57542321cf1488d7e1b77df96cfe895888dfbbc1a3733db0a9108404404534d7",
+    "client/src/Main.cpp": "6cafc634391f55241d7a1d0f48057babe9054e1ddddcf765b7e7224cea3fa9d2",
+    "client/src/PacketHandlers/system.cpp": "de7905bdebe5a994e3392a64a907e1a08cab9f5a33878b1922ca8966f3d9c18e",
+    "client/src/PacketHandlers/trailers.cpp": "74768ffe39b0361470cd9b74f1a49e6e865f85ec3a0ff0bd80c524ee794f7823",
+    "client/src/PacketHandlers/vehicles.cpp": "3225b5f727f68fab9a394ed7bc01a8d50d24ddb764bd9e865ed55dae0ffc3886",
+    "server/src/CNetwork.cpp": "54a50cba05a467e33611b2fa359fa09e48276fec4679af6bb76d12798b04b76c",
+    "server/src/CNetworkVehicle.cpp": "d9d302137f5a016cce5ad4f031ec2212802cb1581910b7336469a4879be29d33",
+    "server/src/CNetworkVehicle.h": "cfb6c7c85849317f520dcb47406ddc19c664df0c86ec4e02f4edefba90939ff1",
+    "server/src/CNetworkVehicleManager.cpp": "c678323afde589b365636f39a9807931fdc69adfa32e5e1c1c4b36349437e831",
+    "server/src/CTrailerSync.cpp": "3e9db47370dabed58b08317873c44e55dfc9cab585aa1f78e364698aa15f44a1",
+    "server/src/CTrailerSync.h": "b43e3c912d18dc28b37bb4bfb1b4a298821648575fde7d487da04a156c1e7b14",
+    "server/src/PacketHandlers/peds.cpp": "06e2ed76be8e316be6199f03135c798d053584e4e6064f2cce2f7ca000f091bd",
+    "server/src/PacketHandlers/trailers.cpp": "938a94ec0343f3708d9404c497eef81cf653cc6384a97ccbee7c2cf962b741d4",
+    "server/src/PacketHandlers/vehicles.cpp": "b84fcfd0fd27b448f427f507d0908070eab701a8435f94325943efade94904d2",
+    "shared/network/packet_types.h": "9c5f5fe13ef241cc6eae0935625422a8fac2f098305d6d63b3d769f2505bc732",
+    "shared/network/packets/trailers.h": "48e8f96901a9688796dc2e526a39e04b5555f294a686e5bd67a1dd8007888c8b",
+    "shared/network/packets/vehicles.h": "a4516c50e18869b1f487b5e052f9bb6c97555061b7a1a3c85f14d84d8d9c77d7",
+    "shared/network/trailer_sync.h": "222509729b19986f5508d0f4e38949608997e6a20d12b09b6704ea5ff8b694ce"
+  },
+  "HeadlessProductionHashes": {
+    "shared/network/trailer_sync.h": "222509729b19986f5508d0f4e38949608997e6a20d12b09b6704ea5ff8b694ce",
+    "shared/network/packets/trailers.h": "48e8f96901a9688796dc2e526a39e04b5555f294a686e5bd67a1dd8007888c8b",
+    "shared/network/packet.h": "d793d33984fcaf8c5756414f82765c10552ab0ffccf652590c57c21e59fde750",
+    "shared/network/packet_types.h": "9c5f5fe13ef241cc6eae0935625422a8fac2f098305d6d63b3d769f2505bc732",
+    "shared/network/object_sync.h": "3ac949b15bc4f3dad1b31aa9fefd7b21df0562579282b693d9dec3a8e249bbaa",
+    "shared/network/packets/vehicles.h": "a4516c50e18869b1f487b5e052f9bb6c97555061b7a1a3c85f14d84d8d9c77d7",
+    "client/src/PacketHandlers/vehicles.cpp": "3225b5f727f68fab9a394ed7bc01a8d50d24ddb764bd9e865ed55dae0ffc3886",
+    "client/src/CNetworkVehicleManager.cpp": "a7ac30eb0c47cec78887945f1775709a28e12cb12fb9e009d9ee466a5743231a",
+    "client/src/CNetworkVehicle.h": "90efa4c67d32854aa21eb26aafb39f1cbb08b27313869be7cc7ae638ef681865",
+    "client/src/CNetworkVehicle.cpp": "abb9fdb6019e9ceecde0d981bac774a5c799814c2adf794ba16bfb21636a8084",
+    "third_party/serialize.h": "54d66abaeefd4cd5385d8a7b717be8a1440dd32ffa7840856a0f09663eb3084e",
+    "client/src/CTrailerSync.cpp": "26221c9aab85369e51efa69ef40526c2ffb1b8a552889ff867a50b2817220d30",
+    "client/src/CTrailerSync.h": "616279cc317c4764b8139c04df1ed62ceb8a97d16305218937de495e679b2acb",
+    "client/src/CTrailerSyncNative.cpp": "8daea2781ac3f95000ab822cd6da24c6928333139a8c86bfdcfdcbf8e0fe8e40",
+    "server/src/CTrailerSync.cpp": "3e9db47370dabed58b08317873c44e55dfc9cab585aa1f78e364698aa15f44a1",
+    "server/src/CTrailerSync.h": "b43e3c912d18dc28b37bb4bfb1b4a298821648575fde7d487da04a156c1e7b14"
+  },
+  "ExtractionHashes": {
+    "client": "bc313a8c6de241e39b5d4beb1ef2beb0c756ddb07e5c83f17b9da19d4050aea9",
+    "server": "a942e00e4701dee37e41eb17600c64611a7d92dd2e6578b1801a9b1e6251fcf1",
+    "vehicle_birth_codec": "244aa440028a30aa080c7dddddf6ea961d19f85c7de613ea8833438e8e538119",
+    "actual_constructor_create": "0b35c4a455c76f554ffdfc441478d6625fd9c6de981961f2f193bedec202ed12",
+    "actual_create_hosted": "86d21b071a45bd24cc36b8f0b92543f9c9968086308df35641035481cf6371e9",
+    "vehicle_manager_getters": "89e0de1d7b48bed90179ef276d420c18300a1a529e03d0c18d86cad389bcc6eb",
+    "vehicle_client_handlers": "07f7b1bea084c386b4828be0a607311663afc035cc39f6dc73b1e1412c857b5b"
+  },
+  "TestHashes": {
+    "client_doubles.h": "206002417ce6a28e41553267ad84a936eae452e23f6275f9c6c6459a4bb5a20d",
+    "run_tests.py": "da5c38462cced90dc006a05f95515b090a330c334206e147e3617af1b1152022",
+    "server_doubles.h": "500df6eb9ace49d06030fcae77d4aaec79aec0ba60156a07e4066e1d7effa517",
+    "trailer_birth_codec_tests.cpp": "00c51fac1a79226e6cd44ba8469183e5d401dd514b120a3e1499c28cde359181",
+    "trailer_client_tests.cpp": "dd396323244c772d7f56148a8edcff044c0bc1d5e471d09fb820b7bdfcbe4a1b",
+    "trailer_codec_tests.cpp": "73558d8e758c57f4c46e7bd91b46d0b38747e99828a1dfe3f04064ba7e20cac5",
+    "trailer_constructor_tests.cpp": "aa44e59c371472376c55876db0e686e3218e05edf51e9f9d2ece89de0afaa431",
+    "trailer_core_tests.cpp": "0d25090204e9b805c2146c6d34d22c42e49cddbc270bb9e1f7fd529c1c064463",
+    "trailer_server_tests.cpp": "4b5a4a044caddef10936c9f7c4ccde8942a9f4cba43bbcfe8b882ce742761fd7"
+  },
+  "Build": {
+    "Architecture": "x86",
+    "Mode": "release",
+    "ActualSourceWorkingDirectory": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\trailer-sync",
+    "GTA_SA_DIR_Cleared": true,
+    "Shipping": false,
+    "Artifacts": {
+      "CoopAndreasSA.dll": {
+        "Path": ".cache\\trailer-compile-001\\output\\windows\\x86\\release\\CoopAndreasSA.dll",
+        "SHA256": "fd2841f5f6b89f717a22cac874a246a6152af068adf0f5c03e9038d8672e0419",
+        "Bytes": 2352128,
+        "PEMachine": "0x14c"
+      },
+      "server.exe": {
+        "Path": ".cache\\trailer-compile-001\\output\\windows\\x86\\release\\server.exe",
+        "SHA256": "f1f59041c1b92f952e5734ff93873759760c8c869c1a24f47e1b7f736552e3f1",
+        "Bytes": 598528,
+        "PEMachine": "0x14c"
+      }
+    },
+    "Logs": {
+      "client-build-ready.log": {
+        "Path": ".cache\\trailer-compile-001\\client-build-ready.log",
+        "SHA256": "92cac315d39eb67c9fe9bf821fdd2930c1baeeef461bd72da82e1e8386e6eb14",
+        "ExitCode": 0
+      },
+      "server-build-ready.log": {
+        "Path": ".cache\\trailer-compile-001\\server-build-ready.log",
+        "SHA256": "1bc0a8f0a2fe3bf5b7583bb7d5767c0b1c9f6fd937634fe2ebd94c87ec5f50eb",
+        "ExitCode": 0
+      }
+    }
+  },
+  "NativeEvidence": {
+    "ExecutableSHA256": "a559aa772fd136379155efa71f00c47aad34bbfeae6196b0fe1047d0645cbd26",
+    "ImageBase": "0x400000",
+    "VtableEntries": {
+      "0x871214": "0x6b4410",
+      "0x871218": "0x6a4400",
+      "0x871d1c": "0x6cfdf0",
+      "0x871d20": "0x6cefb0"
+    },
+    "LiveAccess": false,
+    "LifecycleCalls": {
+      "0x748e6b": {
+        "Bytes": "e8 90 3a df ff",
+        "Target": "0x53c900"
+      },
+      "0x53bdd7": {
+        "Bytes": "e8 74 cf f2 ff",
+        "Target": "0x468d50"
+      },
+      "0x5ba340": {
+        "Bytes": "e8 0b ea ea ff",
+        "Target": "0x468d50"
+      },
+      "0x5d4fd7": {
+        "Bytes": "e8 74 3d e9 ff",
+        "Target": "0x468d50"
+      },
+      "0x53c98c": {
+        "Bytes": "e8 ef 68 02 00",
+        "Target": "0x563280"
+      }
+    },
+    "AllocatorPrefix": {
+      "Address": "0x6e2d50",
+      "Bytes": "8b 0d 94 44 b7 00 e9 f5 fc ff ff 90 90 90 90 90 8b 44 24 08"
+    }
+  },
+  "CommonValidityAPI": {
+    "Signature": "bool CNetworkVehicle::HasValidVehicle() const",
+    "Delegate": "CTrailerSync::NativeValid(const CNetworkVehicle*)",
+    "Checks": [
+      "Local script scene",
+      "Full native pool reference",
+      "Pool membership before model access",
+      "Native matrix",
+      "Model"
+    ],
+    "GateLocations": [
+      "client/src/CNetworkVehicleManager.cpp GetVehicle(int/CEntity*), UpdateIdle, UpdateDamageSync and RemoveHostedUnused.",
+      "client/src/CNetworkVehicle.cpp creation/destruction/HasDriver and nonce/full-ref capture.",
+      "client/src/PacketHandlers/vehicles.cpp spawn/confirm/remove/assignment and linked child idle suppression.",
+      "client/src/CTrailerSync.cpp native attachment/pose apply and lifecycle request boundaries."
+    ],
+    "RootIntegration": "Fire must prefer valid mapping, then reject any stale raw FindVehicle mapping before host-world fallback, and validate direct-array owner/apply accesses. Frozen fire branch/source not edited."
+  },
+  "ReproducedAndFixed": [
+    "Menu spawn/removal cancels same birth before construction while retaining newer queued birth.",
+    "First invalid raw pointer match cannot mask valid replacement mapping in either registry ordering.",
+    "Reset -> VehicleSpawn -> first Process with default zero connection baseline cannot invalidate or duplicate just-created native mapping."
+  ],
+  "AdditionalBoundaryCoverage": [
+    "Native pool capacity zero, native allocator nullptr, model not loaded, exact-birth successful retry through actual constructor/CreateVehicle.",
+    "Full temporary registry rejects wrapper without sending temp ID 255 or deleting native local car.",
+    "Actual CreateHosted and full-ref native destruction free unconfirmed slot; fresh nonce rejects old confirmation against reuse.",
+    "Known orphan late confirmation sends exact old birth removal; valid current duplicate confirmation sends no removal.",
+    "Menu-ready first New Game restores unlinked mapping; connected guest pair replay restores both identities and real reciprocal native links.",
+    "Owner seat priority and stamped NPC ownership, connection incarnation, disconnect, parent deletion, retry, stale/nonfinite state and owner-only native attach.",
+    "Actual birth/nonce/syncer serializer snippets use real serialize.h; unchanged legacy position/rotation codecs are excluded from that extraction."
+  ],
+  "Limitations": [
+    "No game/GUI/runtime execution. Native physics/timing/seat behavior requires the user checklist in docs/TRAILER_SYNC.md.",
+    "One native CTrailer per supported cab/tractor; towtruck cars, trains, chains and arbitrary AttachEntity mechanics unsupported.",
+    "Canceled confirmation identities are retained in a bounded 255-entry ring; unknown/evicted identities are ignored without raw-slot inference.",
+    "Root resolves final enum/protocol version and shared fire integration. Local 0.5 config, SDK and SCM are unchanged."
+  ]
+}
