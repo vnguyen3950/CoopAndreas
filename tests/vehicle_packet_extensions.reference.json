@@ -1,0 +1,28 @@
+{
+  "scope": "current extension serializer sections only; no native timing proof",
+  "header_sha256": {
+    "shared/network/packets/vehicles.h": "e9adaff119921054d747bb3b0ea97ffc36f8f579245bcfb6b7b7fe7fd4deddba",
+    "third_party/serialize.h": "54d66abaeefd4cd5385d8a7b717be8a1440dd32ffa7840856a0f09663eb3084e",
+    "shared/config.h": "ed78002d6ad62ea9e90eedf7b9dfbc22035af83f06ee4f76a62930dc7d4e2dff"
+  },
+  "sections": [
+    {
+      "packet": "VehicleIdleUpdate",
+      "extracted_code_sha256": "c8d8ddc47ca8ccaa6008ca21679767af4cc41ef76b99777d9900c4fc3616d5fb",
+      "sections": [
+        "dirt normalization/compression",
+        "four flags and alarm"
+      ]
+    },
+    {
+      "packet": "VehicleDriverUpdate",
+      "extracted_code_sha256": "c8d8ddc47ca8ccaa6008ca21679767af4cc41ef76b99777d9900c4fc3616d5fb",
+      "sections": [
+        "dirt normalization/compression",
+        "four flags and alarm"
+      ]
+    }
+  ],
+  "test_source_sha256": "3e4a23ed1f21d8028b4c3c896c279c467c44e6a8e6e0073d6e0b6dc30427db17",
+  "status": "extraction verified; C++ tests not executed"
+}
