@@ -21,6 +21,8 @@ Native gameplay testing remains with the user. Prepared `mission-batch-007` sele
 
 All three use isolated worktrees from the reviewed world source. Contracts precede implementation; the next enum/version and shared hooks remain root-owned. Gamepad support stays skipped. Mission work remains queued.
 
+This increment is frozen as `mission-batch-008` / `0.6.0-alpha`. Independent source reviews, combined regressions and all four release builds pass. The updater passed on a filesystem fixture with window settings preserved. Actual lab installation and native gameplay remain user-owned.
+
 ## NPC-driven vehicle state
 
 - [x] Verify the real NPC driver packet, sender/receiver ownership and native flag/dirt semantics.

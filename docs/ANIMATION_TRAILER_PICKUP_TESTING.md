@@ -1,6 +1,6 @@
 # Animation, trailer and pickup checks
 
-Use matching **0.6.0-alpha** clients and server in the separate test installation. Source reviews, headless regressions and all four x86 release targets pass. Native gameplay remains unvalidated. The previous 0.5 world package is preserved.
+Prepared `mission-batch-008` contains matching **0.6.0-alpha** clients and server with the same reviewed mission scripts. Independent reviews, 1,143,952 headless assertions, 45 real-server transport checks and all four x86 release targets pass. Its updater passed on a separate filesystem fixture and preserved window settings. The actual lab is untouched; native gameplay remains unvalidated. The previous 0.5 world package is preserved.
 
 ## What changed
 

@@ -6,6 +6,8 @@ Close lab games, the launcher and server before updating. Start the server, then
 
 Development source uses **0.6.0-alpha**. Restart the matching server after replacing its executable; 0.5 and earlier peers are rejected before registration. The [new checklist](ANIMATION_TRAILER_PICKUP_TESTING.md) covers animations, trailers and ordinary pickups; the [world checklist](WORLD_SYNC.md) covers NPCs, fires, maps and gang wars. Use the version of the selected frozen package consistently on all machines.
 
+The selected local package is `mission-batch-008`. When ready to update the separate lab, close its game, launcher and server, then run the workspace `update-lab.ps1`. It backs up replaced files and preserves window settings. The agent verified this updater on a filesystem fixture; your actual installation has not been updated automatically.
+
 ## Mission launch
 
 Connect all participants before starting a mission. The captured roster supports up to three guests; late joining is outside these mission tests. As the authenticated host, stand outside with no active mission, close chat, type **D1212**, enable **Missions**, and select a candidate. The menu defaults to adapted stories; exposing unadapted entries does not add guest support.
