@@ -83,6 +83,7 @@ void CCore::Init()
     CCutsceneVotes::Init();
     CPlayerVitalsSync::Init();
     CMapSync::Init();
+    CNetworkPedManager::Init();
     Events::initGameEvent.after += []
     {
         CPatch::TemporaryPatches();

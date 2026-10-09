@@ -11,14 +11,28 @@ PACKET_HANDLER(ePacketType::PED_SPAWN, Packets::Peds::PedSpawn* pPedSpawn)
         packet->pos.y, packet->pos.z, packet->pedType, packet->createdBy);
 #endif
 
+    if (!CNetwork::m_bAuthenticated || !pPedSpawn->Valid() || !pPedSpawn->stamp.Lifetime()) return;
+    if (CNetworkPedManager::Defer(*pPedSpawn, pPedSpawn->pedid, pPedSpawn->stamp) ||
+        !CNetworkPedManager::AcceptSpawn(pPedSpawn->pedid, pPedSpawn->stamp)) return;
     CNetworkPed* pNetworkPed = new CNetworkPed(pPedSpawn->pedid, pPedSpawn->modelId, pPedSpawn->pedType, pPedSpawn->pos,
         pPedSpawn->createdBy, pPedSpawn->specialModelName);
 
+    pNetworkPed->m_generation = pPedSpawn->stamp.generation;
+    pNetworkPed->m_ownerEpoch = pPedSpawn->stamp.epoch;
+    pNetworkPed->m_ownerId = pPedSpawn->ownerid;
+    pNetworkPed->m_bSyncing = pPedSpawn->ownerid == CNetworkPlayerManager::m_nMyId;
+    pNetworkPed->m_stateSequence = pPedSpawn->stamp.sequence;
+    if (!pNetworkPed->HasValidPed()) {
+        pNetworkPed->m_bSyncing = false; delete pNetworkPed;
+        CNetworkPedManager::Defer(*pPedSpawn, pPedSpawn->pedid, pPedSpawn->stamp, true); return;
+    }
     CNetworkPedManager::Add(pNetworkPed);
 }
 
 PACKET_HANDLER(ePacketType::PED_CONFIRM, Packets::Peds::PedConfirm* pPedConfirm)
 {
+    if (!CNetwork::m_bAuthenticated || !pPedConfirm->stamp.Lifetime() ||
+        pPedConfirm->ownerid != CNetworkPlayerManager::m_nMyId || !CNetworkPed::WasRequested(pPedConfirm->requestToken)) return;
 #ifdef PACKET_DEBUG_MESSAGES
     CChat::AddMessage("PED CONFIRM %d %d", packet->pedid, packet->tempid);
 #endif
@@ -26,9 +40,19 @@ PACKET_HANDLER(ePacketType::PED_CONFIRM, Packets::Peds::PedConfirm* pPedConfirm)
     if (pPedConfirm->tempid < ARRAY_SIZE(CNetworkPedManager::m_apTempPeds))
     {
         CNetworkPed* pTempPed = CNetworkPedManager::m_apTempPeds[pPedConfirm->tempid];
-        if (pTempPed)
+        if (!pTempPed || pTempPed->m_requestToken != pPedConfirm->requestToken) {
+            // The original native actor disappeared before confirmation. Free
+            // only that server lifetime, never a newer occupant of this temp slot.
+            Packets::Peds::PedRemove remove; remove.pedid = pPedConfirm->pedid; remove.stamp = pPedConfirm->stamp;
+            GetPacketFactory().Send(remove); return;
+        }
+        if (pTempPed && pTempPed->m_requestToken == pPedConfirm->requestToken &&
+            pPedConfirm->stamp.Lifetime() && pPedConfirm->ownerid == CNetworkPlayerManager::m_nMyId)
         {
             pTempPed->m_nPedId = pPedConfirm->pedid;
+            pTempPed->m_generation = pPedConfirm->stamp.generation;
+            pTempPed->m_ownerEpoch = pPedConfirm->stamp.epoch;
+            pTempPed->m_ownerId = pPedConfirm->ownerid;
             CNetworkPedManager::m_apTempPeds[pPedConfirm->tempid] = nullptr;
 
             if (!pTempPed->HasValidPed())
@@ -37,7 +61,11 @@ PACKET_HANDLER(ePacketType::PED_CONFIRM, Packets::Peds::PedConfirm* pPedConfirm)
             }
             else
             {
+                if (!CNetworkPedManager::AcceptSpawn(pTempPed->m_nPedId, pTempPed->GetStamp())) {
+                    pTempPed->m_nPedId = -1; delete pTempPed; return;
+                }
                 CNetworkPedManager::Add(pTempPed);
+                if (pTempPed->m_bPinned) CNetworkPedManager::PinGangWarPedToHost(pTempPed->m_pPed, true);
             }
         }
     }
@@ -49,63 +77,36 @@ PACKET_HANDLER(ePacketType::PED_REMOVE, Packets::Peds::PedRemove* pPedRemove)
     CChat::AddMessage("PED REMOVE %d", pPedRemove->pedid);
 #endif
 
+    if (CNetworkPedManager::Defer(*pPedRemove, pPedRemove->pedid, pPedRemove->stamp) ||
+        !CNetworkPedManager::AcceptRemoval(pPedRemove->pedid, pPedRemove->stamp)) return;
     CNetworkPed* pNetworkPed = CNetworkPedManager::GetPed(pPedRemove->pedid);
     if (pNetworkPed)
     {
         CNetworkPedManager::Remove(pNetworkPed);
+        pNetworkPed->m_bSyncing = false;
         delete pNetworkPed;
     }
 }
 
-PACKET_HANDLER(ePacketType::ASSIGN_PED, Packets::Peds::AssignPedSyncer* pAssignPedSyncer)
+PACKET_HANDLER(ePacketType::ASSIGN_PED, Packets::Peds::AssignPedSyncer* packet)
 {
-    CNetworkPed* pNetworkPed = CNetworkPedManager::GetPed(pAssignPedSyncer->pedid);
-
-    if (!pNetworkPed)
-    {
-        // A claim cancellation can race the owner's removal. If the server already assigned
-        // the missing ped to us, this removal is accepted; otherwise the server ignores it.
-        Packets::Peds::PedRemove pedRemovePacket{};
-        pedRemovePacket.pedid = pAssignPedSyncer->pedid;
-        GetPacketFactory().Send(pedRemovePacket);
-        return;
-    }
-
-    if (pNetworkPed->m_bSyncing)
-    {
-#ifdef PACKET_DEBUG_MESSAGES
-        CChat::AddMessage("NOT SYNCING PED %d ANYMORE", pAssignPedSyncer->pedid);
-#endif
-        pNetworkPed->m_bSyncing = false;
-
-        if (auto pPed = pNetworkPed->m_pPed)
-        {
-            pPed->SetCharCreatedBy(MISSION_CHAR);
-        }
-    }
-    else
-    {
-#ifdef PACKET_DEBUG_MESSAGES
-        CChat::AddMessage("SYNCING VEHICLE %d", pAssignPedSyncer->pedid);
-#endif
-        pNetworkPed->m_bSyncing = true;
-        pNetworkPed->m_bClaimOnRelease = false;
-
-        if (auto pPed = pNetworkPed->m_pPed)
-        {
-            pPed->SetCharCreatedBy(pNetworkPed->m_nCreatedBy);
-        }
-    }
+    auto* ped = CNetworkPedManager::GetPed(packet->pedid);
+    if (CNetworkPedManager::Defer(*packet, packet->pedid, packet->stamp, !ped)) return;
+    if (!NPCSync::Assignable(ped->GetStamp(), packet->stamp, ped->m_ownerId, packet->ownerid)) return;
+    if (packet->stamp.epoch == ped->m_ownerEpoch) return; // Explicit repeated assignment is idempotent.
+    ped->m_ownerEpoch = packet->stamp.epoch; ped->m_ownerId = packet->ownerid;
+    ped->m_stateSequence = packet->stamp.sequence;
+    ped->m_bSyncing = packet->ownerid == CNetworkPlayerManager::m_nMyId;
+    ped->m_bClaimOnRelease = false;
+    ped->m_pPed->SetCharCreatedBy(ped->m_bSyncing ? ped->m_nCreatedBy : MISSION_CHAR);
 }
 
 PACKET_HANDLER(ePacketType::PED_ONFOOT, Packets::Peds::PedOnFoot* pPedOnFoot)
 {
     CNetworkPed* pNetworkPed = CNetworkPedManager::GetPed(pPedOnFoot->pedid);
 
-    if (!pNetworkPed)
-    {
-        return;
-    }
+    if (!pNetworkPed || !pPedOnFoot->Valid() || (pNetworkPed->m_bSyncing && !pNetworkPed->m_bAllowReplay) ||
+        !pNetworkPed->AcceptState(pPedOnFoot->stamp)) return;
 
     CPed* pPed = pNetworkPed->m_pPed;
     if (!pPed)
@@ -125,6 +126,8 @@ PACKET_HANDLER(ePacketType::PED_ONFOOT, Packets::Peds::PedOnFoot* pPedOnFoot)
 
     pNetworkPed->ApplyWeaponSnapshot(pPedOnFoot->weaponSnapshot);
     pPed->SetPosn(pPedOnFoot->pos);
+    pPed->m_nAreaCode = pPedOnFoot->area;
+    pPed->m_vecMoveSpeed = pPedOnFoot->velocity;
 
     pNetworkPed->m_fCurrentRotation = pPed->m_fCurrentRotation = pPedOnFoot->currentRotation.m_angle;
     pNetworkPed->m_fAimingRotation = pPed->m_fAimingRotation = pPedOnFoot->aimingRotation.m_angle;
@@ -199,13 +202,17 @@ PACKET_HANDLER(ePacketType::PED_DRIVER_UPDATE, Packets::Peds::PedDriverUpdate* p
     // Ped ownership drives this stream; the idle vehicle syncer may be local.
     // Neither a newly local NPC nor a player already in the driver seat may be
     // displaced by an older unreliable NPC snapshot.
-    if (pNetworkPed->m_bSyncing || (pVehicle->m_pDriver && pVehicle->m_pDriver->IsPlayer()))
+    if ((pNetworkPed->m_bSyncing && !pNetworkPed->m_bAllowReplay) ||
+        !pPedDriverUpdate->Valid() || (pVehicle->m_pDriver && pVehicle->m_pDriver->IsPlayer()) ||
+        !pNetworkPed->AcceptState(pPedDriverUpdate->stamp))
         return;
 
     if (pPed->m_pVehicle != pVehicle || !pPed->m_nPedFlags.bInVehicle)
     {
         pNetworkPed->WarpIntoVehicleDriver(pVehicle);
     }
+    pPed->m_nAreaCode = pPedDriverUpdate->area;
+    pVehicle->m_nAreaCode = pPedDriverUpdate->area;
     pVehicle->m_matrix->pos = pPedDriverUpdate->pos;
     pVehicle->m_matrix->right = pPedDriverUpdate->roll;
     pVehicle->m_matrix->up = pPedDriverUpdate->rot;
@@ -277,6 +284,12 @@ PACKET_HANDLER(ePacketType::PED_PASSENGER_UPDATE, Packets::Peds::PedPassengerSyn
     if (!pNetworkVehicle->m_pVehicle->IsVTableValid() || !pNetworkPed->m_pPed->IsVTableValid())
         return;
 
+    if (!pPedPassengerSync->Valid() || (pNetworkPed->m_bSyncing && !pNetworkPed->m_bAllowReplay) ||
+        pPedPassengerSync->seatid >= pNetworkVehicle->m_pVehicle->m_nMaxPassengers ||
+        (pNetworkVehicle->m_pVehicle->m_apPassengers[pPedPassengerSync->seatid] &&
+         pNetworkVehicle->m_pVehicle->m_apPassengers[pPedPassengerSync->seatid] != pNetworkPed->m_pPed) ||
+        !pNetworkPed->AcceptState(pPedPassengerSync->stamp)) return;
+    pNetworkPed->m_pPed->m_nAreaCode = pPedPassengerSync->area;
     if (!pNetworkPed->m_pPed->m_nPedFlags.bInVehicle || pNetworkVehicle->m_pVehicle->m_pDriver == pNetworkPed->m_pPed)
     {
         pNetworkPed->WarpIntoVehiclePassenger(pNetworkVehicle->m_pVehicle, pPedPassengerSync->seatid);
@@ -292,7 +305,8 @@ PACKET_HANDLER(ePacketType::PED_SHOT_SYNC, Packets::Peds::PedShotSync* pPedShotS
 {
     CNetworkPed* pNetworkPed = CNetworkPedManager::GetPed(pPedShotSync->pedid);
 
-    if (pNetworkPed && pNetworkPed->m_pPed)
+    if (pNetworkPed && pNetworkPed->HasValidPed() && !pNetworkPed->m_bSyncing &&
+        pPedShotSync->Valid() && pPedShotSync->stamp.SameOwner(pNetworkPed->GetStamp()))
     {
         if (pNetworkPed->m_pPed->GetWeapon().m_eWeaponType != pPedShotSync->weaponType)
         {
@@ -323,9 +337,32 @@ PACKET_HANDLER(ePacketType::PED_RESET_ALL_CLAIMS, Packets::Peds::PedResetAllClai
 {
     if (auto pNetworkPed = CNetworkPedManager::GetPed(pPedResetAllClaims->pedid))
     {
-        if (!pNetworkPed->m_bSyncing)
+        if (!pNetworkPed->m_bSyncing && pPedResetAllClaims->stamp.SameOwner(pNetworkPed->GetStamp()))
         {
             pNetworkPed->m_bClaimOnRelease = false;
         }
     }
+}
+
+PACKET_HANDLER(ePacketType::PED_REPLAY, Packets::Peds::PedReplay* packet)
+{
+    if (packet->mode < 1 || packet->mode > 3) return;
+    auto& state = packet->StatePacket();
+    int id = packet->mode == 1 ? packet->onFoot.pedid : packet->mode == 2 ? packet->driver.pedid : packet->passenger.pedid;
+    const auto stamp = packet->mode == 1 ? packet->onFoot.stamp : packet->mode == 2 ? packet->driver.stamp : packet->passenger.stamp;
+    auto* ped = CNetworkPedManager::GetPed(id);
+    const int vehicle = packet->mode == 2 ? packet->driver.vehicleid : packet->mode == 3 ? packet->passenger.vehicleid : -1;
+    auto* nativeVehicle = vehicle >= 0 ? CNetworkVehicleManager::GetVehicle(vehicle) : nullptr;
+    const bool missingVehicle = vehicle >= 0 && (!nativeVehicle || !nativeVehicle->m_pVehicle || !nativeVehicle->m_pVehicle->m_matrix);
+    if (CNetworkPedManager::Defer(*packet, id, stamp, !ped || missingVehicle)) return;
+    ped->m_bAllowReplay = true;
+    GetPacketHandler().ProcessPacket(&state);
+    // Native state operations can destroy/recreate a pool entry; do not retain the wrapper across them.
+    if (auto* current = CNetworkPedManager::GetPed(id)) current->m_bAllowReplay = false;
+}
+PACKET_HANDLER(ePacketType::PED_PIN, Packets::Peds::PedPin* packet)
+{
+    if (CNetworkPedManager::Defer(*packet, packet->pedid, packet->stamp, !CNetworkPedManager::GetPed(packet->pedid))) return;
+    if (auto* ped = CNetworkPedManager::GetPed(packet->pedid))
+        if (packet->stamp.SameOwner(ped->GetStamp())) { ped->m_bPinned = packet->pinned; ped->m_bClaimOnRelease = false; }
 }

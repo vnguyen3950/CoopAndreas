@@ -23,6 +23,7 @@ struct Transport
 Transport& GetPacketFactory();
 #include "network/packet.h"
 #include "network/vehicle_authority.h"
+#include "network/npc_sync.h"
 inline Transport& GetPacketFactory() { static Transport transport; return transport; }
 template<class T> void Transport::Send(const T& p) { sent.reset(static_cast<const Packet&>(p).Clone()); }
 namespace logger { template<class... T> void warn(const char*, T...) {} }
@@ -49,6 +50,7 @@ struct CPed
     struct { bool bInVehicle = false; } m_nPedFlags;
     CVehicle* m_pVehicle = nullptr;
     float m_fHealth = 100, m_fArmour = 0;
+    uint8_t m_nAreaCode = 0;
     CWeapon weapon;
     bool IsVTableValid() const { return valid; }
     bool IsPlayer() const { return player; }
@@ -56,6 +58,7 @@ struct CPed
 };
 struct CVehicle
 {
+    uint8_t m_nAreaCode = 0;
     bool valid = true;
     Matrix storage;
     Matrix* m_matrix = &storage;
@@ -78,6 +81,14 @@ struct CAutomobile : CVehicle { uint16_t m_wMiscComponentAngle = 0; };
 struct CNetworkPlayer { int id; std::string GetName() const { return "test peer"; } };
 struct CNetworkPed
 {
+    uint32_t m_generation = 1, m_ownerEpoch = 1, m_stateSequence = 0;
+    NPCSync::Stamp GetStamp() const { return {m_generation, m_ownerEpoch, m_stateSequence}; }
+    bool m_bAllowReplay = false, m_hasState = false;
+    CVector m_vecPos{};
+    struct { int mode = 0; Packets::Peds::PedDriverUpdate driver; } m_lastState;
+    bool HasValidPed() const { return !m_pPed || m_pPed->valid; } // Server records have no native actor; native clients are checked by caller.
+    bool NextState(NPCSync::Stamp& stamp);
+    bool AcceptState(const NPCSync::Stamp& stamp);
     int m_nPedId = 7;
     bool m_bSyncing = false;
     CPed* m_pPed = nullptr;
@@ -101,6 +112,7 @@ struct CNetworkVehicle
 };
 struct CNetworkPedManager
 {
+    static bool Authenticated(CNetworkPlayer* player) { return player != nullptr; } // Recorded transport; real registry authentication is covered in npc_world_sync.
     static inline CNetworkPed* ped = nullptr;
     static CNetworkPed* GetPed(int id) { return ped && ped->m_nPedId == id ? ped : nullptr; }
 };

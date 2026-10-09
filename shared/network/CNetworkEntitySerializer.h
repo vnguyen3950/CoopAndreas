@@ -1,5 +1,7 @@
 #pragma once
 #include "object_sync.h"
+#include "npc_sync.h"
+#include "eNetworkEntityType.h"
 
 enum eNetworkEntityType : uint8_t;
 
@@ -8,6 +10,18 @@ class CNetworkEntitySerializer
 public:
 	eNetworkEntityType entityType = (eNetworkEntityType)1;
 	int entityId = 0;
+	uint32_t entityGeneration = 0;
+	bool Valid() const
+	{
+		if (entityType < NETWORK_ENTITY_TYPE_PLAYER || entityType > NETWORK_ENTITY_TYPE_NOTINPOOLS) return false;
+		if (entityType == NETWORK_ENTITY_TYPE_PED)
+			return entityId >= 0 && entityId < Config::MAX_SERVER_PEDS && entityGeneration > 0 && entityGeneration <= NPCSync::MaxCounter;
+		if (entityGeneration != 0) return false;
+		if (entityType == NETWORK_ENTITY_TYPE_PLAYER) return entityId >= 0 && entityId < Config::MAX_SERVER_PLAYERS;
+		if (entityType == NETWORK_ENTITY_TYPE_VEHICLE) return entityId >= 0 && entityId < Config::MAX_SERVER_VEHICLES;
+		if (entityType == NETWORK_ENTITY_TYPE_OBJECT) return entityId > 0 && entityId <= int(ObjectSync::MAX_ID);
+		return true;
+	}
 
 #ifdef COOP_CLIENT
 	CEntity* GetEntity();
@@ -17,8 +31,11 @@ public:
 	template <typename Stream>
 	bool Serialize(Stream& stream)
 	{
+		if (entityType != NETWORK_ENTITY_TYPE_PED) entityGeneration = 0;
+		if (!Stream::IsReading && !Valid()) return false;
 		serialize_int(stream, (int&)entityType, NETWORK_ENTITY_TYPE_PLAYER, NETWORK_ENTITY_TYPE_NOTINPOOLS);
 
+		if (entityType != NETWORK_ENTITY_TYPE_PED) entityGeneration = 0;
 		int maxValue = 0;
 		switch (entityType)
 		{
@@ -33,16 +50,21 @@ public:
 			break;
 		case NETWORK_ENTITY_TYPE_OBJECT:
 			serialize_int(stream, entityId, 1, int(ObjectSync::MAX_ID));
-			return true;
+			return Valid();
 		}
 		
 		if (maxValue == 0)
 		{
-			return true;
+			return Valid();
 		}
 
 		serialize_int(stream, entityId, 0, maxValue - 1);
-		return true;
+		if (entityType == NETWORK_ENTITY_TYPE_PED)
+		{
+			serialize_int(stream, entityGeneration, 1, int(NPCSync::MaxCounter));
+		}
+		else entityGeneration = 0;
+		return Valid();
 	}
 };
 

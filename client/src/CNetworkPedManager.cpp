@@ -1,9 +1,18 @@
 #include "stdafx.h"
 #include "CNetworkVehicle.h"
 #include "CNetworkPed.h"
+#include <memory>
+namespace {
+bool initializedScripts = false;
+struct DeferredNPC { int id; NPCSync::Stamp stamp; std::unique_ptr<Packet> packet; };
+std::vector<DeferredNPC>& Deferred() { static std::vector<DeferredNPC> packets; return packets; }
+}
 
 std::vector<CNetworkPed*> CNetworkPedManager::m_pPeds;
 CNetworkPed* CNetworkPedManager::m_apTempPeds[255];
+std::array<uint32_t, 255> CNetworkPedManager::m_generations{};
+std::array<bool, 255> CNetworkPedManager::m_removed{};
+std::atomic_bool CNetworkPedManager::m_resetPending{false};
 
 CNetworkPed* CNetworkPedManager::GetPed(int pedid)
 {
@@ -89,12 +98,13 @@ void CNetworkPedManager::HandlePedDestruction(CPed* pPed)
         delete pNetworkPed;
     }
 
-    for (CNetworkPed* pNetworkPed : m_apTempPeds)
+    for (auto*& pNetworkPed : m_apTempPeds)
     {
         if (!pNetworkPed || pNetworkPed->m_pPed != pPed)
             continue;
 
-        pNetworkPed->DetachPed();
+        auto* old = pNetworkPed; pNetworkPed = nullptr;
+        old->DetachPed(); old->m_nPedId = -1; delete old;
     }
 }
 
@@ -104,7 +114,7 @@ void CNetworkPedManager::Update()
 
     for (CNetworkPed* pNetworkPed : m_pPeds)
     {
-        if (!pNetworkPed->m_bSyncing)
+        if (!pNetworkPed->m_bSyncing || !pNetworkPed->GetStamp().Lifetime() || !pNetworkPed->HasValidPed())
             continue;
 
         CPed* pPed = pNetworkPed->m_pPed;
@@ -128,6 +138,8 @@ void CNetworkPedManager::Update()
                 packet.vehicleSubType = static_cast<eVehicleType>(pVehicle->m_nVehicleSubType);
 
                 packet.pedid = pNetworkPed->m_nPedId;
+                if (!pNetworkPed->NextState(packet.stamp)) continue;
+                packet.area = pPed->m_nAreaCode;
                 packet.vehicleid = pNetworkVehicle->m_nVehicleId;
 
                 packet.pos = pVehicle->m_matrix->pos;
@@ -188,6 +200,8 @@ void CNetworkPedManager::Update()
             {
                 Packets::Peds::PedPassengerSync packet{};
                 packet.pedid = pNetworkPed->m_nPedId;
+                if (!pNetworkPed->NextState(packet.stamp)) continue;
+                packet.area = pPed->m_nAreaCode;
                 packet.vehicleid = pNetworkVehicle->m_nVehicleId;
 
                 packet.healthSnapshot.iHealth = static_cast<uint8_t>(std::clamp(pPed->m_fHealth, 0.0f, 255.0f));
@@ -214,7 +228,9 @@ void CNetworkPedManager::Update()
             Packets::Peds::PedOnFoot packet{};
 
             packet.pedid = pNetworkPed->m_nPedId;
-            packet.pos = pPed->m_matrix->pos;
+                if (!pNetworkPed->NextState(packet.stamp)) continue;
+                packet.area = pPed->m_nAreaCode;
+            packet.pos = pPed->GetPosition();
             packet.velocity = pPed->m_vecMoveSpeed;
 
             packet.healthSnapshot.iHealth = static_cast<uint8_t>(std::clamp(pPed->m_fHealth, 0.0f, 255.0f));
@@ -251,6 +267,8 @@ void CNetworkPedManager::Update()
 
 void CNetworkPedManager::Process()
 {
+    ProcessPendingReset();
+    ProcessPendingNative();
     for (auto networkPed : m_pPeds)
     {
         if (!networkPed->HasValidPed())
@@ -319,11 +337,106 @@ void CNetworkPedManager::RemoveInvalidPeds()
         ++it;
     }
 
-    for (CNetworkPed* pNetworkPed : m_apTempPeds)
+    for (auto*& pNetworkPed : m_apTempPeds)
     {
-        if (!pNetworkPed || !pNetworkPed->m_pPed || pNetworkPed->HasValidPed())
+        if (!pNetworkPed || pNetworkPed->HasValidPed())
             continue;
 
-        pNetworkPed->DetachPed();
+        auto* old = pNetworkPed; pNetworkPed = nullptr;
+        old->DetachPed(); old->m_nPedId = -1; delete old;
+    }
+}
+
+bool CNetworkPedManager::AcceptSpawn(int id, const NPCSync::Stamp& stamp)
+{
+    if (id < 0 || id >= Config::MAX_SERVER_PEDS || !stamp.Lifetime()) return false;
+    if (stamp.generation < m_generations[id] || (stamp.generation == m_generations[id] && m_removed[id])) return false;
+    if (auto* existing = GetPed(id)) {
+        if (existing->m_generation >= stamp.generation) return false;
+        Remove(existing); existing->m_bSyncing = false; delete existing;
+    }
+    m_generations[id] = stamp.generation; m_removed[id] = false;
+    return true;
+}
+bool CNetworkPedManager::AcceptRemoval(int id, const NPCSync::Stamp& stamp)
+{
+    if (id < 0 || id >= Config::MAX_SERVER_PEDS || !stamp.Lifetime() || stamp.generation < m_generations[id]) return false;
+    if (auto* existing = GetPed(id))
+        if (stamp.generation == existing->m_generation && !stamp.SameOwner(existing->GetStamp())) return false;
+    m_generations[id] = stamp.generation; m_removed[id] = true;
+    return true;
+}
+bool CNetworkPedManager::PinGangWarPedToHost(CPed* ped, bool pinned)
+{
+    if (!CNetwork::m_bAuthenticated || !CLocalPlayer::m_bIsHost || !ped) return false;
+    auto* networkPed = GetPed(ped);
+    if (!networkPed) for (auto* pending : m_apTempPeds)
+        if (pending && pending->m_pPed == ped && pending->HasValidPed()) { networkPed = pending; break; }
+    if (!networkPed) return false;
+    networkPed->m_bPinned = pinned;
+    Packets::Peds::PedPin packet;
+    packet.pedid = networkPed->m_generation ? networkPed->m_nPedId : 0;
+    if (!networkPed->m_generation) packet.requestToken = networkPed->m_requestToken;
+    packet.stamp = networkPed->GetStamp(); packet.pinned = pinned;
+    GetPacketFactory().Send(packet);
+    return true;
+}
+void CNetworkPedManager::RequestReset() { m_resetPending.store(true, std::memory_order_release); }
+void CNetworkPedManager::ProcessPendingReset() { if (m_resetPending.load(std::memory_order_acquire)) Clear(); }
+void CNetworkPedManager::Clear()
+{
+    m_resetPending.exchange(false, std::memory_order_acq_rel);
+    auto previous = std::move(m_pPeds); m_pPeds.clear();
+    for (auto* ped : previous) { ped->m_nPedId = -1; delete ped; }
+    for (auto*& ped : m_apTempPeds) { auto* old = ped; ped = nullptr; if (old) { old->m_nPedId = -1; delete old; } }
+    m_generations = {}; m_removed = {};
+    Deferred().clear();
+}
+
+void CNetworkPedManager::Init()
+{
+    Events::initScriptsEvent.before += [] { initializedScripts = false; };
+    Events::processScriptsEvent.after += [] { if (gGameState == 9) initializedScripts = true; };
+    gameShutdownEvent.before += [] { initializedScripts = false; RequestReset(); };
+}
+bool CNetworkPedManager::NativeReady()
+{
+    auto* local = CWorld::Players[0].m_pPed;
+    return initializedScripts && gGameState == 9 && CWorld::PlayerInFocus == 0 && CPools::ms_pPedPool &&
+        local && CPools::ms_pPedPool->IsObjectValid(local) && local->m_pPlayerData;
+}
+bool CNetworkPedManager::Defer(Packet& packet, int id, const NPCSync::Stamp& stamp, bool force)
+{
+    if (!force && NativeReady()) return false;
+    if (id < 0 || id >= Config::MAX_SERVER_PEDS || !stamp.Lifetime()) return true;
+    const auto type = packet.GetType();
+    if (type != ePacketType::PED_REMOVE && (stamp.generation < m_generations[id] ||
+        (stamp.generation == m_generations[id] && m_removed[id]))) return true;
+    auto& queue = Deferred();
+    for (const auto& old : queue) if (old.id == id && (old.stamp.generation > stamp.generation ||
+        (old.stamp.generation == stamp.generation && (old.packet->GetType() == ePacketType::PED_REMOVE ||
+            ((old.packet->GetType() == type || type == ePacketType::PED_REMOVE) &&
+                (old.stamp.epoch > stamp.epoch || (old.stamp.epoch == stamp.epoch && old.stamp.sequence > stamp.sequence))))))) return true;
+    if (type == ePacketType::PED_REMOVE && !AcceptRemoval(id, stamp)) return true;
+    queue.erase(std::remove_if(queue.begin(), queue.end(), [&](const auto& old) {
+        return old.id == id && (old.stamp.generation < stamp.generation ||
+            (old.stamp.generation == stamp.generation && (type == ePacketType::PED_REMOVE || old.packet->GetType() == type)));
+    }), queue.end());
+    // At most one of five reliable lifecycle/replay types per slot. Dormant
+    // menu/model/pool identities have no auth-time expiry and cannot grow unbounded.
+    if (type != ePacketType::PED_REMOVE || GetPed(id)) queue.push_back({id, stamp, std::unique_ptr<Packet>(packet.Clone())});
+    return true;
+}
+void CNetworkPedManager::ProcessPendingNative()
+{
+    if (!CNetwork::m_bAuthenticated || !NativeReady()) return;
+    static uint32_t lastRetry = 0;
+    const uint32_t now = GetTickCount();
+    if (now - lastRetry < 250) return;
+    lastRetry = now;
+    const size_t budget = (std::min)(Deferred().size(), size_t(4));
+    for (size_t i = 0; i < budget && !Deferred().empty(); ++i) {
+        auto next = std::move(Deferred().front()); Deferred().erase(Deferred().begin());
+        GetPacketHandler().ProcessPacket(next.packet.get());
     }
 }

@@ -14,4 +14,11 @@ public:
     static CNetworkPed* GetPed(int pedid);
     static int GetFreeId();
     static void RemoveAllHostedAndNotify(CNetworkPlayer* player);
+    static bool Authenticated(CNetworkPlayer* player);
+    static uint32_t AllocateGeneration();
+    static bool AcceptRequest(CNetworkPlayer* player, uint32_t token);
+    static bool AssignOwner(CNetworkPed* ped, CNetworkPlayer* player);
+    static void Replay(CNetworkPed* ped, CNetworkPlayer* recipient);
+    static void DeleteAndNotify(CNetworkPed* ped, CNetworkPlayer* ignore = nullptr);
+    static void ClearClaims(CNetworkPed* ped);
 };

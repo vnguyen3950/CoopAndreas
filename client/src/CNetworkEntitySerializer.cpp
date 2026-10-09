@@ -4,11 +4,13 @@
 
 CEntity* CNetworkEntitySerializer::GetEntity()
 {
+	if (!Valid()) return nullptr;
 	if (entityType == NETWORK_ENTITY_TYPE_PED)
 	{
 		if (auto networkPed = CNetworkPedManager::GetPed(entityId))
 		{
-			if (auto ped = networkPed->m_pPed)
+			if (networkPed->m_generation == entityGeneration)
+            if (auto ped = networkPed->m_pPed)
 			{
 				return ped;
 			}
@@ -49,6 +51,7 @@ CEntity* CNetworkEntitySerializer::GetEntity()
 
 void CNetworkEntitySerializer::SetEntity(CEntity* entity)
 {
+    entityGeneration = 0;
 	entityType = NETWORK_ENTITY_TYPE_NOTHING;
 
 	if (entity == nullptr)
@@ -77,7 +80,9 @@ void CNetworkEntitySerializer::SetEntity(CEntity* entity)
 			if (auto networkPed = CNetworkPedManager::GetPed(entity))
 			{
 				entityId = networkPed->m_nPedId;
+                entityGeneration = networkPed->m_generation;
 			}
+			if (!entityGeneration) entityType = NETWORK_ENTITY_TYPE_NOTINPOOLS;
 		}
 	}
 	else if (entity->m_nType == ENTITY_TYPE_VEHICLE)

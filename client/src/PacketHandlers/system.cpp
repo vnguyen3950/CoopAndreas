@@ -72,6 +72,7 @@ PACKET_HANDLER(ePacketType::PLAYER_HANDSHAKE, Packets::System::PlayerHandshake* 
     CCutsceneVotes::Reset();
     CMapSync::Reset();
     CNetworkPlayerManager::Reset();
+    CNetworkPedManager::Clear();
     CNetworkPlayerManager::m_nMyId = pPlayerHandshake->yourid;
     CNetwork::m_bAuthenticated = true;
     CPatch::RevertTemporaryPatches();

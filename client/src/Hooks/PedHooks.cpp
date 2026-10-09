@@ -54,11 +54,13 @@ bool __fastcall CWeapon__Fire_Hook(CWeapon* This, SKIP_EDX, CPed* owner, CVector
 
     if (pNetworkPed)
     {
-        if (pNetworkPed->m_bSyncing)
+        if (pNetworkPed->m_bSyncing && pNetworkPed->GetStamp().Lifetime())
         {
             Packets::Peds::PedShotSync packet{};
             packet.pedid = pNetworkPed->m_nPedId;
+            packet.stamp = pNetworkPed->GetStamp();
             packet.weaponType = This->m_eWeaponType;
+            if (!vecOrigin || !vecEffectPosn) return This->Fire(owner, vecOrigin, vecEffectPosn, targetEntity, vecTarget, arg_14);
             packet.origin = *vecOrigin;
             packet.effect = *vecEffectPosn;
             if (vecTarget)

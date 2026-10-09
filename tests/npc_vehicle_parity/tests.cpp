@@ -31,6 +31,7 @@ template<class T> void codec()
     else
     {
         T defaults;
+        defaults.stamp = {1,1,1};
         expect(!defaults.engineState && !defaults.lightState && !defaults.engineBroken && !defaults.sirenOrAlarm
             && defaults.alarmState == 0 && defaults.dirtLevel == 0, "New fields have deterministic defaults.");
         expect(static_cast<Packet&>(defaults).GetType() == ePacketType::PED_DRIVER_UPDATE
@@ -47,6 +48,7 @@ template<class T> void codec()
                     {
                         ++cases;
                         T input; input.pedid = 7; input.vehicleid = 9; input.vehicleSubType = eVehicleType(subtype);
+                        input.stamp = {1,1,1};
                         input.engineState = flags & 1; input.lightState = flags & 2;
                         input.engineBroken = flags & 4; input.sirenOrAlarm = flags & 8;
                         input.alarmState = alarm; input.dirtLevel = value;
@@ -64,7 +66,7 @@ template<class T> void codec()
                         Packets::Peds::LegacyPedDriverUpdate legacy;
                         legacy.pedid = input.pedid; legacy.vehicleid = input.vehicleid; legacy.vehicleSubType = input.vehicleSubType;
                         auto old = encode(legacy, offset);
-                        expect(wire.bits == old.bits + 24, "The bounded extension adds exactly 24 bits.");
+                        expect(wire.bits == old.bits + 125, "Parity plus three 31-bit lifetime counters and area add exactly 125 bits.");
                         bool same = true;
                         for (int bit = 0; bit < old.bits; ++bit)
                             same &= ((wire.data()[bit/8] >> (bit%8)) & 1) == ((old.data()[bit/8] >> (bit%8)) & 1);
@@ -72,7 +74,7 @@ template<class T> void codec()
                     }
         // Invalid IDs/subtype are read from deliberately malformed bytes, not
         // passed to the serializer's writer assertions.
-        auto wire = encode(T{});
+        T valid; valid.stamp = {1,1,1}; auto wire = encode(valid);
         for (auto bad : {std::pair<int,unsigned>{0,255}, {8,255}, {16,15}})
         {
             auto malformed = wire;
@@ -90,6 +92,7 @@ void authority()
     ped.m_pSyncer = &owner; vehicle.m_pSyncer = &other;
     CNetworkPedManager::ped = &ped; CNetworkVehicleManager::vehicle = &vehicle;
     Packets::Peds::PedDriverUpdate packet; packet.pedid = 7; packet.vehicleid = 9; packet.pos.x = 20;
+    packet.stamp = {1,1,1};
     GetPacketFactory().forwarded = 0;
     ServerDriver(&packet, &other);
     expect(!GetPacketFactory().forwarded && !vehicle.m_bUsedByPed, "Wrong ped owner cannot mutate or forward NPC vehicle state.");
@@ -104,6 +107,7 @@ void authority()
     ServerDriver(&packet, &owner);
     expect(GetPacketFactory().forwarded == 1, "Even the NPC owner cannot overwrite its own recorded player driver.");
     vehicle.m_pPlayers[0] = nullptr;
+    packet.stamp.sequence = 2;
     ServerDriver(&packet, &owner);
     expect(GetPacketFactory().forwarded == 2, "NPC stream becomes eligible after the recorded player exits.");
     ServerDriver(&packet, nullptr);
@@ -119,6 +123,7 @@ template<class T> void native_pipeline()
     ped.m_pPed = &actor; vehicle.m_pVehicle = &car;
     CNetworkPedManager::ped = &ped; CNetworkVehicleManager::vehicle = &vehicle;
     T packet; packet.pedid = 7; packet.vehicleid = 9; packet.pos.x = 22;
+    packet.stamp = {1,1,1};
     car.m_matrix->pos.x = 99; ped.m_bSyncing = true;
     ClientDriver(&packet);
     expect(car.m_matrix->pos.x == 99 && ped.warps == 0, "Queued remote NPC state cannot overwrite a locally owned ped.");
@@ -140,6 +145,7 @@ template<class T> void native_pipeline()
             "Actual receiver applies all captured state to native vehicle fields.");
         for (unsigned flags = 0; flags < 16; ++flags)
         {
+            ++packet.stamp.sequence;
             packet.engineState = flags & 1; packet.lightState = flags & 2;
             packet.engineBroken = flags & 4; packet.sirenOrAlarm = flags & 8;
             packet.alarmState = flags ? 65535 : 0; packet.dirtLevel = flags ? 15 : 0;
@@ -156,6 +162,7 @@ template<class T> void native_pipeline()
     expect(ped.warps == before, "A vehicle without a native matrix cannot be warped or overwritten.");
     car.m_matrix = &car.storage;
     car.m_nVehicleFlags = {true,false,true,true}; car.m_nAlarmState = 1000; car.m_fDirtLevel = 9;
+    ped.m_bSyncing = true;
     CaptureDriver(&ped, &actor, &car, &vehicle);
     auto* captured = dynamic_cast<T*>(GetPacketFactory().sent.get());
     expect(captured != nullptr, "Actual NPC driver branch sends the existing packet type.");

@@ -65,6 +65,7 @@ public:
         Events::gameProcessEvent.before += []
         {
             CNetworkPlayerManager::ProcessPendingReset();
+            CNetworkPedManager::ProcessPendingReset();
             ENetEvent event;
             if (CNetwork::m_bConnected)
             {
@@ -73,6 +74,7 @@ public:
                 CServerTime::Process();
                 CNetwork::ProcessReceive();
                 CNetworkPlayerManager::ProcessPendingReset();
+                CNetworkPedManager::ProcessPendingReset();
                 GetPacketBuffer().Process();
 
                 uint32_t currentTime = GetTickCount();

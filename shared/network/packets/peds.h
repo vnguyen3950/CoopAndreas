@@ -1,5 +1,7 @@
 #pragma once
 #include <cmath>
+#include <type_traits>
+#include "network/npc_sync.h"
 #include <eModelID.h>
 #include <ePedType.h>
 #include <CPed.h>
@@ -21,19 +23,28 @@ public:
     eCharCreatedBy createdBy = MISSION_CHAR;
     char specialModelName[8] = {'\0'};
 
+    NPCSync::Stamp stamp{};
+    uint32_t requestToken = 0;
+    int ownerid = -1;
+    bool Valid() const { return NPCSync::Position(pos) && modelId > MODEL_NULL && modelId <= MODEL_SPECIAL10 && pedType >= PED_TYPE_CIVMALE && pedType <= PED_TYPE_MISSION8 && createdBy >= UNUSED_CHAR && createdBy <= REPLAY_CHAR && ((stamp.Lifetime() && ownerid >= 0 && ownerid < Config::MAX_SERVER_PLAYERS) || (!stamp.generation && !stamp.epoch && requestToken > 0 && requestToken <= NPCSync::MaxCounter && ownerid == -1)); }
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
+        if (!Stream::IsReading && !Valid()) return false;
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
         serialize_uint8(stream, tempid);
         serialize_int(stream, (int&)modelId, MODEL_NULL, MODEL_SPECIAL10);
-        serialize_int(stream, (int&)pedType, PED_TYPE_PLAYER1, PED_TYPE_MISSION8);
+        serialize_int(stream, (int&)pedType, PED_TYPE_CIVMALE, PED_TYPE_MISSION8);
         serialize_object(stream, pos);
         serialize_int(stream, (int&)createdBy, UNUSED_CHAR, REPLAY_CHAR);
         serialize_string(stream, specialModelName, 8);
         specialModelName[ARRAY_SIZE(specialModelName) - 1] = '\0';
-        return true;
+        serialize_object(stream, stamp);
+        serialize_int(stream, requestToken, 0, int(NPCSync::MaxCounter));
+        serialize_int(stream, ownerid, -1, Config::MAX_SERVER_PLAYERS - 1);
+        return Valid();
     }
 };
 
@@ -45,13 +56,20 @@ public:
     uint8_t tempid = 255;
     int pedid = 0;
 
+    NPCSync::Stamp stamp{};
+    uint32_t requestToken = 0;
+    int ownerid = -1;
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
         serialize_uint8(stream, tempid);
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
-        return true;
+        serialize_object(stream, stamp);
+        serialize_int(stream, requestToken, 0, int(NPCSync::MaxCounter));
+        serialize_int(stream, ownerid, -1, Config::MAX_SERVER_PLAYERS - 1);
+        return stamp.Lifetime() && requestToken > 0 && tempid < 255 && ownerid >= 0;
     }
 };
 
@@ -62,11 +80,14 @@ class PedRemove : public Packet
 public:
     int pedid = 0;
 
+    NPCSync::Stamp stamp{};
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
+        serialize_object(stream, stamp);
         return true;
     }
 };
@@ -78,11 +99,16 @@ class AssignPedSyncer : public Packet
 public:
     int pedid;
 
+    NPCSync::Stamp stamp{};
+    int ownerid = -1;
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
+        serialize_object(stream, stamp);
+        serialize_int(stream, ownerid, 0, Config::MAX_SERVER_PLAYERS - 1);
         return true;
     }
 };
@@ -106,13 +132,18 @@ public:
     uint8_t fightingStyle = 4;
     WorldPositionCompressed weaponAim{};
 
+    NPCSync::Stamp stamp{};
+    uint8_t area = 0;
+    bool Valid() const { return stamp.State() && NPCSync::Position(pos) && NPCSync::Velocity(velocity) && NPCSync::Finite(aimingRotation.m_angle, 100.0f) && NPCSync::Finite(currentRotation.m_angle, 100.0f) && NPCSync::Finite(lookDirection.m_angle, 100.0f) && moveState >= PEDMOVE_NONE && moveState <= PEDMOVE_SPRINT && fightingStyle >= 4 && fightingStyle <= 16 && (!bAiming || NPCSync::Position(weaponAim)); }
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
+        if (!Stream::IsReading && !Valid()) return false;
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
         serialize_object(stream, pos);
-        // serialize_object(stream, velocity); // not used for now
+        serialize_object(stream, velocity);
         serialize_object(stream, healthSnapshot);
         serialize_object(stream, weaponSnapshot);
         serialize_object(stream, aimingRotation);
@@ -126,7 +157,9 @@ private:
         {
             serialize_object(stream, weaponAim);
         }
-        return true;
+        serialize_object(stream, stamp);
+        serialize_uint8(stream, area);
+        return Valid();
     }
 };
 
@@ -169,10 +202,20 @@ public:
     uint16_t alarmState{}; // Includes the native 65535 armed-alarm sentinel.
     float dirtLevel{};
 
+    NPCSync::Stamp stamp{};
+    uint8_t area = 0;
+    bool Valid() const { return stamp.State() && NPCSync::Position(pos) && NPCSync::Velocity(velocity) && NPCSync::VectorValid(rot, 1.0f) && NPCSync::VectorValid(roll, 1.0f) && NPCSync::VectorValid(turnSpeed, 100.0f) && NPCSync::Finite(health, 100000.0f) && NPCSync::Finite(gasPedal, 100.0f) && NPCSync::Finite(breakPedal, 100.0f) && NPCSync::Finite(steerAngle, 100.0f) && NPCSync::Finite(bikeLean, 100.0f) && NPCSync::Finite(controlPedaling, 100.0f) && NPCSync::Finite(planeGearState, 1.0f) && NPCSync::Finite(dirtLevel, 15.0f) && dirtLevel >= 0.0f; }
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
+        // Retain the existing native sender dirt normalization. Received dirt
+        // is compressed/bounded; the complete state still validates identity
+        // and all raw float operands before relay or native application.
+        if (Stream::IsWriting)
+            dirtLevel = std::isfinite(dirtLevel) ? std::clamp(dirtLevel, 0.0f, 15.0f) : 0.0f;
+        if (!Stream::IsReading && !Valid()) return false;
 #pragma region IDs
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
         serialize_int(stream, vehicleid, 0, Config::MAX_SERVER_VEHICLES - 1);
@@ -292,10 +335,10 @@ private:
         serialize_bool(stream, engineBroken);
         serialize_bool(stream, sirenOrAlarm);
         serialize_uint16(stream, alarmState);
-        if (Stream::IsWriting)
-            dirtLevel = std::isfinite(dirtLevel) ? std::clamp(dirtLevel, 0.0f, 15.0f) : 0.0f;
         serialize_compressed_float(stream, dirtLevel, 0.0f, 15.0f, 1.0f);
-        return true;
+        serialize_object(stream, stamp);
+        serialize_uint8(stream, area);
+        return Valid();
     }
 };
 
@@ -310,18 +353,25 @@ public:
     Packets::Players::SHealthSnapshot healthSnapshot{};
     Packets::Players::SWeaponSnapshot weaponSnapshot{};
 
-    int8_t seatid;
+    int8_t seatid = 0;
+
+    NPCSync::Stamp stamp{};
+    uint8_t area = 0;
+    bool Valid() const { return stamp.State() && seatid >= 0 && seatid <= 7; }
 
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
+        if (!Stream::IsReading && !Valid()) return false;
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
         serialize_int(stream, vehicleid, 0, Config::MAX_SERVER_VEHICLES - 1);
         serialize_object(stream, healthSnapshot);
         serialize_object(stream, weaponSnapshot);
         serialize_int(stream, seatid, -1, 7);  // TODO test properly TODO(v0.3.1-alpha): limits
-        return true;
+        serialize_object(stream, stamp);
+        serialize_uint8(stream, area);
+        return Valid();
     }
 };
 
@@ -336,16 +386,21 @@ public:
     WorldPositionCompressed effect{};
     WorldPositionCompressed target{};
 
+    NPCSync::Stamp stamp{};
+    bool Valid() const { return stamp.Lifetime() && NPCSync::Position(origin) && NPCSync::Position(effect) && NPCSync::Position(target); }
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
+        if (!Stream::IsReading && !Valid()) return false;
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
         serialize_int(stream, (int&)weaponType, WEAPON_UNARMED, WEAPON_FLARE);
         serialize_object(stream, origin);
         serialize_object(stream, effect);
         serialize_object(stream, target);
-        return true;
+        serialize_object(stream, stamp);
+        return Valid();
     }
 };
 
@@ -386,11 +441,14 @@ class PedClaimOnRelease : public Packet
 public:
     int pedid = 0;
 
+    NPCSync::Stamp stamp{};
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
+        serialize_object(stream, stamp);
         return true;
     }
 };
@@ -402,11 +460,14 @@ class PedCancelClaim : public Packet
 public:
     int pedid = 0;
 
+    NPCSync::Stamp stamp{};
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
+        serialize_object(stream, stamp);
         return true;
     }
 };
@@ -418,11 +479,14 @@ class PedResetAllClaims : public Packet
 public:
     int pedid = 0;
 
+    NPCSync::Stamp stamp{};
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
+        serialize_object(stream, stamp);
         return true;
     }
 };
@@ -435,13 +499,54 @@ public:
     int pedid = 0;
     bool allowReturnToPreviousHost = false;
 
+    NPCSync::Stamp stamp{};
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
         serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
         serialize_bool(stream, allowReturnToPreviousHost);
+        serialize_object(stream, stamp);
         return true;
+    }
+};
+
+class PedPin : public Packet
+{
+    DEFINE_PACKET_TYPE(PedPin, ePacketType::PED_PIN, ePacketChannel::EVENT);
+public:
+    int pedid = 0;
+    NPCSync::Stamp stamp{};
+    bool pinned = false;
+    uint32_t requestToken = 0;
+private:
+    template<class Stream> bool Serialize(Stream& stream) {
+        serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
+        serialize_object(stream, stamp);
+        serialize_bool(stream, pinned);
+        serialize_int(stream, requestToken, 0, int(NPCSync::MaxCounter));
+        return (stamp.Lifetime() && !requestToken) ||
+            (!stamp.generation && !stamp.epoch && !stamp.sequence && requestToken > 0);
+    }
+};
+
+class PedReplay : public Packet
+{
+    DEFINE_PACKET_TYPE(PedReplay, ePacketType::PED_REPLAY, ePacketChannel::EVENT);
+public:
+    uint8_t mode = 1; // on-foot, driver, passenger; one cached authoritative state.
+    PedOnFoot onFoot{};
+    PedDriverUpdate driver{};
+    PedPassengerSync passenger{};
+    Packet& StatePacket() { return mode == 1 ? static_cast<Packet&>(onFoot) : mode == 2 ? static_cast<Packet&>(driver) : static_cast<Packet&>(passenger); }
+private:
+    template<class Stream> bool Serialize(Stream& stream) {
+        serialize_int(stream, mode, 1, 3);
+        auto& state = StatePacket();
+        if constexpr (std::is_same_v<Stream, serialize::ReadStream>) return state.SerializeRead(stream);
+        else if constexpr (std::is_same_v<Stream, serialize::WriteStream>) return state.SerializeWrite(stream);
+        else return state.SerializeMeasure(stream);
     }
 };
 

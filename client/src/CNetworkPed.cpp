@@ -7,12 +7,19 @@
 
 CNetworkPed::CNetworkPed(int pedid, int modelId, ePedType pedType, CVector pos, unsigned char createdBy, char specialModelName[])
 {
+    m_nPedId = pedid; m_nPedType = pedType; m_nCreatedBy = createdBy;
+    if (!CPools::ms_pPedPool || !CPools::ms_pPedPool->GetNoOfFreeSpaces()) return;
+    if (pedType == PED_TYPE_COP && modelId != MODEL_LAPDM1 && modelId != MODEL_CSHER &&
+        modelId != MODEL_SWAT && modelId != MODEL_FBI && modelId != MODEL_ARMY) return;
     if (modelId >= 290 && modelId <= 299)
         CStreaming::RequestSpecialModel(modelId, specialModelName, 0);
     else
         CStreaming::RequestModel(modelId, 0);
 
     CStreaming::LoadAllRequestedModels(false);
+    if (!CPools::ms_pPedPool || !CModelInfo::ms_modelInfoPtrs[modelId] ||
+        CModelInfo::ms_modelInfoPtrs[modelId]->GetModelType() != MODEL_INFO_PED ||
+        CStreaming::ms_aInfoForModel[modelId].m_nLoadState != LOADSTATE_LOADED) return;
 
     if (pedType == PED_TYPE_COP)
     {
@@ -79,6 +86,7 @@ CNetworkPed::~CNetworkPed()
         {
             Packets::Peds::PedRemove packet{};
             packet.pedid = m_nPedId;
+            packet.stamp = GetStamp();
             GetPacketFactory().Send(packet);
         }
     }
@@ -120,12 +128,16 @@ void CNetworkPed::DetachPed()
 
 CNetworkPed* CNetworkPed::CreateHosted(CPed* pPed)
 {
+    // Never reuse a token, including across Clear/retry.
+    if (!pPed || pPed->IsPlayer() || pPed->m_nPedType < PED_TYPE_CIVMALE || !CPools::ms_pPedPool || m_lastRequestToken == NPCSync::MaxCounter) return nullptr;
     CNetworkPed* pNetworkPed = new CNetworkPed();
+    pNetworkPed->m_requestToken = ++m_lastRequestToken;
 
     pNetworkPed->m_pPed = pPed;
     pNetworkPed->m_nPedPoolRef = CPools::GetPedRef(pPed);
     pNetworkPed->m_nPedId = -1;
     pNetworkPed->m_nCreatedBy = pPed->m_nCreatedBy;
+    pNetworkPed->m_nPedType = static_cast<ePedType>(pPed->m_nPedType);
     pNetworkPed->m_bSyncing = true;
     pNetworkPed->m_nTempId = CNetworkPedManager::AddToTempList(pNetworkPed);
 
@@ -140,9 +152,10 @@ CNetworkPed* CNetworkPed::CreateHosted(CPed* pPed)
 
     Packets::Peds::PedSpawn packet{};
     packet.tempid = pNetworkPed->m_nTempId;
+    packet.requestToken = pNetworkPed->m_requestToken;
     packet.pedid = 0; // the server assigns the real id before forwarding the spawn
     packet.modelId = static_cast<eModelID>(pPed->m_nModelIndex);
-    packet.pos = pPed->m_matrix->pos;
+    packet.pos = pPed->GetPosition();
     packet.pedType = static_cast<ePedType>(pPed->m_nPedType);
     packet.createdBy = static_cast<eCharCreatedBy>(pPed->m_nCreatedBy);
 
@@ -234,11 +247,12 @@ void CNetworkPed::RemoveFromVehicle(CVehicle* vehicle)
 
 void CNetworkPed::ClaimOnRelease()
 {
-    if (m_bClaimOnRelease || m_bSyncing)
+    if (m_bClaimOnRelease || m_bSyncing || m_bPinned || !m_generation)
         return;
 
     Packets::Peds::PedClaimOnRelease packet{};
     packet.pedid = m_nPedId;
+    packet.stamp = GetStamp();
     GetPacketFactory().Send(packet);
 
     m_bClaimOnRelease = true;
@@ -251,6 +265,7 @@ void CNetworkPed::CancelClaim()
 
     Packets::Peds::PedCancelClaim packet{};
     packet.pedid = m_nPedId;
+    packet.stamp = GetStamp();
     GetPacketFactory().Send(packet);
 
     m_bClaimOnRelease = false;
@@ -266,4 +281,18 @@ void CNetworkPed::ApplyWeaponSnapshot(Packets::Players::SWeaponSnapshot& weaponS
     // TODO refactor CUtil
     CUtil::GiveWeaponByPacket(this, weaponSnapshot.iWeaponType, weaponSnapshot.nAmmo);
     m_pPed->m_aWeapons[m_pPed->m_nActiveWeaponSlot].m_nState = static_cast<eWeaponState>(weaponSnapshot.iWeaponState);
+}
+
+bool CNetworkPed::NextState(NPCSync::Stamp& stamp)
+{
+    if (!GetStamp().Lifetime() || !m_bSyncing || m_stateSequence == NPCSync::MaxCounter) return false;
+    stamp = {m_generation, m_ownerEpoch, ++m_stateSequence};
+    return true;
+}
+bool CNetworkPed::AcceptState(const NPCSync::Stamp& stamp)
+{
+    if (!HasValidPed() || !stamp.SameOwner(GetStamp()) || !stamp.State()) return false;
+    if (stamp.sequence <= m_stateSequence && !(m_bAllowReplay && stamp.sequence == m_stateSequence)) return false;
+    m_stateSequence = stamp.sequence;
+    return true;
 }

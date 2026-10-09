@@ -13,6 +13,7 @@ INPUTS = [
     "shared/network/packets/peds.h", "shared/network/packets/players.h",
     "shared/network/packet.h", "shared/network/packet_types.h",
     "shared/network/serializable_types.h", "shared/network/vehicle_authority.h",
+    "shared/network/npc_sync.h", "client/src/CNetworkPed.cpp",
     "shared/config.h", "third_party/serialize.h",
     "third_party/plugin-sdk/plugin_sa/game_sa/CVehicle.h",
     "third_party/plugin-sdk/plugin_sa/game_sa/CWeapon.h",
@@ -95,8 +96,10 @@ def main():
     handlers = (
         "void ServerDriver(Packets::Peds::PedDriverUpdate* pPedDriverUpdate, CNetworkPlayer* pNetworkPlayer) " + server +
         "\nvoid ClientDriver(Packets::Peds::PedDriverUpdate* pPedDriverUpdate) " + client +
-        "\nvoid CaptureDriver(CNetworkPed* pNetworkPed, CPed* pPed, CVehicle* pVehicle, CNetworkVehicle* pNetworkVehicle) " + sender)
-    (output / "extracted_handlers.h").write_text(handlers, encoding="utf-8")
+        "\nvoid CaptureDriver(CNetworkPed* pNetworkPed, CPed* pPed, CVehicle* pVehicle, CNetworkVehicle* pNetworkVehicle) { do " + sender + " while (false); }")
+    helpers = "\n".join(block(read("client/src/CNetworkPed.cpp"), re.escape(signature) + r"[^{}]*\{", True)
+        for signature in ("bool CNetworkPed::NextState(", "bool CNetworkPed::AcceptState("))
+    (output / "extracted_handlers.h").write_text(helpers + "\n" + handlers, encoding="utf-8")
     for p in ("tests.cpp", "doubles.h"):
         shutil.copyfile(HERE / p, output / p)
     command = ["cl.exe", "/nologo", "/std:c++17", "/EHsc", "/W4", "/DNDEBUG", "/DNOMINMAX",

@@ -144,6 +144,7 @@ void CNetwork::Disconnect()
     CMapSync::Reset();
     COpCodeSync::ms_bLoadingCutscene = false;
     CNetworkPlayerManager::RequestReset();
+    CNetworkPedManager::RequestReset();
     if (!m_bConnected)
         return;
 

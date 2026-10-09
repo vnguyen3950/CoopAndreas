@@ -52,6 +52,13 @@ PACKET_HANDLER(ePacketType::RESPAWN_PLAYER, Packets::Players::RespawnPlayer* pRe
 
 PACKET_HANDLER(ePacketType::PLAYER_BULLET_SHOT, Packets::Players::PlayerBulletShot* pPlayerBulletShot, CNetworkPlayer* pNetworkPlayer)
 {
+    if (!CNetworkPedManager::Authenticated(pNetworkPlayer)) return;
+    if (pPlayerBulletShot->bHitSomething && pPlayerBulletShot->bHitNetworkEntity &&
+        pPlayerBulletShot->hitEntity.entityType == NETWORK_ENTITY_TYPE_PED) {
+        auto* ped = CNetworkPedManager::GetPed(pPlayerBulletShot->hitEntity.entityId);
+        if (!pPlayerBulletShot->hitEntity.Valid() || !ped ||
+            pPlayerBulletShot->hitEntity.entityGeneration != ped->m_generation) return;
+    }
     pPlayerBulletShot->playerid = pNetworkPlayer->m_iPlayerId;
     if (pPlayerBulletShot->bHitSomething && pPlayerBulletShot->bHitNetworkEntity
         && pPlayerBulletShot->hitEntity.entityType == NETWORK_ENTITY_TYPE_OBJECT)

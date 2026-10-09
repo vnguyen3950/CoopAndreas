@@ -1,5 +1,5 @@
 #pragma once
-#include "stdafx.h"
+#include <cstdint>
 
 enum eNetworkEntityType : uint8_t
 {

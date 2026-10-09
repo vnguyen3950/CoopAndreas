@@ -13,6 +13,7 @@ void CCommandPedResetAllClaims::Process(CRunningScript* script)
 			{
 				Packets::Peds::PedResetAllClaims packet{};
 				packet.pedid = networkPed->m_nPedId;
+				packet.stamp = networkPed->GetStamp();
 				GetPacketFactory().Send(packet);
 			}
 		}

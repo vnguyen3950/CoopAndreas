@@ -270,16 +270,14 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
         }
     }
 
-    for (auto i : CNetworkPedManager::m_pPeds)
+    for (auto* ped : CNetworkPedManager::m_pPeds)
     {
-        Packets::Peds::PedSpawn packet{};
-        packet.pedid = i->m_nPedId;
-        packet.modelId = i->m_nModelId;
-        packet.pos = i->m_vecPos;
-        packet.pedType = i->m_nPedType;
-        packet.createdBy = i->m_nCreatedBy;
-        snprintf(packet.specialModelName, sizeof(packet.specialModelName), "%s", i->m_szSpecialModelName);
-        GetPacketFactory().Send(packet, pNewNetworkPlayer);
+        auto packet = ped->SpawnPacket(); GetPacketFactory().Send(packet, pNewNetworkPlayer);
+        CNetworkPedManager::Replay(ped, pNewNetworkPlayer);
+        if (ped->m_bPinned) {
+            Packets::Peds::PedPin pin; pin.pedid = ped->m_nPedId; pin.stamp = ped->GetStamp(); pin.pinned = true;
+            GetPacketFactory().Send(pin, pNewNetworkPlayer);
+        }
     }
 
      if (Packets::Scripts::g_pLastEnExPlayerOwner)
