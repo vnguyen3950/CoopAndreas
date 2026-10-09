@@ -8,7 +8,7 @@ The host's initialized game state seeds the room. A joining guest does not contr
 
 Host migration preserves the room's wallet, wanted policy and cheat toggles. Disconnecting and reconnecting creates a new connection identity; a reused player slot cannot reuse the old occupant's receipts. The room resets after its final participant leaves.
 
-Shopping remains native and optimistic: each player can spend the balance they currently see. Concurrent purchases can therefore overspend. Both debits remain in the signed ledger; a nonnegative HUD display does not forgive the debt. This feature does not authorize purchases before native goods are delivered or roll those goods back.
+Shopping remains native and optimistic: each player can spend the balance they currently see. Concurrent purchases can therefore overspend. Both debits remain in the signed ledger. The game receives a nonnegative spending budget and HUD balance, so its ordinary clamp to zero cannot forgive room debt; subsequent earnings repay that debt. Cash observation continues through death/arrest for the same initialized player, retaining native fees. This feature does not authorize purchases before native goods are delivered or roll those goods back.
 
 Any participant can raise the shared wanted level. A guest's death or ordinary native reset must not clear the room's pursuit. Host mission scripts and host decay can lower it; bribes, resprays and supported wanted cheats have explicit operations. Never-wanted takes precedence over a later script assignment.
 
@@ -27,6 +27,8 @@ Use a separate test installation, matching clients/server and a fresh New Game. 
 | Both players earn or spend in quick succession | Both changes remain after receipts arrive. |
 | Buy simultaneously when the wallet cannot cover both | Both debits remain; later earnings repay any debt. Goods are not rolled back. |
 | Guest joins after cash changes | The guest adopts the room balance without changing it. |
+| Die or get arrested with a positive balance | The native fee is retained once, without treating resurrection as a fresh wallet. |
+| Die while the room has debt, then earn money | Native clamp to zero does not erase the debt; earnings repay it before becoming spendable. |
 | Disconnect the host while a transaction is pending | The remaining host preserves the wallet and applies the pending transaction once. |
 | Raise stars as a guest, then die or restart locally | Guest reset does not erase room wanted state. |
 | Finish a mission which changes wanted limits or clears pursuit | Host script changes converge without repeated native echo. |

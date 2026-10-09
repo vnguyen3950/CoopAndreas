@@ -14,8 +14,9 @@ This is a source development branch. All four x86 release targets and the full s
 - Add host-authoritative guest checkpoint racing for the High Stakes instance, with a persistent main-block handoff, separate guest cars, ordered progress and results. Host story qualification remains against the original NPCs.
 - Default the mission menu to the adapted candidates and add host-only guest input predicates for future cargo work.
 - Integrate reviewed upstream vehicle-state/dirt and ped-lifetime/interior-transition fixes. See [upstream PR decisions](UPSTREAM_PRS.md) for provenance, limits and deferred features.
+- Replace PR #106's balance/star/cheat mirroring with a server-owned wallet, explicit wanted policy and a bounded shared-cheat subset. See [session policy and native checks](SHARED_SESSION.md) for accounting, migration and coverage limits.
 
-The current object/vehicle extension uses local protocol **0.3.2-alpha**. Clients and server must match; the existing handshake rejects earlier 0.3.0-alpha and 0.3.1-alpha binaries. Launcher authentication is unchanged.
+The current object/vehicle/session extension uses local protocol **0.3.3-alpha**. Clients and server must match; the existing handshake rejects earlier versions, including 0.3.2-alpha. Launcher authentication is unchanged.
 
 ## Adapted story candidates
 
