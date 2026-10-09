@@ -41,6 +41,7 @@ struct Row {
     uint32_t grant=0;
     int collector=-1;
     Actor collectorLife;
+    bool awaitingOutcome=false; // Server-only accounting; omitted from state wire.
     bool Valid()const {
         if(!item.Valid()||int(stage)>3||int(reason)>int(Reason::SceneEnded)||grant>MaxCounter||collector<-1||collector>=MaxPlayers)return false;
         return stage!=Stage::Reserved&&stage!=Stage::Collected||(grant&&collector>=0&&collectorLife.Valid()&&collectorLife.area==0);
@@ -61,7 +62,7 @@ public:
     const Row* Find(uint32_t id)const{for(const auto&row:rows)if(row.item.id==id&&id)return &row;return nullptr;}
     Row* Create(int sender,uint32_t expectedEpoch,const Actor&life,Item item) {
         if(sender!=host||!CurrentActor(life,ownerLife)||expectedEpoch!=epoch||!item.ValidMetadata()||item.owner!=sender||item.creation<=creationHighWater||nextId==MaxCounter)return nullptr;
-        Row* target=nullptr;for(auto&row:rows)if(!row.item.id||row.stage==Stage::Collected||row.stage==Stage::Removed){target=&row;break;}
+        Row* target=nullptr;for(auto&row:rows)if(!row.item.id||(!row.awaitingOutcome&&(row.stage==Stage::Collected||row.stage==Stage::Removed))){target=&row;break;}
         if(!target)return nullptr;
         item.id=++nextId;item.epoch=epoch;item.revision=1;*target={};target->item=item;target->stage=Stage::Active;
         creationHighWater=item.creation;return target;
@@ -73,19 +74,19 @@ public:
     }
     Row* Reserve(int sender,uint32_t expectedEpoch,uint32_t id,const Actor&life,const Position&position,bool mission,bool inVehicle) {
         if(sender<0||sender>=MaxPlayers||!life.Valid()||life.area!=0||mission||inVehicle||expectedEpoch!=epoch||nextGrant==MaxCounter)return nullptr;
-        for(const auto&row:rows)if(row.stage==Stage::Reserved&&row.collector==sender)return nullptr;
+        for(const auto&row:rows)if(row.awaitingOutcome&&row.collector==sender)return nullptr;
         auto*row=Find(id);if(!row||row->stage!=Stage::Active||row->item.epoch!=epoch||row->item.revision==MaxCounter||!Touching(position,row->item.position))return nullptr;
-        row->grant=++nextGrant;row->collector=sender;row->collectorLife=life;row->stage=Stage::Reserved;++row->item.revision;return row;
+        row->grant=++nextGrant;row->collector=sender;row->collectorLife=life;row->stage=Stage::Reserved;row->awaitingOutcome=true;++row->item.revision;return row;
     }
     bool Complete(int sender,uint32_t expectedEpoch,uint32_t id,uint32_t grant,const Actor&life,Outcome outcome) {
-        auto*row=Find(id);if(expectedEpoch!=epoch||!row||row->stage!=Stage::Reserved||row->collector!=sender||row->grant!=grant||!SameLife(life,row->collectorLife)||row->item.revision==MaxCounter||int(outcome)>2)return false;
+        auto*row=Find(id);if(expectedEpoch!=epoch||!row||!row->awaitingOutcome||(row->stage!=Stage::Reserved&&!(row->stage==Stage::Removed&&row->reason==Reason::Ambiguous))||row->collector!=sender||row->grant!=grant||!SameLife(life,row->collectorLife)||row->item.revision==MaxCounter||int(outcome)>2)return false;
         if(outcome==Outcome::Consumed){row->stage=Stage::Collected;}
-        else if(outcome==Outcome::DeclinedBeforeApply){row->stage=Stage::Active;row->collector=-1;row->collectorLife={};}
+        else if(outcome==Outcome::DeclinedBeforeApply){row->stage=Stage::Removed;row->reason=Reason::Cleanup;}
         else{row->stage=Stage::Removed;row->reason=Reason::Ambiguous;}
-        ++row->item.revision;return true;
+        row->awaitingOutcome=false;++row->item.revision;return true;
     }
     void RetireCollector(int id) {
-        for(auto&row:rows)if(row.stage==Stage::Reserved&&row.collector==id){row.stage=Stage::Removed;row.reason=Reason::CollectorLeft;if(row.item.revision<MaxCounter)++row.item.revision;}
+        for(auto&row:rows)if(row.awaitingOutcome&&row.collector==id){row.stage=Stage::Removed;row.reason=Reason::CollectorLeft;row.awaitingOutcome=false;if(row.item.revision<MaxCounter)++row.item.revision;}
     }
 private:
     uint32_t nextId=0,nextGrant=0,creationHighWater=0; // Never reset lifetime/grant IDs during a server process.

@@ -22,14 +22,15 @@ static void RegistryCases(){
  const auto token=row->grant;expect(!room.Reserve(2,room.epoch,id,Life(),{},false,false)&&row->collector==1&&row->grant==token,"Simultaneous other collector cannot duplicate reservation");
  expect(!room.Complete(2,room.epoch,id,token,Life(),Outcome::Consumed),"Wrong collector cannot acknowledge benefit");
  expect(!room.Complete(1,room.epoch,id,token,Life(2),Outcome::Consumed),"Grant cannot cross actor birth");
- expect(room.Complete(1,room.epoch,id,token,Life(),Outcome::DeclinedBeforeApply)&&row->stage==Stage::Active,"Verified pre-apply decline can reopen unmutated resource");
+ expect(room.Complete(1,room.epoch,id,token,Life(),Outcome::DeclinedBeforeApply)&&row->stage==Stage::Removed,"Pre-apply decline is terminal in conservative ordinary slice");
  expect(!room.Complete(1,room.epoch,id,token,Life(),Outcome::Consumed),"Late old grant result cannot overwrite active row");
+ row=room.Create(0,room.epoch,Life(),Metadata(2));id=row->item.id;
  room.Reserve(2,room.epoch,id,Life(),{},false,false);expect(row->grant>token,"A new reservation never reuses grant token");
  expect(room.Complete(2,room.epoch,id,row->grant,Life(),Outcome::UnknownAfterApply)&&row->stage==Stage::Removed,"Possible benefit after native apply retires ambiguity instead of reopening");
- row=room.Create(0,room.epoch,Life(),Metadata(2));expect(row&&row->item.id>id,"Retired storage slot receives a distinct network ID");
+ row=room.Create(0,room.epoch,Life(),Metadata(3));expect(row&&row->item.id>id,"Retired storage slot receives a distinct network ID");
  id=row->item.id;room.Reserve(1,room.epoch,id,Life(),{},false,false);room.RetireCollector(1);
  expect(row->stage==Stage::Removed&&row->reason==Reason::CollectorLeft,"Lost collector cannot free ambiguous award for another claim");
- row=room.Create(0,room.epoch,Life(),Metadata(3));room.Reserve(1,room.epoch,row->item.id,Life(),{},false,false);
+ row=room.Create(0,room.epoch,Life(),Metadata(4));room.Reserve(1,room.epoch,row->item.id,Life(),{},false,false);
  const auto consumedId=row->item.id,grant=row->grant;
  expect(room.Complete(1,room.epoch,consumedId,grant,Life(),Outcome::Consumed)&&row->stage==Stage::Collected,"Actual consumed result marks collection separately from removal");
  expect(!room.Complete(1,room.epoch,consumedId,grant,Life(),Outcome::Consumed),"Duplicate outcome has no second accounting transition");

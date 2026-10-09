@@ -1,0 +1,48 @@
+Ordinary shared pickups: first bounded slice
+
+This slice shares exterior, non-mission consumables of native types 3, 4, 5
+and 8: health, armour, selected firearms with explicit positive ammunition,
+and money. Mission, interior, shop, collectible, bribe and respawning street
+pickups retain their native paths. Weapon replacement and partial ammunition
+extraction are excluded. This is not full pickup parity.
+
+A collection is reserved for one authenticated player and that player's exact
+acknowledged actor lifetime. The collector receives the original native
+benefit. Money changes go through the existing wallet observation; there is no
+second network wallet reward. Collection query flags are set only for an
+observed successful native collection by that collector. Removing an item is
+not reported as collecting it.
+
+Pre-apply declines are terminal in this first slice. If the collector moves
+away, dies, enters a vehicle or interior, starts a mission, changes actor
+lifetime, or becomes ineligible while the grant is in flight, the item can be
+retired without any benefit. For example, another health change can make a
+reserved health pickup unnecessary before its grant arrives. The item is not
+offered repeatedly to compensate for that declined reservation. This is a
+deliberate conservative policy to prevent stale grants and duplicate rewards.
+
+Temporary model, pickup-pool or visual-object unavailability is different.
+One bounded pending grant remains inert until its native representation is
+available, provided the collector still meets the lifetime and eligibility
+checks. Native CPickups::Update creates and removes visual objects in its
+visibility pass before the hooked collection calls. An offscreen pickup can
+therefore legitimately have no visual object. That absence alone does not
+mean its resource metadata changed, and the host monitor does not retire an
+item merely because m_pObject is null.
+
+Native same-handle ammunition merges are not fully accounted for here. Exact
+model, type, ammunition and position are checked again immediately before
+native collection, together with the current native object binding and area.
+A detected host pile mismatch retires its old shared identity and native pile;
+the complete merged pile is not automatically republished. If an old grant
+was already issued, its exact outcome can still be acknowledged once. No new
+reservation is issued from that retired identity. This can lose additional
+merged ammunition, but avoids duplicating the old grant as part of a newly
+published full pile. Native outcomes that may have applied a benefit but cannot
+be proved consumed are terminal unknown outcomes, not retries.
+
+Source and headless tests do not prove runtime gameplay. Human checks should
+cover simultaneous collection, money observation, late joining, reconnects,
+offscreen object recreation, temporary model/pool exhaustion, leaving range
+or becoming ineligible during a grant, and native death-drop merges. Root
+owns final hooks, packet ordering/version integration and packaging.

@@ -1,0 +1,44 @@
+Pickup service integration boundary
+
+The ordinary slice depends on animation actor-life source 9ef6bbb2fcc2e40ffef137fc29da5588e35f738c.
+It consumes GetLocalLife and GetActorLife, including ready, exact connection
+generation/birth/model/area, and a non-future actor sequence. It does not provide
+another actor-birth counter or authenticate a player's world position. The
+collector supplies a finite position in its authenticated intent; the actual
+collector rechecks native range, resources, area and mission status before any
+benefit. A hostile modified collector remains outside the native-proof model.
+
+Root owns these shared integration points; they are not edited in this lane:
+
+- Reserve PICKUP_HELLO, PICKUP_STATE and PICKUP_ACTION in the final enum/version.
+  All three codecs use reliable SYSTEM. Existing payloads are unchanged.
+- Call client CPickupSync::Init once, and Process on the main initialized game
+  path with player focus zero. Reset on actual disconnect before another scene
+  can dispatch old work. Keep root's packet-buffer clear/pop repair.
+- Deliver client HostChanged after the existing authoritative host assignment.
+- Call server Join after authenticated player registration; Leave before its
+  wrapper is removed; HostChanged after the authoritative room host changes.
+- Feed server Mission from authenticated current-host mission-state changes.
+  Mission entry/exit tears down the shared ordinary scene; it does not report
+  mission collection. The native scene initialization/shutdown events already
+  reset the client service. No SCM or SDK changes are required.
+- Register the new packet handler translation units through the existing build
+  glob. Grants are server-only. Client creation/removal is current-host-only;
+  claims/results bind the registered collector and exact reservation.
+- Preserve existing session cash observation after the original native pickup
+  mutation. Do not add another wallet reward, shared health maximum or stat
+  broadcast. The original collector-side native effect is the benefit source.
+
+The isolated build overlays only the frozen animation declaration/implementation
+dependencies and reserved enum names. It proves SDK/API compilation and linking,
+not the final shared hooks, final wire IDs or runtime gameplay. Root must rerun
+the tests/build after its final integration. See PICKUP_LIFECYCLE_NOTES.txt for
+the conservative terminal-decline and native-merge quarantine policies.
+
+Native evidence is disk/source evidence, not game execution. Generate entry
+0x456F20 and Remove entry 0x4556C0 use checked instruction-complete trampolines.
+Only stock Update calls 0x45902E and 0x459095 are redirected; 0x457410 remains
+callable for a reserved collector. A prefix/call mismatch disables this slice.
+The delayed-weapon empty sentinel is native 55 (0x37), which the SDK omits by
+name. SDK CObject flag b01 is native pickup flag bit zero. No SDK declarations
+were changed. The consumptive pickup query is never used for deduplication.
