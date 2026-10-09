@@ -115,6 +115,9 @@ struct CChat { template<class... T>static void AddMessage(T...){} };
 struct CPatch { static void RevertTemporaryPatches(){} };
 // Registry tests isolate the separately tested vote-reset collaborator.
 struct CCutsceneVotes { static void Reset(){} };
+// Map behavior has its own production-service suite; this collaborator merely
+// permits the unchanged handshake body to run in the registry-only fixture.
+struct CMapSync { static void Reset(){} };
 namespace logger { template<class... T>void info(T...){} }
 struct semver_t {};
 inline void semver_unpack(uint32_t,semver_t*){}
