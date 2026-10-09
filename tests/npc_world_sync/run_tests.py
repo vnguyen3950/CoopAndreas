@@ -22,11 +22,12 @@ def block(text,pattern):
   if not depth:return text[m.start():end+2]
  raise ValueError('Unbalanced extraction')
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');a=p.parse_args();out=a.output.resolve()
+ p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client','passenger'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');a=p.parse_args();out=a.output.resolve()
  if out.exists() or ROOT/'.cache' not in out.parents:p.error('Fresh worktree .cache directory required')
- inputs=INPUTS+(SERVER_INPUTS if a.suite=='server' else CLIENT_INPUTS if a.suite=='client' else [])
+ inputs=INPUTS+(SERVER_INPUTS if a.suite=='server' else CLIENT_INPUTS if a.suite in ('client','passenger') else [])
  out.mkdir(parents=True);before={n:sha(ROOT/n) for n in inputs}
- support=['run_tests.py', 'server_tests.cpp','server_doubles.h'] if a.suite=='server' else ['run_tests.py','client_tests.cpp','client_doubles.h'] if a.suite=='client' else ['run_tests.py','tests.cpp']
+ test_name='server_tests.cpp' if a.suite=='server' else 'passenger_counterexamples.cpp' if a.suite=='passenger' else 'client_tests.cpp' if a.suite=='client' else 'tests.cpp'
+ support=['run_tests.py',test_name]+(['server_doubles.h'] if a.suite=='server' else ['client_doubles.h'] if a.suite in ('client','passenger') else [])
  support_before={n:sha(HERE/n) for n in support}
  for n in inputs:
   target=out/'source'/n;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/n,target)
@@ -59,21 +60,21 @@ def main():
   (out/'server_factory.inc').write_text('static uint8_t packetBuffer[10*1024];\n'+block(read('server/src/CPacketFactory.cpp'),r'static void BuildPacketStream\([^{}]*\{'))
   (out/'client_buffer.inc').write_text(block(read('client/src/CPacketBuffer.cpp'),r'void CPacketBuffer::Receive\([^{}]*\{'))
   shutil.copyfile(HERE/'server_doubles.h',out/'server_doubles.h')
- if a.suite=='client':
+ if a.suite in ('client','passenger'):
   fragments += [block(read(SDK+'eCopType.h'),r'enum\s+(?:PLUGIN_API\s+)?eCopType\b[^{}]*\{')]
   (out/'extracted_packet.h').write_text('\n'.join(fragments))
   for name,path in [('client_ped_decl','client/src/CNetworkPed.h'),('client_manager_decl','client/src/CNetworkPedManager.h')]:
    (out/(name+'.inc')).write_text(includes_only(read(path)))
   ped=read('client/src/CNetworkPed.cpp');mgr=read('client/src/CNetworkPedManager.cpp');handlers=read('client/src/PacketHandlers/peds.cpp')
-  methods=[block(ped,re.escape(signature)+r'[^{}]*\{') for signature in ('CNetworkPed::CNetworkPed(int pedid','CNetworkPed::~CNetworkPed()','bool CNetworkPed::HasValidPed() const','void CNetworkPed::DetachPed()','CNetworkPed* CNetworkPed::CreateHosted(','void CNetworkPed::ApplyWeaponSnapshot(','void CNetworkPed::CancelClaim()','bool CNetworkPed::NextState(','bool CNetworkPed::AcceptState(')]
+  methods=[block(ped,re.escape(signature)+r'[^{}]*\{') for signature in ('CNetworkPed::CNetworkPed(int pedid','CNetworkPed::~CNetworkPed()','bool CNetworkPed::HasValidPed() const','void CNetworkPed::DetachPed()','CNetworkPed* CNetworkPed::CreateHosted(','void CNetworkPed::ApplyWeaponSnapshot(','void CNetworkPed::CancelClaim()','bool CNetworkPed::NextState(','bool CNetworkPed::AcceptState(','bool CNetworkPed::CanAcceptState(')]
   methods += [block(mgr,re.escape(signature)+r'[^{}]*\{') for signature in ('CNetworkPed* CNetworkPedManager::GetPed(int','CNetworkPed* CNetworkPedManager::GetPed(CEntity*','void CNetworkPedManager::Add(','void CNetworkPedManager::Remove(','void CNetworkPedManager::HandlePedDestruction(','void CNetworkPedManager::RemoveInvalidPeds()','unsigned char CNetworkPedManager::AddToTempList(','bool CNetworkPedManager::AcceptSpawn(','bool CNetworkPedManager::AcceptRemoval(','bool CNetworkPedManager::PinGangWarPedToHost(','void CNetworkPedManager::RequestReset()','void CNetworkPedManager::ProcessPendingReset()','void CNetworkPedManager::Clear()','void CNetworkPedManager::Init()','bool CNetworkPedManager::NativeReady()','bool CNetworkPedManager::Defer(','void CNetworkPedManager::ProcessPendingNative()')]
   for packet in ('PED_SPAWN','PED_CONFIRM','PED_REMOVE','ASSIGN_PED','PED_ONFOOT','PED_DRIVER_UPDATE','PED_PASSENGER_UPDATE','PED_REPLAY','PED_PIN'):
    methods += [block(handlers,r'PACKET_HANDLER\(\s*ePacketType::'+packet+r'\b[^{}]*\{')]
   prefix=includes_only(mgr[:mgr.index('CNetworkPed* CNetworkPedManager::GetPed(int')])
   (out/'client_functions.inc').write_text(prefix+'\n\n'+'\n\n'.join(methods))
   shutil.copyfile(HERE/'client_doubles.h',out/'client_doubles.h')
- shutil.copyfile(HERE/('server_tests.cpp' if a.suite=='server' else 'client_tests.cpp' if a.suite=='client' else 'tests.cpp'),out/'tests.cpp')
- cmd=['cl.exe','/nologo','/std:c++17','/EHsc','/W4','/DNDEBUG','/DNOMINMAX','/DCOOP_CLIENT' if a.suite=='client' else '/DCOOP_SERVER','tests.cpp','/I'+str(out/'source/shared'),'/I'+str(out/'source/third_party'),'/Fe:tests.exe','/Fo:tests.obj']
+ shutil.copyfile(HERE/test_name,out/'tests.cpp')
+ cmd=['cl.exe','/nologo','/std:c++17','/EHsc','/W4','/DNDEBUG','/DNOMINMAX','/DCOOP_CLIENT' if a.suite in ('client','passenger') else '/DCOOP_SERVER','tests.cpp','/I'+str(out/'source/shared'),'/I'+str(out/'source/third_party'),'/Fe:tests.exe','/Fo:tests.obj']
  env=r'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat'
  (out/'compile.cmd').write_text('@echo off\ncall "'+env+'" x64_x86 > environment.log 2>&1\nif errorlevel 1 exit /b 1\n'+subprocess.list2cmdline(cmd)+'\n')
  processEnv=os.environ.copy();processEnv.pop('GTA_SA_DIR',None)

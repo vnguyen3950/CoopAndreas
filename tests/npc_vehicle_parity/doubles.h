@@ -89,6 +89,7 @@ struct CNetworkPed
     bool HasValidPed() const { return !m_pPed || m_pPed->valid; } // Server records have no native actor; native clients are checked by caller.
     bool NextState(NPCSync::Stamp& stamp);
     bool AcceptState(const NPCSync::Stamp& stamp);
+    bool CanAcceptState(const NPCSync::Stamp& stamp) const;
     int m_nPedId = 7;
     bool m_bSyncing = false;
     CPed* m_pPed = nullptr;

@@ -33,6 +33,7 @@ public:
 	NPCSync::Stamp GetStamp() const { return {m_generation, m_ownerEpoch, m_stateSequence}; }
 	bool NextState(NPCSync::Stamp& stamp);
 	bool AcceptState(const NPCSync::Stamp& stamp);
+	bool CanAcceptState(const NPCSync::Stamp& stamp) const;
 
 	static CNetworkPed* CreateHosted(CPed* pPed);
 	bool HasValidPed() const;

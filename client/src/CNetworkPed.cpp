@@ -291,8 +291,13 @@ bool CNetworkPed::NextState(NPCSync::Stamp& stamp)
 }
 bool CNetworkPed::AcceptState(const NPCSync::Stamp& stamp)
 {
+    if (!CanAcceptState(stamp)) return false;
+    m_stateSequence = stamp.sequence;
+    return true;
+}
+bool CNetworkPed::CanAcceptState(const NPCSync::Stamp& stamp) const
+{
     if (!HasValidPed() || !stamp.SameOwner(GetStamp()) || !stamp.State()) return false;
     if (stamp.sequence <= m_stateSequence && !(m_bAllowReplay && stamp.sequence == m_stateSequence)) return false;
-    m_stateSequence = stamp.sequence;
     return true;
 }

@@ -288,12 +288,24 @@ PACKET_HANDLER(ePacketType::PED_PASSENGER_UPDATE, Packets::Peds::PedPassengerSyn
         pPedPassengerSync->seatid >= pNetworkVehicle->m_pVehicle->m_nMaxPassengers ||
         (pNetworkVehicle->m_pVehicle->m_apPassengers[pPedPassengerSync->seatid] &&
          pNetworkVehicle->m_pVehicle->m_apPassengers[pPedPassengerSync->seatid] != pNetworkPed->m_pPed) ||
-        !pNetworkPed->AcceptState(pPedPassengerSync->stamp)) return;
-    pNetworkPed->m_pPed->m_nAreaCode = pPedPassengerSync->area;
-    if (!pNetworkPed->m_pPed->m_nPedFlags.bInVehicle || pNetworkVehicle->m_pVehicle->m_pDriver == pNetworkPed->m_pPed)
+        !pNetworkPed->CanAcceptState(pPedPassengerSync->stamp)) return;
+    if (!pNetworkPed->m_pPed->m_nPedFlags.bInVehicle ||
+        pNetworkPed->m_pPed->m_pVehicle != pNetworkVehicle->m_pVehicle ||
+        pNetworkVehicle->m_pVehicle->m_apPassengers[pPedPassengerSync->seatid] != pNetworkPed->m_pPed)
     {
         pNetworkPed->WarpIntoVehiclePassenger(pNetworkVehicle->m_pVehicle, pPedPassengerSync->seatid);
     }
+
+    // Native task changes can fail or invalidate a binding. Consume the state
+    // sequence only after the authoritative vehicle and seat actually match.
+    pNetworkPed = CNetworkPedManager::GetPed(pPedPassengerSync->pedid);
+    pNetworkVehicle = CNetworkVehicleManager::GetVehicle(pPedPassengerSync->vehicleid);
+    if (!pNetworkPed || !pNetworkVehicle || !pNetworkVehicle->m_pVehicle ||
+        !pNetworkPed->m_pPed->m_nPedFlags.bInVehicle ||
+        pNetworkPed->m_pPed->m_pVehicle != pNetworkVehicle->m_pVehicle ||
+        pNetworkVehicle->m_pVehicle->m_apPassengers[pPedPassengerSync->seatid] != pNetworkPed->m_pPed ||
+        !pNetworkPed->AcceptState(pPedPassengerSync->stamp)) return;
+    pNetworkPed->m_pPed->m_nAreaCode = pPedPassengerSync->area;
 
     pNetworkPed->ApplyWeaponSnapshot(pPedPassengerSync->weaponSnapshot);
 
@@ -358,7 +370,15 @@ PACKET_HANDLER(ePacketType::PED_REPLAY, Packets::Peds::PedReplay* packet)
     ped->m_bAllowReplay = true;
     GetPacketHandler().ProcessPacket(&state);
     // Native state operations can destroy/recreate a pool entry; do not retain the wrapper across them.
-    if (auto* current = CNetworkPedManager::GetPed(id)) current->m_bAllowReplay = false;
+    if (auto* current = CNetworkPedManager::GetPed(id)) {
+        auto* currentVehicle = vehicle >= 0 ? CNetworkVehicleManager::GetVehicle(vehicle) : nullptr;
+        const bool retryPassenger = packet->mode == 3 && packet->passenger.Valid() && current->CanAcceptState(stamp) &&
+            (!currentVehicle || !currentVehicle->m_pVehicle || !current->m_pPed->m_nPedFlags.bInVehicle ||
+                current->m_pPed->m_pVehicle != currentVehicle->m_pVehicle ||
+                currentVehicle->m_pVehicle->m_apPassengers[packet->passenger.seatid] != current->m_pPed);
+        current->m_bAllowReplay = false;
+        if (retryPassenger) CNetworkPedManager::Defer(*packet, id, stamp, true);
+    }
 }
 PACKET_HANDLER(ePacketType::PED_PIN, Packets::Peds::PedPin* packet)
 {

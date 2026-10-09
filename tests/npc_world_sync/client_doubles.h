@@ -28,6 +28,7 @@ inline void Factory::Send(Packet&p){sent.emplace_back(p.Clone());}
 namespace logger {template<class...T>void warn(const char*,T...) {}}
 static int nativeCreates=0,nativeDeletes=0,modelRequests=0,warps=0;
 static bool poolFull=false,modelsAvailable=true;
+static bool passengerWarpSucceeds=true;
 struct CEntity {virtual ~CEntity()=default;};class CPed;class CVehicle;
 struct CTaskSimpleUseGun {CVector m_vecTarget{};CTaskSimpleUseGun(CEntity*,CVector,int,int,bool){}void MakeAbortable(CPed*,int,void*){}};
 constexpr int TASK_SECONDARY_ATTACK=0,ABORT_PRIORITY_URGENT=0;
@@ -88,7 +89,7 @@ static int gGameState=0;static uint32_t tick=1000;inline uint32_t GetTickCount()
 #include "client_manager_decl.inc"
 // Native task effects are recorded doubles; their callers and validation remain actual source.
 inline void CNetworkPed::WarpIntoVehicleDriver(CVehicle*v){++warps;m_pPed->m_pVehicle=v;m_pPed->m_nPedFlags.bInVehicle=true;v->m_pDriver=m_pPed;}
-inline void CNetworkPed::WarpIntoVehiclePassenger(CVehicle*v,int seat){++warps;m_pPed->m_pVehicle=v;m_pPed->m_nPedFlags.bInVehicle=true;v->m_apPassengers[seat]=m_pPed;}
+inline void CNetworkPed::WarpIntoVehiclePassenger(CVehicle*v,int seat){++warps;if(!passengerWarpSucceeds)return;m_pPed->m_pVehicle=v;m_pPed->m_nPedFlags.bInVehicle=true;v->m_apPassengers[seat]=m_pPed;}
 inline void CNetworkPed::RemoveFromVehicle(CVehicle*){m_pPed->m_pVehicle=nullptr;m_pPed->m_nPedFlags.bInVehicle=false;}
 #include "client_functions.inc"
 static unsigned checks=0,failures=0;

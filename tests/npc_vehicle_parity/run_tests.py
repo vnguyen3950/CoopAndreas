@@ -98,7 +98,7 @@ def main():
         "\nvoid ClientDriver(Packets::Peds::PedDriverUpdate* pPedDriverUpdate) " + client +
         "\nvoid CaptureDriver(CNetworkPed* pNetworkPed, CPed* pPed, CVehicle* pVehicle, CNetworkVehicle* pNetworkVehicle) { do " + sender + " while (false); }")
     helpers = "\n".join(block(read("client/src/CNetworkPed.cpp"), re.escape(signature) + r"[^{}]*\{", True)
-        for signature in ("bool CNetworkPed::NextState(", "bool CNetworkPed::AcceptState("))
+        for signature in ("bool CNetworkPed::NextState(", "bool CNetworkPed::AcceptState(", "bool CNetworkPed::CanAcceptState("))
     (output / "extracted_handlers.h").write_text(helpers + "\n" + handlers, encoding="utf-8")
     for p in ("tests.cpp", "doubles.h"):
         shutil.copyfile(HERE / p, output / p)

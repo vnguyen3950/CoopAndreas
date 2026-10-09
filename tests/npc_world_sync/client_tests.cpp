@@ -25,11 +25,24 @@ int main(){
  PedReplay passenger;passenger.mode=3;passenger.passenger.pedid=4;passenger.passenger.stamp={10,1,3};passenger.passenger.seatid=2;
  CNetworkVehicleManager::vehicle=nullptr;receive(passenger);expect(Deferred().size()==1,"Missing passenger vehicle remains pending independently of driver state.");
  CNetworkVehicleManager::vehicle=&networkCar;tick+=300;CNetworkPedManager::ProcessPendingNative();expect(car.m_apPassengers[2]==actor&&Deferred().empty(),"Late passenger vehicle applies bounded seat state.");
- AssignPedSyncer assign;assign.pedid=4;assign.stamp={10,2,3};assign.ownerid=0;receive(assign);
+ // Actual passenger handler must not commit state until native task placement
+ // succeeds; an occupied target is never displaced and reliable replay survives.
+ CPed occupant(PED_TYPE_PLAYER1);car.m_apPassengers[4]=&occupant;
+ passenger.passenger.seatid=4;passenger.passenger.stamp.sequence=4;auto oldWarps=warps;
+ receive(passenger);
+ expect(car.m_apPassengers[4]==&occupant&&warps==oldWarps&&ped->m_stateSequence==3,"Occupied target seat rejects warp and leaves sequence unconsumed.");
+ expect(Deferred().size()==1,"Reliable passenger replay remains pending while target seat is occupied.");
+ car.m_apPassengers[4]=nullptr;passengerWarpSucceeds=false;tick+=300;CNetworkPedManager::ProcessPendingNative();
+ expect(ped->m_stateSequence==3&&Deferred().size()==1&&car.m_apPassengers[4]==nullptr,"Native passenger task failure retains replay without consuming its sequence.");
+ passengerWarpSucceeds=true;tick+=300;CNetworkPedManager::ProcessPendingNative();
+ expect(ped->m_stateSequence==4&&Deferred().empty()&&car.m_apPassengers[4]==actor,"Successful retry consumes sequence only after native target placement matches.");
+ passenger.passenger.seatid=-1;passenger.passenger.stamp.sequence=5;receive(passenger);
+ expect(ped->m_stateSequence==4&&Deferred().empty(),"Malformed retained passenger seat cannot index native array or enter retry queue.");
+ AssignPedSyncer assign;assign.pedid=4;assign.stamp={10,2,4};assign.ownerid=0;receive(assign);
  expect(ped->m_bSyncing&&ped->m_ownerEpoch==2,"Actual assignment sets explicit local ownership.");
  receive(assign);expect(ped->m_bSyncing,"Repeated assignment cannot toggle ownership off.");
  assign.ownerid=1;receive(assign);expect(ped->m_bSyncing&&ped->m_ownerId==0,"Same epoch cannot change owner identity.");
- NPCSync::Stamp next;expect(ped->NextState(next)&&next.sequence==4&&next.epoch==2,"New owner continues received state sequence.");
+ NPCSync::Stamp next;expect(ped->NextState(next)&&next.sequence==5&&next.epoch==2,"New owner continues received state sequence.");
  PedRemove oldRemove;oldRemove.pedid=4;oldRemove.stamp={10,1,3};receive(oldRemove);expect(CNetworkPedManager::GetPed(4)==ped,"Old owner removal cannot erase current epoch.");
  CNetworkPedManager::Clear();gGameState=0;Events::initScriptsEvent.before.Fire();
  spawn.stamp={20,1,0};receive(spawn);replay.onFoot.stamp={20,1,1};receive(replay);
