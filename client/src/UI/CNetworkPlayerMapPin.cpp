@@ -27,7 +27,8 @@ float CalculateMarkerAngle(CNetworkPlayer* player)
 {
 	float baseAngle = player->m_pPed->m_nPhysicalFlags.bOnSolidSurface ? player->m_pPed->GetHeading() : player->m_onFootSnapshotInterpolated.currentRotation.m_angle;
 
-	if (player->m_pPed->m_pVehicle && player->m_pPed->m_nPedFlags.bInVehicle)
+	if (player->m_pPed->m_pVehicle && player->m_pPed->m_nPedFlags.bInVehicle
+		&& CPools::ms_pVehiclePool && CPools::ms_pVehiclePool->IsObjectValid(player->m_pPed->m_pVehicle))
 	{
 		baseAngle = player->m_pPed->m_pVehicle->GetHeading();
 	}
@@ -49,10 +50,14 @@ void CNetworkPlayerMapPin::Process()
 		if (!CNetwork::m_bAuthenticated || !CPlayerVitalsSync::HasBoundPed(player))
 			continue;
 
-		const auto& position = player->m_pPed->GetPosition();
+		CVector position = player->m_pPed->GetPosition();
+		if (player->m_pPed->m_nPedFlags.bInVehicle && player->m_pPed->m_pVehicle
+			&& CPools::ms_pVehiclePool && CPools::ms_pVehiclePool->IsObjectValid(player->m_pPed->m_pVehicle))
+			position = player->m_pPed->m_pVehicle->GetPosition();
 		if (!std::isfinite(position.x) || !std::isfinite(position.y)) continue;
 		CVector2D pos = GetPlayerMarkerPosition(position);
 		float angle = CalculateMarkerAngle(player);
+		if (!std::isfinite(angle)) continue;
 		// The native sprite rotates directly in screen pixels; use one scale
 		// for both axes so the marker keeps its proportions at any aspect ratio.
 		const float markerSize = 5.0f * RsGlobal.maximumHeight / 360.0f;
