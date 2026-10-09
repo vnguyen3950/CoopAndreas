@@ -4,7 +4,7 @@ Use a separate compatible installation that you own, the normal CoopAndreas laun
 
 Close lab games, the launcher and server before updating. Start the server, then launch both clients with distinct names. For this follow-up, start a fresh **New Game**: the persistent main script changed for the race handoff, and existing saves have not been validated against the changed instruction offsets.
 
-The local object protocol is **0.3.1-alpha**. Restart the server after replacing its executable; older 0.3.0-alpha binaries are rejected by the version handshake.
+The local object/vehicle protocol is **0.3.2-alpha**. Restart the server after replacing its executable; older 0.3.0-alpha and 0.3.1-alpha binaries are rejected by the version handshake.
 
 ## Mission launch
 
@@ -37,6 +37,8 @@ Some mechanics remain host-owned, including photography, book/object collection,
 - Guest messages currently show podium/winner/disqualification outcomes; individual numeric standings need another targeted text API.
 
 ## Reports
+
+The new upstream integrations also need the vehicle and interior/ped-lifetime checks listed in [UPSTREAM_PRS.md](UPSTREAM_PRS.md). In particular, compare player-driven and idle vehicle states and check cancelled door transitions after mission transfers. NPC-driven vehicle flag parity is outside the imported vehicle feature.
 
 Record mission name/ID, host/guest role, client count, one or multiple PCs, exact steps, last objective and result. Identify the binary/script pair with the local build manifest and include relevant screenshots/crash/server logs. Keep account keys and credentials out of reports.
 

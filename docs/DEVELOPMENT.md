@@ -13,8 +13,9 @@ This is a source development branch. All four x86 release targets and the full s
 - Replicate bounded mission-created object state/lifetimes and validate guest bullet hits before native host damage. Object queries remain host-local. Lifecycle/setters share reliable SCRIPT ordering, with model-ready queues, ownership/revision checks and non-reused IDs.
 - Add host-authoritative guest checkpoint racing for the High Stakes instance, with a persistent main-block handoff, separate guest cars, ordered progress and results. Host story qualification remains against the original NPCs.
 - Default the mission menu to the adapted candidates and add host-only guest input predicates for future cargo work.
+- Integrate reviewed upstream vehicle-state/dirt and ped-lifetime/interior-transition fixes. See [upstream PR decisions](UPSTREAM_PRS.md) for provenance, limits and deferred features.
 
-The object extension uses local protocol **0.3.1-alpha**. Clients and server must match; the existing handshake rejects 0.3.0-alpha binaries. Launcher authentication is unchanged.
+The current object/vehicle extension uses local protocol **0.3.2-alpha**. Clients and server must match; the existing handshake rejects earlier 0.3.0-alpha and 0.3.1-alpha binaries. Launcher authentication is unchanged.
 
 ## Adapted story candidates
 

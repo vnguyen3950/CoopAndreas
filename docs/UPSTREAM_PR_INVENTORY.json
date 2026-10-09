@@ -1,0 +1,644 @@
+{
+  "review_base": "1252a8a13c90e811e414920bf003a5cba776cfcd",
+  "pull_requests": [
+    {
+      "number": 112,
+      "title": "Add pickup sync and stat sync",
+      "state": "OPEN",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/112",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Limited stat repair; full pickup/session feature deferred"
+    },
+    {
+      "number": 111,
+      "title": "Add vehicle engine, lights, siren, alarm state sync",
+      "state": "OPEN",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/111",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Selected: vehicle flags"
+    },
+    {
+      "number": 110,
+      "title": "Add vehicle dirt level sync",
+      "state": "OPEN",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/110",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Selected: dirt state"
+    },
+    {
+      "number": 109,
+      "title": "Add vehicle dirt level & player head movement sync",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/109",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 108,
+      "title": "Add Game Paused discord state, vehicle dirt level sync, player head movement sync",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/108",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 106,
+      "title": "Synchronization of: Money, wanted level, and cheat codes for all players",
+      "state": "OPEN",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/106",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Deferred: shared wallet/wanted/cheat policy"
+    },
+    {
+      "number": 105,
+      "title": "Implement passenger door hint",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/105",
+      "already_in_base": true,
+      "merge_commit": "cd5ca45bf09d5c54c7403428d13df1422fa736b7",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 104,
+      "title": "Fix weather time and lightning synchronization",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/104",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 103,
+      "title": "Add ImGui mission runner",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/103",
+      "already_in_base": true,
+      "merge_commit": "e8cfc739f9b83eb8eb2a0cbe5cc27f80eee45de8",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 102,
+      "title": "Fix 0x4D68BA crash",
+      "state": "OPEN",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/102",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Selected: ped lifetime fix"
+    },
+    {
+      "number": 101,
+      "title": "Fix cop skin sync",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/101",
+      "already_in_base": true,
+      "merge_commit": "de2373da147e59e057e7f03b2550f01e44238750",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 100,
+      "title": "Implement moon sync",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/100",
+      "already_in_base": true,
+      "merge_commit": "1a66bb4843e78f1bdbac7b2c6c44a989bb405a3e",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 99,
+      "title": "Added default font fallback",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/99",
+      "already_in_base": true,
+      "merge_commit": "4d4b2fd18e77f10ede17571a7b4db75061ea875b",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 98,
+      "title": "implement network packet debugger with imgui, some work on the 4th mission",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/98",
+      "already_in_base": true,
+      "merge_commit": "486843a0b6123c0f3155c473d1f86119c2ccf3dc",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 97,
+      "title": "Show player ping in player list",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/97",
+      "already_in_base": true,
+      "merge_commit": "9b1a2bf5a3044541bca4b172b68ca5653ffe9ee2",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 96,
+      "title": "Guard EnEx doors during transitions",
+      "state": "OPEN",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/96",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Selected: EnEx guards"
+    },
+    {
+      "number": 95,
+      "title": "Fix car generator handles for expanded vehicle pool",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/95",
+      "already_in_base": true,
+      "merge_commit": "aac77c50fa187b91a326f4525bef7ce9dae890fb",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 94,
+      "title": "Synchronize EnEx enter and exit transitions",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/94",
+      "already_in_base": true,
+      "merge_commit": "c6cb324dc4181bbfa65781d11eddbb93fe83893f",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 92,
+      "title": "Add wanted level sync",
+      "state": "OPEN",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/92",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Deferred: draft wanted policy and mission scope"
+    },
+    {
+      "number": 91,
+      "title": "Rework player list",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/91",
+      "already_in_base": true,
+      "merge_commit": "8eb5c02292f71e698ebb688162ebe907493d6f3e",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 90,
+      "title": "GNU/Linux building support and with documentation",
+      "state": "OPEN",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/90",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Deferred: Linux validation and build-layout port"
+    },
+    {
+      "number": 89,
+      "title": "GNU/Linux building support on Xmake and with documentation . ",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/89",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 88,
+      "title": "Make it work/compile with latest plugin-sdk",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/88",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 85,
+      "title": "Fixed server compiling for Linux",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/85",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 84,
+      "title": "Add moon size sync",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/84",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 80,
+      "title": "Add CI checks for server and proxy targets",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/80",
+      "already_in_base": true,
+      "merge_commit": "49c74b9e2fc353f566a195d3ac63ac7bae0827d5",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 79,
+      "title": "CConfigLoader",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/79",
+      "already_in_base": true,
+      "merge_commit": "f896a67c1cfc283ce02e738a39cc110f82408288",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 78,
+      "title": "Add wanted level sync",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/78",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 77,
+      "title": "Moving to xmake",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/77",
+      "already_in_base": true,
+      "merge_commit": "4db30c48baa6aae128bcf71a98cf11bba9633c2a",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 76,
+      "title": "(Refactor, Fix) CConfigLoader",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/76",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 75,
+      "title": "proxy and custom menu mgr",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/75",
+      "already_in_base": true,
+      "merge_commit": "a8e2f7fd0233c393c71de1dc022763289bef8032",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 72,
+      "title": "Channel arrangement",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/72",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 70,
+      "title": "Add server config",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/70",
+      "already_in_base": true,
+      "merge_commit": "97ea462f627b48fe46c5a37912448740014899f5",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 69,
+      "title": "Fix vertical camera movement during a camera fade",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/69",
+      "already_in_base": true,
+      "merge_commit": "355100b7358fc76b969ca124f58daa816eb421d4",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 68,
+      "title": "Add redirect for CWeapon::DoBulletImpact at 0x741185",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/68",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 66,
+      "title": "Update README.md",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/66",
+      "already_in_base": true,
+      "merge_commit": "30fe14dbb50fb4adbcb8eb60b9293a5231393b5a",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 65,
+      "title": "Some fixes",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/65",
+      "already_in_base": true,
+      "merge_commit": "1474ea61f23e60880bca08041722ebde098bc1c9",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 64,
+      "title": "Bumped to 4.7.2, added gamepath selection in launcher, ui fixes, crash fixes, admin rights",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/64",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 63,
+      "title": "v0.1.1-alpha stable cross platform version (edited request)",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/63",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 62,
+      "title": "v0.1.1-alpha stable cross platform version ",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/62",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 61,
+      "title": "Update Coop Server",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/61",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 60,
+      "title": "Fix linux build",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/60",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 58,
+      "title": "Feat : Radio Sync",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/58",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 57,
+      "title": "Configured version.rc",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/57",
+      "already_in_base": true,
+      "merge_commit": "e929d2ba1015456906707f2a29de10b6b475cd57",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 56,
+      "title": "Improve player hud display",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/56",
+      "already_in_base": true,
+      "merge_commit": "f86a54d88026526aa0a0ba8b8c187c3c8a46d3f4",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 53,
+      "title": "Fixed unicode (move caret and erase character)",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/53",
+      "already_in_base": true,
+      "merge_commit": "2cae93f4664769f50456b67766a73ff85cf7fa03",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 52,
+      "title": "Unicode support",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/52",
+      "already_in_base": true,
+      "merge_commit": "ebdf6ac8123286b93dd1c68a65186f25b93350f5",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 51,
+      "title": "Fixed chat & Some improvements",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/51",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 50,
+      "title": "Player name tag is no longer displayed behind objects",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/50",
+      "already_in_base": true,
+      "merge_commit": "f109220d7764cc81faccf9b98b0af6f9dd9cb0e4",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 49,
+      "title": "Fix map player waypoint",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/49",
+      "already_in_base": true,
+      "merge_commit": "28fae0049d32247d3900505e980572eb21537616",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 48,
+      "title": "Fixes",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/48",
+      "already_in_base": true,
+      "merge_commit": "288819e3c1b755f35d1b3c7754bacaf02c80b3ce",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 47,
+      "title": "Some refactored code & See detail",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/47",
+      "already_in_base": true,
+      "merge_commit": "98b4c71ecb7283404aa4cf481074e94114c0be0a",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 46,
+      "title": "improve discord rich presence",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/46",
+      "already_in_base": true,
+      "merge_commit": "052bd2a563a4faf062618846a81ad26b499f4803",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 45,
+      "title": "Refactore code & See details",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/45",
+      "already_in_base": true,
+      "merge_commit": "073dc6f27ab0f74fdf8e19edf7261b9b545d0c4c",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 44,
+      "title": "Added Discord RPC",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/44",
+      "already_in_base": true,
+      "merge_commit": "5b5b69583d44b870b9c5ad38f843714869ab698a",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 43,
+      "title": "fix linking errors",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/43",
+      "already_in_base": true,
+      "merge_commit": "c0a0fd8c577b62c0b8babd36a993009dec4b062b",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 42,
+      "title": "separate ped sync and minor improvements",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/42",
+      "already_in_base": true,
+      "merge_commit": "72bba51018b009fed24ba67056eea0ab65d87661",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 37,
+      "title": "Task28",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/37",
+      "already_in_base": true,
+      "merge_commit": "3ccab846127d82b0e49eaf182101920f260c55fd",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 36,
+      "title": "Vs compatibable",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/36",
+      "already_in_base": true,
+      "merge_commit": "cc9cd9fe63665efdedb0fc14d8ee3f2e7060661c",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 35,
+      "title": "The new implementation of CoopAndreas Server",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/35",
+      "already_in_base": true,
+      "merge_commit": "cdf1e820933d1a543447b1f44c6b080099e292a3",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 33,
+      "title": "The New Implementation of Server (CoopAndreasServer)",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/33",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 31,
+      "title": "CoopAndreas Server Updates",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/31",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 30,
+      "title": "correcting VehicleComponentAdd to VehicleComponentRemove",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/30",
+      "already_in_base": true,
+      "merge_commit": "fda9876ee2e4a98e415ff947263e9c65510a6d76",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 15,
+      "title": "mouse fix patch",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/15",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 14,
+      "title": "fix mouse bug and added new no pause alt+tab",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/14",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 7,
+      "title": "Fix: Resolved game freeze caused by quotes in username",
+      "state": "CLOSED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/7",
+      "already_in_base": false,
+      "merge_commit": null,
+      "decision": "Closed historical or separately reviewed proposal"
+    },
+    {
+      "number": 6,
+      "title": "Changed function return type \"CUtil::IsMeleeWeapon\" from \"int\" to \"bool\"",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/6",
+      "already_in_base": true,
+      "merge_commit": "7ac0519f15ed6bf759ffdee6f3172f0a467c6b0b",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 5,
+      "title": "Decreased Enet Timeout",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/5",
+      "already_in_base": true,
+      "merge_commit": "8e678cbbc55c1476207c5cef0b643846972aed07",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 4,
+      "title": "Fixed Enet Client Connection",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/4",
+      "already_in_base": true,
+      "merge_commit": "c76afb99a82cad83714652dde8207b9e9fa7a9db",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 3,
+      "title": "Enet Old Library",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/3",
+      "already_in_base": true,
+      "merge_commit": "57c6cfeb3ecb1e79f1d6099d42e958b994d2565e",
+      "decision": "Already present in upstream base"
+    },
+    {
+      "number": 2,
+      "title": "fix: Enet Client",
+      "state": "MERGED",
+      "url": "https://github.com/Tornamic/CoopAndreas/pull/2",
+      "already_in_base": true,
+      "merge_commit": "43b615749566cfe1bfee4f222dda075106c8ecb8",
+      "decision": "Already present in upstream base"
+    }
+  ]
+}

@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-// Object packets require matching clients/server; the existing handshake rejects older builds.
-#define COOPANDREAS_VERSION "0.3.1-alpha"
+// Object/vehicle packets require matching clients/server; the handshake rejects older builds.
+#define COOPANDREAS_VERSION "0.3.2-alpha"
 struct Config
 {
     static constexpr uint16_t DEFAULT_PORT = 6767;
