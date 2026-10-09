@@ -9,6 +9,7 @@ namespace
 {
 constexpr DWORD DOOR_CLOSE_TIMEOUT_MS = 10000;
 constexpr float CLOSED_MATRIX_DIFFERENCE_SQ = 0.0004f;
+constexpr float TRANSITION_MAX_DISTANCE_SQ = 20.0f * 20.0f;
 
 struct DoorGuard
 {
@@ -19,12 +20,15 @@ struct DoorGuard
     CMatrix m_matrixClosed{};
     int m_nActiveTransitions = 0;
     DWORD m_nNoLeaseSince = 0;
+    bool m_bRetireWhenUnused = false;
 };
 
 struct CollisionParticipant
 {
     CEntity* m_pPed = nullptr;
     int m_nPedPoolRef = -1;
+    uint8_t m_nAreaCode = 0;
+    CVector m_vecStartPosition{};
     CEntity* m_pPreviousIgnoredCollision = nullptr;
     DoorGuard* m_pGuard = nullptr;
 };
@@ -153,6 +157,7 @@ DoorGuard* AcquireDoorGuard(CObject* pDoor)
         if (HasValidDoor(guard) && guard.m_nDoorPoolRef == poolRef)
         {
             guard.m_nNoLeaseSince = 0;
+            guard.m_bRetireWhenUnused = false;
             return &guard;
         }
         // An old door's registered reference may have been nulled while its
@@ -258,6 +263,12 @@ void DetachGuardParticipants(DoorGuard& guard)
         if (item.second.m_participant.m_pGuard == &guard) DetachParticipant(item.second.m_participant);
 }
 
+void CancelParticipant(CollisionParticipant& participant)
+{
+    if (participant.m_pGuard) participant.m_pGuard->m_bRetireWhenUnused = true;
+    DetachParticipant(participant);
+}
+
 void AttachParticipant(CollisionParticipant& participant, DoorGuard* pGuard, CPed* pPed)
 {
     if (participant.m_pGuard)
@@ -267,6 +278,8 @@ void AttachParticipant(CollisionParticipant& participant, DoorGuard* pGuard, CPe
 
     participant.m_pPed = pPed;
     participant.m_nPedPoolRef = CPools::GetPedRef(pPed);
+    participant.m_nAreaCode = pPed->m_nAreaCode;
+    participant.m_vecStartPosition = pPed->GetPosition();
     pPed->RegisterReference(&participant.m_pPed);
     participant.m_pPreviousIgnoredCollision = pPed->m_pEntityIgnoredCollision;
     if (participant.m_pPreviousIgnoredCollision == pGuard->m_pBlocker)
@@ -293,11 +306,19 @@ bool ProcessParticipant(CollisionParticipant& participant)
     if (!HasValidPed(participant.m_pPed, participant.m_nPedPoolRef)
         || !HasValidDoor(*participant.m_pGuard))
     {
-        DetachParticipant(participant);
+        CancelParticipant(participant);
         return false;
     }
 
     CPed* pPed = static_cast<CPed*>(participant.m_pPed);
+    // Mission teleports and death can replace a door task without producing
+    // the native completion callback. Release only this artificial guard lease.
+    if (pPed->m_fHealth <= 0.0f || pPed->m_nAreaCode != participant.m_nAreaCode
+        || VectorDifferenceSq(pPed->GetPosition(), participant.m_vecStartPosition) > TRANSITION_MAX_DISTANCE_SQ)
+    {
+        CancelParticipant(participant);
+        return false;
+    }
     if (pPed->m_pEntityIgnoredCollision != participant.m_pGuard->m_pBlocker)
     {
         pPed->m_pEntityIgnoredCollision = participant.m_pGuard->m_pBlocker;
@@ -444,6 +465,11 @@ void ProcessDoorGuards()
             ++it;
             continue;
         }
+        if (guard.m_bRetireWhenUnused)
+        {
+            it = DestroyDoorGuard(it);
+            continue;
+        }
         if (IsRealDoorClosed(guard))
         {
             it = DestroyDoorGuard(it);
@@ -567,7 +593,7 @@ void CEntryExitTransitionSync::Process()
 
     if (g_localParticipant.m_pGuard)
     {
-        ProcessParticipant(g_localParticipant);
+        if (!ProcessParticipant(g_localParticipant)) ms_pLocalAnimatedTransition = nullptr;
     }
 
     for (auto it = g_remoteTransitions.begin(); it != g_remoteTransitions.end();)
@@ -579,11 +605,13 @@ void CEntryExitTransitionSync::Process()
         if (!pNetworkPlayer || pNetworkPlayer->m_pPed != pTransitionPed
             || !HasValidPed(pTransitionPed, transition.m_nPedPoolRef))
         {
+            CancelParticipant(transition.m_participant);
             it = ClearRemoteTransition(it, pNetworkPlayer);
             continue;
         }
         if (pNetworkPlayer->m_pPed->m_nPedFlags.bInVehicle)
         {
+            CancelParticipant(transition.m_participant);
             it = ClearRemoteTransition(it, pNetworkPlayer);
             continue;
         }
