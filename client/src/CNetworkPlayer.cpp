@@ -6,9 +6,6 @@
 
 CNetworkPlayer::~CNetworkPlayer()
 {
-    if (m_pPed == nullptr)
-        return;
-
     this->DestroyPed();
 }
 
@@ -26,13 +23,29 @@ CNetworkPlayer::CNetworkPlayer(int id, CVector position)
 
 void CNetworkPlayer::CreatePed(int id, CVector position)
 {
-    unsigned int actorId = 0;
+    if (m_pPed) DestroyPed();
+    m_pPed = nullptr;
+    m_nPedRef = -1;
+    if (id != m_iPlayerId || id < 0 || id >= Config::MAX_SERVER_PLAYERS || !CPools::ms_pPedPool) return;
+    unsigned int actorId = 0xFFFFFFFFu;
     int playerId = id + 2;
 
     plugin::Command<Commands::CREATE_PLAYER>(playerId, position.x, position.y, position.z, &actorId);
+    auto* created = CWorld::Players[playerId].m_pPed;
+    if (!created || created == CWorld::Players[0].m_pPed || created == CWorld::Players[1].m_pPed) return;
+    if (!CPools::ms_pPedPool->IsObjectValid(created)) return;
+    const int createdReference = CPools::GetPedRef(created);
+    if (createdReference < 0 || CPools::GetPed(createdReference) != created) return;
+    m_pPed = created;
+    m_nPedRef = createdReference;
+    actorId = 0xFFFFFFFFu;
     plugin::Command<Commands::GET_PLAYER_CHAR>(playerId, &actorId);
-
-    m_pPed = (CPlayerPed*)CPools::GetPed(actorId);
+    if (actorId > 0x7FFFFFFFu) { DestroyPed(); return; }
+    auto* ped = (CPlayerPed*)CPools::GetPed(actorId);
+    if (!ped || ped != created || static_cast<int>(actorId) != createdReference
+        || !ped->m_pPlayerData || !ped->m_pPlayerData->m_pPedClothesDesc) { DestroyPed(); return; }
+    m_pPed = ped;
+    m_nPedRef = static_cast<int>(actorId);
 
     m_pPed->SetOrientation(0.0f, 0.0f, 0.0f);
 
@@ -46,25 +59,28 @@ void CNetworkPlayer::CreatePed(int id, CVector position)
 
 void CNetworkPlayer::DestroyPed()
 {
-    if (m_pPed->m_pVehicle)
+    auto* ped = m_pPed;
+    const int reference = m_nPedRef;
+    // Clear before native calls, including reentrant/repeated teardown.
+    m_pPed = nullptr;
+    m_nPedRef = -1;
+    if (!ped || reference < 0 || m_iPlayerId < 0 || m_iPlayerId >= Config::MAX_SERVER_PLAYERS
+        || !CPools::ms_pPedPool || CPools::GetPed(reference) != ped) return;
+    const int internal = m_iPlayerId + 2;
+    if (CWorld::Players[internal].m_pPed != ped || CWorld::Players[0].m_pPed == ped
+        || CWorld::Players[1].m_pPed == ped) return;
+    // Establish pool generation and remote PlayerInfo ownership before any
+    // native dereference. Never delete recycled/local/unbound peds.
+    if (!ped->IsVTableValid() || !ped->m_pPlayerData) return;
+    if (ped->m_pVehicle)
     {
-        plugin::Command<Commands::WARP_CHAR_FROM_CAR_TO_COORD>(CPools::GetPedRef(m_pPed), 0.f, 0.f, 0.f);
+        plugin::Command<Commands::WARP_CHAR_FROM_CAR_TO_COORD>(reference, 0.f, 0.f, 0.f);
     }
-
-    uintptr_t pedPtr = (uintptr_t)m_pPed;
-    if (m_pPed->IsVTableValid())
-    {
-        CWorld::Remove(m_pPed);
-
-        // destroy the ped
-        __asm
-        {
-			mov ecx, pedPtr
-			mov ebx, [ecx]  // vtable addr
-			push 1  // unused arg
-			call[ebx]  // call destructor
-        }
-    }
+    CWorld::Remove(ped);
+    // The SDK virtual delete dispatches the native deleting destructor/pool
+    // deallocation once. Do not call operator delete separately afterward.
+    delete ped;
+    if (CWorld::Players[internal].m_pPed == ped) CWorld::Players[internal].m_pPed = nullptr;
 }
 
 void CNetworkPlayer::Respawn()
@@ -79,6 +95,7 @@ void CNetworkPlayer::Respawn()
 
 int CNetworkPlayer::GetInternalId()  // most used for CWorld::PlayerInFocus
 {
+    if (!m_pPed) return -1;
     byte playerNumber = 0;
 
     for (; playerNumber < Config::MAX_SERVER_PLAYERS + 2; playerNumber++)

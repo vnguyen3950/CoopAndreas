@@ -141,6 +141,7 @@ void CNetwork::Disconnect()
     GetPacketBuffer().Clear();
     CCutsceneVotes::Reset();
     COpCodeSync::ms_bLoadingCutscene = false;
+    CNetworkPlayerManager::RequestReset();
     if (!m_bConnected)
         return;
 

@@ -11,6 +11,9 @@
 
 PACKET_HANDLER(ePacketType::PLAYER_CONNECTED, Packets::System::PlayerConnected* pPlayerConnected)
 {
+    if (!CNetwork::m_bAuthenticated) return;
+    // Remove before CREATE_PLAYER can replace the native PlayerInfo binding.
+    CNetworkPlayerManager::RemoveById(pPlayerConnected->payload.playerid);
     CNetworkPlayer* pNetworkPlayer =
         new CNetworkPlayer(pPlayerConnected->payload.playerid, CVector(2246.506f, -1259.552f, 23.9531f));
     CNetworkPlayerManager::Add(pNetworkPlayer);
@@ -66,6 +69,7 @@ PACKET_HANDLER(ePacketType::PLAYER_DISCONNECTED, Packets::System::PlayerDisconne
 PACKET_HANDLER(ePacketType::PLAYER_HANDSHAKE, Packets::System::PlayerHandshake* pPlayerHandshake)
 {
     CCutsceneVotes::Reset();
+    CNetworkPlayerManager::Reset();
     CNetworkPlayerManager::m_nMyId = pPlayerHandshake->yourid;
     CNetwork::m_bAuthenticated = true;
     CPatch::RevertTemporaryPatches();

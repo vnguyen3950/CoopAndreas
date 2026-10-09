@@ -116,6 +116,7 @@ void CNetworkPlayerList::DrawName(CNetworkPlayer* pNetworkPlayer, float fX, floa
 
 void CNetworkPlayerList::DrawBars(CPlayerPed* pPlayerPed, float fX, float fY)
 {
+    if (!pPlayerPed) return;
     float fBarOffsetX = CUtil::HUD_X(fX + BAR_OFFSET_X + BOX_WIDTH / 2.0f);
     float fBarOffsetY = CUtil::HUD_Y(fY + BAR_OFFSET_Y);
 
@@ -134,6 +135,7 @@ void CNetworkPlayerList::DrawBars(CPlayerPed* pPlayerPed, float fX, float fY)
 
 void CNetworkPlayerList::DrawWeaponIcon(CPlayerPed* pPlayerPed, float fX, float fY)
 {
+    if (!pPlayerPed) return;
     RwRenderStateSet(rwRENDERSTATETEXTUREFILTER, RWRSTATE(rwFILTERLINEAR));
 
     int nModelId = CUtil::GetWeaponModelById(pPlayerPed->GetWeapon().m_eWeaponType);

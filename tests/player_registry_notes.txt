@@ -1,0 +1,37 @@
+Player registry reconnect repair: bounded verification
+
+Run tests/run_player_registry_tests.py --output .cache/<new evidence name>.
+The runner freezes and hashes actual manager/lifecycle/SYSTEM handler sources,
+compiles their bodies with recorded native entity/pool/command doubles, and
+records source-wiring checks, compiler output and per-case results. Native game
+execution is not claimed. Reset requests are metadata only; native destruction
+is performed by main/game receive callbacks or ProcessPendingReset.
+
+One wrapper per slot is enforced. PLAYER_CONNECTED removes the previous slot
+before constructing CREATE_PLAYER; handshake clears an old registry. Disconnect
+requests cleanup without touching native actors on a networking thread. Root's
+separate packet-buffer Clear/pop repair must be retained when merging CNetwork.cpp.
+
+DestroyPed clears its pointer/reference before native calls and requires exact
+full pool-reference resolution plus the expected remote PlayerInfo slot. Local,
+recycled and unbound actors are not deleted. CREATE/GET failure is guarded;
+known successful creations are torn down if GET subsequently fails. A null
+wrapper returns -1 from GetInternalId. Failed spawn leaves on-foot state cached
+for a later retry; null key/bullet/render paths cannot dereference that actor.
+
+Deleting-destructor evidence (disk and compiler only)
+The SDK CPlaceable declares a virtual destructor. CPed declares class operator
+delete, mapped in CPed.cpp to 0x5E4760. The compatible executable's CPlayerPed
+vtable at 0x86D168 begins with 0x60A9A0. That deleting destructor calls 0x6093B0
+and, when flag bit 1 is set, calls 0x5E4760 once. MSVC x86's compiled DestroyPed
+uses push 1 followed by vtable slot-zero call, with no extra pool-delete call.
+Executable SHA256: A559AA772FD136379155EFA71F00C47AAD34BBFEAE6196B0FE1047D0645CBD26.
+Disassembly and generated binaries stay in ignored local evidence, not commits.
+
+Human checks on root's matched final package
+- Connect in the menu, start a game and reconnect to the same server slot.
+- Repeat a disconnect/reconnect: one visible remote actor/name, no old ghost.
+- Disconnect a remote player seated in a vehicle, then reconnect and respawn.
+- Repeat respawn and mission retry without a double-delete or local actor removal.
+- Confirm native gameplay, input and other session/entity systems retain their
+  behavior. Source tests cannot prove native ABI execution or ENet scheduling.

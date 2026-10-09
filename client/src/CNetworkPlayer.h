@@ -4,6 +4,7 @@ class CNetworkPlayer
 {
 public:
 	CPlayerPed* m_pPed = nullptr;
+	int m_nPedRef = -1;
 	int m_iPlayerId;
 
 	Packets::Players::OnFootUpdate m_onFootSnapshotInterpolated{};

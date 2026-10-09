@@ -14,12 +14,14 @@ PACKET_HANDLER(ePacketType::PLAYER_ONFOOT_UPDATE, Packets::Players::OnFootUpdate
     }
 
     CPlayerPed* pPlayerPed = pNetworkPlayer->m_pPed;
+    pNetworkPlayer->m_onFootSnapshotInterpolated = *pOnFootUpdate;
 
     if (pPlayerPed == nullptr)
     {
         pNetworkPlayer->CreatePed(pNetworkPlayer->m_iPlayerId, pOnFootUpdate->vecPos);
         pPlayerPed = pNetworkPlayer->m_pPed;
     }
+    if (!pPlayerPed) return; // Creation can fail; retain pose for a later retry.
 
     if (pPlayerPed->m_pVehicle != nullptr && pPlayerPed->m_nPedFlags.bInVehicle)
     {
@@ -69,8 +71,11 @@ PACKET_HANDLER(ePacketType::PLAYER_KEY_SYNC, Packets::Players::KeyPressed* pKeyP
     pNetworkPlayer->m_oldControllerState = pKeyPressed->keySnapshot.oldControllerState;
     pNetworkPlayer->m_newControllerState = pKeyPressed->keySnapshot.newControllerState;
 
-    pNetworkPlayer->m_pPed->m_fCurrentRotation = pKeyPressed->currentRotation.m_angle;
-    pNetworkPlayer->m_pPed->m_fAimingRotation = pKeyPressed->aimingRotation.m_angle;
+    if (auto* ped = pNetworkPlayer->m_pPed)
+    {
+        ped->m_fCurrentRotation = pKeyPressed->currentRotation.m_angle;
+        ped->m_fAimingRotation = pKeyPressed->aimingRotation.m_angle;
+    }
 
     pNetworkPlayer->m_onFootSnapshotInterpolated.currentRotation = pKeyPressed->currentRotation;
     pNetworkPlayer->m_onFootSnapshotInterpolated.aimingRotation = pKeyPressed->aimingRotation;
@@ -144,7 +149,7 @@ PACKET_HANDLER(ePacketType::RESPAWN_PLAYER, Packets::Players::RespawnPlayer* pRe
 PACKET_HANDLER(ePacketType::PLAYER_BULLET_SHOT, Packets::Players::PlayerBulletShot* pPlayerBulletShot)
 {
     CNetworkPlayer* pNetworkPlayer = CNetworkPlayerManager::GetPlayer(pPlayerBulletShot->playerid);
-    if (pNetworkPlayer == nullptr)
+    if (pNetworkPlayer == nullptr || pNetworkPlayer->m_pPed == nullptr)
     {
         return;
     }
