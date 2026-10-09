@@ -43,10 +43,16 @@ void CNetworkVehicleManager::Remove(CNetworkVehicle* vehicle)
 
 void CNetworkVehicleManager::UpdateDriver(CVehicle* pVehicle)
 {
+    if (!pVehicle || !pVehicle->IsVTableValid() || !pVehicle->m_matrix)
+        return;
+    CPlayerPed* pPlayerPed = FindPlayerPed(0);
+    if (!pPlayerPed || !pPlayerPed->IsVTableValid() || !pPlayerPed->m_nPedFlags.bInVehicle ||
+        pVehicle->m_pDriver != pPlayerPed)
+        return;
+
 	if (auto pNetworkVehicle = CNetworkVehicleManager::GetVehicle(pVehicle))
 	{
 		Packets::Vehicles::VehicleDriverUpdate vehicleDriverUpdate{};
-		CPlayerPed* pPlayerPed = FindPlayerPed(0);
 
 		vehicleDriverUpdate.vehicleid = pNetworkVehicle->m_nVehicleId;
 		vehicleDriverUpdate.pos = pVehicle->m_matrix->pos;
@@ -109,9 +115,11 @@ void CNetworkVehicleManager::UpdateIdle()
 
 	for (auto pNetworkVehicle : m_pVehicles)
 	{
-		CVehicle* pVehicle = pNetworkVehicle->m_pVehicle;
-		if (pVehicle == nullptr)
-			continue;
+        if (!pNetworkVehicle)
+            continue;
+        CVehicle* pVehicle = pNetworkVehicle->m_pVehicle;
+        if (!pVehicle || !pVehicle->IsVTableValid() || !pVehicle->m_matrix)
+            continue;
 
 		if (pNetworkVehicle->m_bSyncing && !pNetworkVehicle->HasDriver())
 		{

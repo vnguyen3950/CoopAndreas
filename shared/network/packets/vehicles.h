@@ -1,5 +1,7 @@
 #pragma once
 #include <CVehicle.h>
+#include <algorithm>
+#include <cmath>
 
 namespace Packets::Vehicles
 {
@@ -72,11 +74,11 @@ public:
     float planeGearState{};
     eDoorLock locked{};
 
-	uint8_t engineState;
-	uint8_t lightState;
-	uint8_t engineBroken;
-	uint8_t sirenOrAlarm;
-	uint16_t alarmState;
+    bool engineState{};
+    bool lightState{};
+    bool engineBroken{};
+    bool sirenOrAlarm{};
+    uint16_t alarmState{};
 
     template <typename Stream>
     bool Serialize(Stream& stream)
@@ -116,7 +118,8 @@ public:
 
         if (Stream::IsWriting)
         {
-            dirtLevel = std::clamp(dirtLevel, 0.0f, 15.0f);
+            // clamp alone leaves NaN unchanged; reject non-finite game state before quantization.
+            dirtLevel = std::isfinite(dirtLevel) ? std::clamp(dirtLevel, 0.0f, 15.0f) : 0.0f;
         }
         serialize_compressed_float(stream, dirtLevel, 0.0f, 15.0f, 1.0f);
 
@@ -150,10 +153,10 @@ public:
 
         serialize_int(stream, (int&)locked, DOORLOCK_NOT_USED, DOORLOCK_SKIP_SHUT_DOORS);
 
-        serialize_uint8(stream, engineState);
-        serialize_uint8(stream, lightState);
-        serialize_uint8(stream, engineBroken);
-        serialize_uint8(stream, sirenOrAlarm);
+        serialize_bool(stream, engineState);
+        serialize_bool(stream, lightState);
+        serialize_bool(stream, engineBroken);
+        serialize_bool(stream, sirenOrAlarm);
         serialize_uint16(stream, alarmState);
 
         return true;
@@ -211,11 +214,11 @@ public:
     float planeGearState{};
     eDoorLock locked{};
 
-	uint8_t engineState;
-	uint8_t lightState;
-	uint8_t engineBroken;
-	uint8_t sirenOrAlarm;
-	uint16_t alarmState;
+    bool engineState{};
+    bool lightState{};
+    bool engineBroken{};
+    bool sirenOrAlarm{};
+    uint16_t alarmState{};
 
 private:
     template <typename Stream>
@@ -257,7 +260,8 @@ private:
 
         if (Stream::IsWriting)
         {
-            dirtLevel = std::clamp(dirtLevel, 0.0f, 15.0f);
+            // clamp alone leaves NaN unchanged; reject non-finite game state before quantization.
+            dirtLevel = std::isfinite(dirtLevel) ? std::clamp(dirtLevel, 0.0f, 15.0f) : 0.0f;
         }
         serialize_compressed_float(stream, dirtLevel, 0.0f, 15.0f, 1.0f);
 
@@ -312,10 +316,10 @@ private:
 
         serialize_int(stream, (int&)locked, DOORLOCK_NOT_USED, DOORLOCK_SKIP_SHUT_DOORS);
 
-        serialize_uint8(stream, engineState);
-        serialize_uint8(stream, lightState);
-        serialize_uint8(stream, engineBroken);
-        serialize_uint8(stream, sirenOrAlarm);
+        serialize_bool(stream, engineState);
+        serialize_bool(stream, lightState);
+        serialize_bool(stream, engineBroken);
+        serialize_bool(stream, sirenOrAlarm);
         serialize_uint16(stream, alarmState);
 
         return true;

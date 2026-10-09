@@ -70,8 +70,17 @@ PACKET_HANDLER(ePacketType::VEHICLE_IDLE_UPDATE, Packets::Vehicles::VehicleIdleU
 PACKET_HANDLER(ePacketType::VEHICLE_DRIVER_UPDATE, Packets::Vehicles::VehicleDriverUpdate* pVehicleDriverUpdate,
     CNetworkPlayer* pNetworkPlayer)
 {
+    if (!pNetworkPlayer)
+        return;
     if (auto pNetworkVehicle = CNetworkVehicleManager::GetVehicle(pVehicleDriverUpdate->vehicleid))
     {
+        // SYNC is unreliable and may precede the reliable entry event. Allow the
+        // assigned syncer or the recorded driver, not an arbitrary client claim.
+        if (pNetworkVehicle->m_pSyncer != pNetworkPlayer && pNetworkVehicle->m_pPlayers[0] != pNetworkPlayer)
+        {
+            logger::warn("%s tried to update someone else's vehicle (driver)", pNetworkPlayer->GetName().c_str());
+            return;
+        }
         pNetworkVehicle->SetOccupant(0, pNetworkPlayer);
         pNetworkVehicle->m_vecPosition = pVehicleDriverUpdate->pos;
         pNetworkVehicle->m_vecRotation = pVehicleDriverUpdate->rot;

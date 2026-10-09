@@ -55,10 +55,16 @@ PACKET_HANDLER(ePacketType::VEHICLE_IDLE_UPDATE, Packets::Vehicles::VehicleIdleU
     if (pNetworkVehicle == nullptr)
         return;
 
-    if (!pNetworkVehicle->m_pVehicle)
+    if (!pNetworkVehicle->m_pVehicle || !pNetworkVehicle->m_pVehicle->IsVTableValid() ||
+        !pNetworkVehicle->m_pVehicle->m_matrix)
         return;
 
-    if (pNetworkVehicle->m_pVehicle->m_matrix == nullptr)
+    // Old unreliable idle snapshots can arrive after this client takes ownership.
+    if (pNetworkVehicle->m_bSyncing)
+        return;
+    auto* localPlayer = FindPlayerPed(0);
+    if (localPlayer && localPlayer->m_nPedFlags.bInVehicle &&
+        pNetworkVehicle->m_pVehicle->m_pDriver == localPlayer)
         return;
 
     pNetworkVehicle->m_pVehicle->m_matrix->pos = pVehicleIdleUpdate->pos;
@@ -105,7 +111,13 @@ PACKET_HANDLER(ePacketType::VEHICLE_DRIVER_UPDATE, Packets::Vehicles::VehicleDri
         return;
 
     CVehicle* pVehicle = pNetworkVehicle->m_pVehicle;
-    if (!pVehicle->IsVTableValid())
+    if (!pVehicle || !pVehicle->IsVTableValid() || !pVehicle->m_matrix ||
+        !pNetworkPlayer->m_pPed || !pNetworkPlayer->m_pPed->IsVTableValid())
+        return;
+
+    // A queued snapshot from the previous driver must not seize a locally driven car.
+    auto* localPlayer = FindPlayerPed(0);
+    if (localPlayer && localPlayer->m_nPedFlags.bInVehicle && pVehicle->m_pDriver == localPlayer)
         return;
 
     if (pNetworkPlayer->m_pPed->m_pVehicle != pVehicle || !pNetworkPlayer->m_pPed->m_nPedFlags.bInVehicle)
