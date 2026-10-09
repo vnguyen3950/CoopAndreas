@@ -30,6 +30,7 @@
 #include "Commands/CCommandPedTakeHost.h"
 #include "Commands/CCommandGetNetworkPlayerInternalId.h"
 #include "Commands/CCommandTeleportPlayersToHostSafely.h"
+#include "Commands/CCommandNetworkPlayerButton.h"
 
 class CCustomCommandRegistrar
 {
@@ -65,5 +66,7 @@ public:
 		CCustomCommandMgr::RegisterCommand(0x1D1A, new CCommandPedTakeHost());
 		CCustomCommandMgr::RegisterCommand(0x1D1B, new CCommandGetNetworkPlayerInternalId());
 		CCustomCommandMgr::RegisterCommand(0x1D1C, new CCommandTeleportPlayersToHostSafely());
+		CCustomCommandMgr::RegisterCommand(0x1D1D, new CCommandNetworkPlayerButton(false));
+		CCustomCommandMgr::RegisterCommand(0x1D1E, new CCommandNetworkPlayerButton(true));
 	}
 };

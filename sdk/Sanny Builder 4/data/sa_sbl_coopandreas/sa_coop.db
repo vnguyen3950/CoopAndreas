@@ -3404,6 +3404,8 @@ PedResetAllClaims,1D19,0,0,("char: Char")
 PedTakeHost,1D1A,0,0,("char: Char" "allowReturnToPreviousHost: bool")
 GetNetworkPlayerInternalId,1D1B,0,0,("char: Char" "playerId: int")
 TeleportPlayersToHostSafely,1D1C,0,0,("player1: Char" "player2: Char" "player3: Char")
+IsNetworkPlayerButtonPressed,1D1D,1,0,("player_actor: Char" "button: Button")
+IsNetworkPlayerButtonJustPressed,1D1E,1,0,("player_actor: Char" "button: Button")
 $END
 
 #EOF

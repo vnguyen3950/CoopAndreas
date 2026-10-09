@@ -3,8 +3,12 @@
 
 :SWEET2
 script_name 'SWEET2'
-Coop.AddChatMessage("{ffff00}[CoopAndreas Warning]{ffffff} This mission is currently unsupported and not recommended to play!")
-Coop.AddChatMessage("{ffff00}[CoopAndreas Warning]{ffffff} It may cause desyncs, crashes, or other unexpected behavior!")
+if not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+gosub @SWEET2_COOP_INIT
 
 gosub @SWEET2_1108
 if 
@@ -146,6 +150,7 @@ $onmission = 1
 93@ = 2444.35
 98@ = -1970.61
 103@ = 13.8
+gosub @SWEET2_COOP_TICK
 wait 0
 Text.LoadMissionText('SWEET2')
 Streaming.SetAreaVisible(1)
@@ -155,6 +160,7 @@ Cutscene.Load('SWEET3A')
 if 
   not Cutscene.HasLoaded
 goto_if_false @SWEET2_1391
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_1367
 
@@ -166,6 +172,7 @@ Camera.DoFade(1, 1000)
 if 
   not Cutscene.HasFinished
 goto_if_false @SWEET2_1424
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_1400
 
@@ -177,6 +184,7 @@ Camera.DoFade(0, Fade.Out)
 if 
   Camera.GetFadingStatus
 goto_if_false @SWEET2_1461
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_1437
 
@@ -193,6 +201,7 @@ if or
   not Streaming.HasSpecialCharacterLoaded(10)
   not Streaming.HasModelLoaded(466)
 goto_if_false @SWEET2_1522
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_1491
 
@@ -227,6 +236,14 @@ Hud.SwitchWidescreen(False)
 Player.SetControl($player1, True)
 Camera.RestoreJumpcut
 Text.PrintNow('SWE2_A', 10000, 1)
+gosub @SWEET2_COOP_FORM_UP
+gosub @SWEET2_COOP_TRANSPORT
+609@ = 1
+614@ = 2451.95
+615@ = -1978.93
+616@ = 12.55
+set_lvar_text_label 624@s = 'SWE2_A'
+gosub @SWEET2_COOP_MESSAGE
 Char.SetNextDesiredMoveState(MoveState.Walk)
 Task.EnterCarAsPassenger($big_smoke, $big_smoke_car, 0, 5000)
 Char.SetCantBeDraggedOut($big_smoke, True)
@@ -250,6 +267,7 @@ if or
   not Char.IsSittingInCar($big_smoke, $big_smoke_car)
   not Car.IsOnAllWheels($big_smoke_car)
 goto_if_false @SWEET2_2420
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
 is_ps2_keyboard_key_pressed 83
@@ -330,7 +348,30 @@ goto @SWEET2_20215
 :SWEET2_2413
 goto @SWEET2_1949
 
+// Preserve the original host arrival test and wait for living, connected guests.
 :SWEET2_2420
+:SWEET2_COOP_EMMET_RALLY
+if or
+    not Car.Locate3D($big_smoke_car, $blob_flag, 2453.07, -2003.96, 12.56, 4.0, 4.0, 4.0)
+    not Char.IsSittingInCar($big_smoke, $big_smoke_car)
+    not Car.IsOnAllWheels($big_smoke_car)
+then
+    goto @SWEET2_1949
+end
+gosub @SWEET2_COOP_READY
+if 611@ == 0
+then
+    if or
+        Char.IsDead($big_smoke)
+        Car.IsDead($big_smoke_car)
+    then
+        goto @SWEET2_20215
+    end
+    gosub @SWEET2_COOP_TICK
+    wait 0
+    goto @SWEET2_COOP_EMMET_RALLY
+end
+609@ = 0
 Player.SetControl($player1, False)
 Hud.SwitchWidescreen(True)
 Camera.SetFixedPosition(2452.949, -2011.824, 16.3096, 0.0, 0.0, 0.0)
@@ -366,6 +407,7 @@ Camera.DoFade(0, 1000)
 if 
   Camera.GetFadingStatus
 goto_if_false @SWEET2_2685
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_2661
 
@@ -379,6 +421,7 @@ Cutscene.Load('SWEET3B')
 if 
   not Cutscene.HasLoaded
 goto_if_false @SWEET2_2753
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_2729
 
@@ -390,6 +433,7 @@ Camera.DoFade(1, 1000)
 if 
   not Cutscene.HasFinished
 goto_if_false @SWEET2_2786
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_2762
 
@@ -400,6 +444,7 @@ Camera.DoFade(0, Fade.Out)
 if 
   Camera.GetFadingStatus
 goto_if_false @SWEET2_2816
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_2792
 
@@ -424,6 +469,7 @@ if or
   not Streaming.HasModelLoaded(346)
   not Streaming.HasAnimationLoaded("COLT45")
 goto_if_false @SWEET2_2945
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_2882
 
@@ -432,6 +478,7 @@ if or
   not Streaming.HasModelLoaded(549)
   not Streaming.HasAnimationLoaded("FAT")
 goto_if_false @SWEET2_2979
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_2945
 
@@ -450,6 +497,16 @@ Char.SetSuffersCriticalHits(63@, False)
 Blip.Remove(35@)
 41@ = Char.GetAmmoInWeapon($scplayer, 22)
 Char.GiveWeapon($scplayer, WeaponType.Pistol, 30000)
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            Char.GiveWeapon(600@(610@,3i), WeaponType.Pistol, 500)
+            Char.SetCurrentWeapon(600@(610@,3i), WeaponType.Pistol)
+        end
+    end
+end
 Char.SetCurrentWeapon($scplayer, WeaponType.Pistol)
 if 
   not Char.IsDead($big_smoke)
@@ -514,6 +571,7 @@ Sequence.Close(54@)
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_3794
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -537,6 +595,7 @@ Char.StartFacialTalk($big_smoke, 3000)
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_3910
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -563,6 +622,7 @@ Sequence.Clear(54@)
 if 
   36@ <> 1
 goto_if_false @SWEET2_4810
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Object.DoesExist($tag_target[0])
@@ -665,6 +725,10 @@ Char.SetCoordinates(63@, 2451.834, -1976.811, 12.5469)
 Char.SetHeading(63@, 75.6292)
 
 :SWEET2_4602
+609@ = 2
+set_lvar_text_label 624@s = 'SWE2_G'
+gosub @SWEET2_COOP_MESSAGE
+gosub @SWEET2_COOP_FORM_UP
 Camera.RestoreJumpcut
 Hud.SwitchWidescreen(False)
 Player.SetControl($player1, True)
@@ -708,6 +772,7 @@ Audio.LoadMissionAudio(37831, 1)
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_4923
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -739,6 +804,7 @@ Task.PlayAnim(63@, "PRTIAL_GNGTLKC", "GANGS", 4.0, False, False, False, True, -1
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_5121
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -841,6 +907,7 @@ Sequence.Clear(54@)
 if 
   36@ <> 3
 goto_if_false @SWEET2_7177
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Object.DoesExist($tag_target(42@,10i))
@@ -909,6 +976,8 @@ Char.SetAmmo($scplayer, WeaponType.Pistol, 30000)
 :SWEET2_6286
 Text.PrintHelpForever('HOOD2B')
 Text.PrintNow('SWE2_H', 10000, 1)
+set_lvar_text_label 624@s = 'SWE2_H'
+gosub @SWEET2_COOP_MESSAGE
 38@ = 0
 
 :SWEET2_6320
@@ -948,6 +1017,7 @@ goto_if_false @SWEET2_7021
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_6548
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -978,6 +1048,7 @@ Object.Break($tag_target[2], 1)
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_6692
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1083,6 +1154,7 @@ Audio.LoadMissionAudio(37829, 1)
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_7290
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1114,6 +1186,7 @@ Task.PlayAnim(63@, "PRTIAL_GNGTLKC", "GANGS", 4.0, False, False, False, True, -1
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_7488
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1255,6 +1328,7 @@ Sequence.Clear(54@)
 if 
   36@ <> 5
 goto_if_false @SWEET2_11793
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Object.DoesExist($tag_target(42@,10i))
@@ -1318,6 +1392,8 @@ Blip.Remove(35@)
 Char.GiveWeapon($scplayer, WeaponType.Pistol, 10)
 Text.PrintHelpForever('HOOD2F')
 Text.PrintNow('SWE2_I', 10000, 1)
+set_lvar_text_label 624@s = 'SWE2_I'
+gosub @SWEET2_COOP_MESSAGE
 38@ = 0
 
 :SWEET2_9197
@@ -1342,6 +1418,7 @@ goto_if_false @SWEET2_9585
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_9402
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1372,6 +1449,7 @@ Object.Break($tag_target[0], 1)
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_9546
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1407,6 +1485,7 @@ goto_if_false @SWEET2_9928
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_9737
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1437,6 +1516,7 @@ Object.Break($tag_target[1], 1)
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_9881
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1484,6 +1564,7 @@ goto_if_false @SWEET2_10326
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_10143
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1514,6 +1595,7 @@ Object.Break($tag_target[2], 1)
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_10287
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1549,6 +1631,7 @@ goto_if_false @SWEET2_10661
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_10478
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1579,6 +1662,7 @@ Object.Break($tag_target[3], 1)
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_10622
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1626,6 +1710,7 @@ goto_if_false @SWEET2_11050
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_10876
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1656,6 +1741,7 @@ Object.Break($tag_target[4], 1)
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_11020
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1680,6 +1766,7 @@ Char.StopFacialTalk($big_smoke)
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_11115
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1698,6 +1785,7 @@ Text.PrintNow('SWE3_ZZ', 10000, 1)
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_11200
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1710,6 +1798,8 @@ goto @SWEET2_11135
 
 :SWEET2_11200
 Text.PrintNow('SWE2_I', 10000, 1)
+set_lvar_text_label 624@s = 'SWE2_I'
+gosub @SWEET2_COOP_MESSAGE
 Char.SetCoordinates($scplayer, 2450.74, -1978.375, 12.5469)
 Char.SetHeading($scplayer, 89.5159)
 if 
@@ -1815,6 +1905,7 @@ Audio.LoadMissionAudio(37835, 1)
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_11906
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1846,6 +1937,7 @@ Task.PlayAnim(63@, "PRTIAL_GNGTLKC", "GANGS", 4.0, False, False, False, True, -1
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_12104
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -1915,6 +2007,8 @@ Char.WarpFromCarToCoord($scplayer, 2446.11, -1974.53, 12.54)
 :SWEET2_12426
 Char.SetHeading($scplayer, 349.81)
 Text.PrintNow('SWE2_F', 10000, 1)
+set_lvar_text_label 624@s = 'SWE2_F'
+gosub @SWEET2_COOP_MESSAGE
 if 
   not Car.IsDead(83@)
 goto_if_false @SWEET2_12529
@@ -1936,6 +2030,7 @@ Player.SetControl($player1, True)
 if 
   not Car.IsDead(83@)
 goto_if_false @SWEET2_13089
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   not Char.LocateOnFoot3D($scplayer, 0, 2451.95, -1978.93, 12.55, 13.0, 13.0, 10.0)
@@ -1971,6 +2066,8 @@ Char.SetAmmo($scplayer, WeaponType.Pistol, 30000)
 :SWEET2_12790
 Text.PrintHelpForever('HOOD2C')
 Text.PrintNow('SWE2_F', 10000, 1)
+set_lvar_text_label 624@s = 'SWE2_F'
+gosub @SWEET2_COOP_MESSAGE
 38@ = 0
 
 :SWEET2_12824
@@ -2036,6 +2133,7 @@ Camera.DoFade(0, 500)
 if 
   Camera.GetFadingStatus
 goto_if_false @SWEET2_13142
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_13118
 
@@ -2052,6 +2150,7 @@ Streaming.RequestAnimation("GANGS")
 if 
   not Streaming.HasAnimationLoaded("GANGS")
 goto_if_false @SWEET2_13244
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_13213
 
@@ -2108,6 +2207,7 @@ Camera.PointAtPoint(2450.777, -1976.838, 13.8915, SwitchType.JumpCut)
 if 
   80@ <> 1
 goto_if_false @SWEET2_13878
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2158,6 +2258,7 @@ skip_cutscene_start_internal @SWEET2_17099
 if 
   80@ <> 2
 goto_if_false @SWEET2_14149
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2208,6 +2309,7 @@ Char.StopFacialTalk($big_smoke)
 if 
   80@ <> 3
 goto_if_false @SWEET2_14389
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2252,6 +2354,7 @@ goto @SWEET2_14177
 if 
   80@ <> 4
 goto_if_false @SWEET2_14608
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2296,6 +2399,7 @@ goto @SWEET2_14396
 if 
   80@ <> 5
 goto_if_false @SWEET2_14827
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2347,6 +2451,7 @@ Task.GoStraightToCoord($big_smoke, 2454.951, -1998.658, 12.554, MoveState.Walk, 
 if 
   80@ <> 6
 goto_if_false @SWEET2_15112
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2402,6 +2507,7 @@ Task.GoStraightToCoord($scplayer, 2452.642, -1998.219, 12.554, MoveState.Walk, 2
 if 
   80@ <> 7
 goto_if_false @SWEET2_15444
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2448,6 +2554,7 @@ Camera.PointAtPoint(2453.538, -1991.412, 14.3914, SwitchType.JumpCut)
 if 
   80@ <> 8
 goto_if_false @SWEET2_15714
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2492,6 +2599,7 @@ goto @SWEET2_15502
 if 
   80@ <> 9
 goto_if_false @SWEET2_15933
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2536,6 +2644,7 @@ goto @SWEET2_15721
 if 
   80@ <> 10
 goto_if_false @SWEET2_16195
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2578,6 +2687,7 @@ goto @SWEET2_15940
 if 
   80@ <> 11
 goto_if_false @SWEET2_16348
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2628,6 +2738,7 @@ Task.EnterCarAsDriver($scplayer, $big_smoke_car, 50000)
 if 
   80@ <> 12
 goto_if_false @SWEET2_16665
+gosub @SWEET2_COOP_TICK
 wait 0
 gosub @SWEET2_21000
 if 
@@ -2666,6 +2777,7 @@ if or
   not Char.IsSittingInCar($scplayer, $big_smoke_car)
   not Char.IsSittingInCar($big_smoke, $big_smoke_car)
 goto_if_false @SWEET2_16813
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -2691,6 +2803,7 @@ Camera.PointAtPoint(2456.231, -2000.027, 14.947, SwitchType.JumpCut)
 if 
   80@ <> 13
 goto_if_false @SWEET2_16978
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -2713,6 +2826,7 @@ goto @SWEET2_16864
 if 
   80@ <> 14
 goto_if_false @SWEET2_17092
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -2749,6 +2863,7 @@ Camera.DoFade(0, 500)
 if 
   Camera.GetFadingStatus
 goto_if_false @SWEET2_17174
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_17150
 
@@ -2792,6 +2907,12 @@ goto_if_false @SWEET2_17340
 Char.SetAmmo($scplayer, WeaponType.Pistol, 41@)
 
 :SWEET2_17340
+609@ = 3
+614@ = 2071.55
+615@ = -1704.38
+616@ = 12.55
+set_lvar_text_label 624@s = 'SWE2_D'
+gosub @SWEET2_COOP_MESSAGE
 Text.PrintNow('SWE2_D', 10000, 1)
 if 
   not Car.IsDead($big_smoke_car)
@@ -2843,6 +2964,7 @@ if or
   not Char.IsSittingInCar($big_smoke, $big_smoke_car)
   not Car.IsOnAllWheels($big_smoke_car)
 goto_if_false @SWEET2_18388
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   not Char.IsInAnyCar($scplayer)
@@ -2972,6 +3094,28 @@ goto @SWEET2_20215
 goto @SWEET2_17618
 
 :SWEET2_18388
+:SWEET2_COOP_SMOKE_RALLY
+if or
+    not Car.Locate3D($big_smoke_car, $blob_flag, 2066.465, -1695.444, 12.5547, 4.0, 4.0, 4.0)
+    not Char.IsSittingInCar($big_smoke, $big_smoke_car)
+    not Car.IsOnAllWheels($big_smoke_car)
+then
+    goto @SWEET2_17618
+end
+gosub @SWEET2_COOP_READY
+if 611@ == 0
+then
+    if or
+        Char.IsDead($big_smoke)
+        Car.IsDead($big_smoke_car)
+    then
+        goto @SWEET2_20215
+    end
+    gosub @SWEET2_COOP_TICK
+    wait 0
+    goto @SWEET2_COOP_SMOKE_RALLY
+end
+609@ = 0
 Player.SetControl($player1, False)
 Hud.SwitchWidescreen(True)
 Camera.SetNearClip(0.2)
@@ -2985,6 +3129,7 @@ Camera.DoFade(0, 1000)
 if 
   Camera.GetFadingStatus
 goto_if_false @SWEET2_18498
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_18474
 
@@ -2992,6 +3137,7 @@ goto @SWEET2_18474
 if 
   not Streaming.HasModelLoaded(330)
 goto_if_false @SWEET2_18525
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_18498
 
@@ -3039,6 +3185,7 @@ Audio.LoadMissionAudio(23000, 3)
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_18866
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -3058,6 +3205,7 @@ gosub @SWEET2_21732
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot1)
 goto_if_false @SWEET2_18958
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -3081,6 +3229,7 @@ gosub @SWEET2_22114
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_19051
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Char.IsDead($big_smoke)
@@ -3121,6 +3270,7 @@ Char.Delete($big_smoke)
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot3)
 goto_if_false @SWEET2_19274
+gosub @SWEET2_COOP_TICK
 wait 0
 goto @SWEET2_19248
 
@@ -3132,6 +3282,7 @@ TIMERA = 0
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot3)
 goto_if_false @SWEET2_19337
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   TIMERA > 1500
@@ -3166,6 +3317,7 @@ Streaming.UnloadSpecialCharacter(1)
 if 
   not Char.LocateAnyMeans3D($scplayer, 1, 2246.972, -1660.779, 14.2856, 3.5, 4.0, 4.0)
 goto_if_false @SWEET2_19706
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   85@ == 0
@@ -3183,6 +3335,12 @@ Text.ClearPrints
 Task.UseMobilePhone($scplayer, False)
 Streaming.MarkModelAsNoLongerNeeded(330)
 Text.PrintNow('COLORS', 6000, 1)
+609@ = 4
+614@ = 2246.97
+615@ = -1660.78
+616@ = 14.29
+set_lvar_text_label 624@s = 'COLORS'
+gosub @SWEET2_COOP_MESSAGE
 85@ = 1
 
 :SWEET2_19618
@@ -3221,6 +3379,7 @@ Player.SetControl($player1, True)
 if 
   87@ <> 2
 goto_if_false @SWEET2_20195
+gosub @SWEET2_COOP_TICK
 wait 0
 86@ = Streaming.GetAreaVisible()
 if 
@@ -3321,6 +3480,7 @@ Stat.PlayerMadeProgress(1)
 return 
 
 :SWEET2_20732
+gosub @SWEET2_COOP_CLEANUP
 $onmission = 0
 $timer_mobile_start = Clock.GetGameTimer()
 Char.RemoveElegantly($big_smoke)
@@ -3471,6 +3631,7 @@ Audio.ClearMissionAudio(MissionAudioSlot.Slot1)
 if 
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_21462
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Car.IsDead($big_smoke_car)
@@ -3521,6 +3682,7 @@ Text.PrintNow('SMOX_AE', 3000, 1)
 if 
   not Audio.HasMissionAudioFinished(MissionAudioSlot.Slot2)
 goto_if_false @SWEET2_21698
+gosub @SWEET2_COOP_TICK
 wait 0
 if 
   Car.IsDead($big_smoke_car)
@@ -3694,3 +3856,204 @@ Zone.SetGangStrength('IWD4', GangType.Ballas, 30)
 Zone.SetGangStrength('IWD5', GangType.Ballas, 30)
 return 
 
+
+// Snapshot roster and escorts are private mission locals; late joiners stay excluded.
+:SWEET2_COOP_INIT
+600@, 601@, 602@ = Coop.CollectNetworkPlayersForTheMission()
+603@ = -1
+604@ = -1
+605@ = -1
+609@ = 0
+613@ = 0
+626@ = 0
+return
+
+:SWEET2_COOP_FORM_UP
+for 610@ = 0 to 2
+    606@(610@,3i) = -1
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            0085: 606@(610@,3i) = 600@(610@,3i)
+            Char.ClearTasksImmediately(600@(610@,3i))
+            Char.SetAreaVisible(600@(610@,3i), 0)
+        end
+    end
+end
+Coop.TeleportPlayersToHostSafely(606@, 607@, 608@)
+return
+
+:SWEET2_COOP_TRANSPORT
+617@ = 2511.0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            603@(610@,3i) = Car.Create(466, 617@, -1683.0, 12.37)
+            Car.SetHeading(603@(610@,3i), 148.0)
+        end
+    end
+    617@ += 5.0
+end
+return
+
+:SWEET2_COOP_MESSAGE
+613@ = 0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.PrintNowForNetworkPlayer(624@s, 8000, 1, 600@(610@,3i))
+    end
+end
+return
+
+:SWEET2_COOP_TICK
+if 609@ == 0
+then
+    return
+end
+620@ = Clock.GetGameTimer()
+if 001D: 613@ > 620@
+then
+    return
+end
+0085: 613@ = 620@
+613@ += 1000
+if 609@ == 2
+then
+    // Checkpoints point at real replicated bottles; guest hits are validated by the host.
+    614@ = 2440.58
+    615@ = -1979.89
+    616@ = 14.1
+    for 621@ = 0 to 4
+        if Object.DoesExist($tag_target(621@,10i))
+        then
+            614@, 615@, 616@ = Object.GetCoordinates($tag_target(621@,10i))
+            break
+        end
+    end
+end
+if 609@ == 4
+then
+    // Follow the host's actual clothing-store area, once per transition.
+    627@ = Char.GetAreaVisible($scplayer)
+    if 803B: 627@ == 626@
+    then
+        0085: 626@ = 627@
+        Streaming.SetAreaVisible(627@)
+        for 610@ = 0 to 2
+            606@(610@,3i) = -1
+            if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+            then
+                if not Char.IsDead(600@(610@,3i))
+                then
+                    0085: 606@(610@,3i) = 600@(610@,3i)
+                    Char.SetAreaVisible(600@(610@,3i), 627@)
+                end
+            end
+        end
+        Coop.TeleportPlayersToHostSafely(606@, 607@, 608@)
+    end
+end
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            if 609@ == 4
+            then
+                if 626@ == 0
+                then
+                    Coop.UpdateCheckpointForNetworkPlayer(614@, 615@, 616@, 15.0, 15.0, 8.0, 600@(610@,3i))
+                else
+                    Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+                end
+            else
+                Coop.UpdateCheckpointForNetworkPlayer(614@, 615@, 616@, 3.0, 3.0, 3.0, 600@(610@,3i))
+            end
+            if 609@ == 1
+            then
+                if Car.DoesExist(603@(610@,3i))
+                then
+                    if not Car.IsDead(603@(610@,3i))
+                    then
+                        628@ = Coop.GetVehicleNetworkId(603@(610@,3i))
+                        if 628@ >= 0
+                        then
+                            Coop.UpdateCarBlipForNetworkPlayer(600@(610@,3i), 603@(610@,3i), True, BlipDisplay.Both, BlipColor.Blue, 3)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+return
+
+:SWEET2_COOP_READY
+611@ = 1
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            612@ = Char.GetAreaVisible(600@(610@,3i))
+            if 612@ <> 0
+            then
+                611@ = 0
+            end
+            if not Char.LocateAnyMeans3D(600@(610@,3i), False, 614@, 615@, 616@, 60.0, 60.0, 12.0)
+            then
+                611@ = 0
+            end
+        end
+    end
+end
+return
+
+:SWEET2_COOP_CLEANUP
+609@ = 0
+627@ = Char.GetAreaVisible($scplayer)
+Streaming.SetAreaVisible(627@)
+for 621@ = 0 to 4
+    if Object.DoesExist($tag_target(621@,10i))
+    then
+        Object.Delete($tag_target(621@,10i))
+    end
+end
+for 610@ = 0 to 2
+    606@(610@,3i) = -1
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        if not Char.IsDead(600@(610@,3i))
+        then
+            Char.ClearTasks(600@(610@,3i))
+            612@ = Char.GetAreaVisible(600@(610@,3i))
+            if 803B: 612@ == 627@
+            then
+                Char.SetAreaVisible(600@(610@,3i), 627@)
+                0085: 606@(610@,3i) = 600@(610@,3i)
+            end
+        end
+    end
+    if Car.DoesExist(603@(610@,3i))
+    then
+        Car.MarkAsNoLongerNeeded(603@(610@,3i))
+    end
+end
+Coop.TeleportPlayersToHostSafely(606@, 607@, 608@)
+for 610@ = 0 to 2
+    600@(610@,3i) = 0
+end
+// Original host area is retained on interior failure; broadcasts restore movement/camera.
+Player.SetControl($player1, True)
+Hud.SwitchWidescreen(False)
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+return

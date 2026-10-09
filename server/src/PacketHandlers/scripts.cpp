@@ -1,6 +1,7 @@
 #include "network/packets/scripts.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CNetworkObjectManager.h"
 
 PACKET_HANDLER(ePacketType::ON_MISSION_FLAG_SYNC, Packets::Scripts::OnMissionFlagSync* pOnMissionFlagSync,
     CNetworkPlayer* pNetworkPlayer)
@@ -87,6 +88,14 @@ PACKET_HANDLER(ePacketType::TELEPORT_PLAYER_SCRIPTED, Packets::Scripts::Teleport
 
 PACKET_HANDLER(ePacketType::OPCODE_SYNC, Packets::Scripts::OpCodeSync* pOpCodeSync, CNetworkPlayer* pNetworkPlayer)
 {
+    uint16_t opcode = 0;
+    if (pOpCodeSync->size < 4) return;
+    std::memcpy(&opcode, pOpCodeSync->buffer, sizeof opcode);
+    if (ObjectSync::IsObjectOpcode(opcode))
+    {
+        if (!CNetworkObjectManager::RemapOpcode(pOpCodeSync->buffer, pOpCodeSync->size, pNetworkPlayer)) return;
+        pOpCodeSync->serverTime = 0;
+    }
     GetPacketFactory().SendToAll(*pOpCodeSync, pNetworkPlayer);
 }
 

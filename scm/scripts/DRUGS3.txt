@@ -3,6 +3,12 @@
 
 :DRUGS3
 script_name 'DRUGS3'
+if not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+gosub @DRUGS3_COOP_INIT
 gosub @DRUGS3_47
 if 
   has_deatharrest_been_executed 
@@ -152,6 +158,7 @@ Skip.SetUp(2263.378, -2226.33, 12.4, 47.416)
 
 :DRUGS3_850
 wait 0
+gosub @DRUGS3_COOP_TICK
 if 
 is_ps2_keyboard_key_pressed 83
 goto_if_false @DRUGS3_876
@@ -163,6 +170,26 @@ if
 goto_if_false @DRUGS3_937
 137@ = Blip.AddForCoord(2247.639, -2202.144, 12.59)
 Text.PrintNow('CSH3_1', 7000, 1)
+614@ = 2247.639
+615@ = -2202.144
+616@ = 12.59
+620@ = -1
+621@ = -1
+622@ = 0
+623@ = 1
+set_lvar_text_label 624@s = 'CSH3_1'
+626@ = 1
+// Armed escorts use their own motorcycles; all mission NPC vehicles remain untouched.
+630@ = 29
+631@ = 300
+632@ = 461
+617@ = 1032.0
+618@ = -1337.0
+619@ = 12.8
+634@ = 180.0
+gosub @DRUGS3_COOP_FORM_UP
+gosub @DRUGS3_COOP_TRANSPORT
+gosub @DRUGS3_COOP_OBJECTIVE
 141@ = 1
 
 :DRUGS3_937
@@ -171,6 +198,10 @@ if
 goto_if_false @DRUGS3_3398
 if 
   Char.LocateAnyMeans2D($scplayer, 1, 2247.639, -2202.144, 3.0, 3.0)
+goto_if_false @DRUGS3_3398
+gosub @DRUGS3_COOP_READY
+if
+    611@ == 1
 goto_if_false @DRUGS3_3398
 if 
   $tripskip_c3flag == 0
@@ -766,6 +797,16 @@ wait 0
 goto @DRUGS3_6188
 
 :DRUGS3_6223
+614@ = 2178.38
+615@ = -2254.89
+616@ = 13.81
+620@ = -1
+621@ = -1
+622@ = 0
+623@ = 1
+set_lvar_text_label 624@s = 'CSH3_1'
+626@ = 2
+gosub @DRUGS3_COOP_OBJECTIVE
 Hud.SwitchWidescreen(False)
 Player.SetControl($player1, True)
 Text.ClearPrints
@@ -1982,6 +2023,16 @@ Streaming.MarkModelAsNoLongerNeeded(#IMCMPTRKDRL_LAS)
 Streaming.MarkModelAsNoLongerNeeded(#IMCMPTRKDRR_LAS)
 Streaming.MarkModelAsNoLongerNeeded(#IMCOMPMOVEDR1_LAS)
 Text.PrintNow('CSH3_53', 7000, 1)
+614@ = 2185.5
+615@ = -2274.8
+616@ = 12.5
+0085: 620@ = 101@
+621@ = -1
+622@ = 0
+623@ = 0
+set_lvar_text_label 624@s = 'CSH3_53'
+626@ = 4
+gosub @DRUGS3_COOP_OBJECTIVE
 if 
   not Char.IsDead(109@)
 goto_if_false @DRUGS3_14178
@@ -2832,6 +2883,7 @@ Blip.Remove($crash_contact_blip)
 return 
 
 :DRUGS3_19417
+gosub @DRUGS3_COOP_CLEANUP
 if 
   not Car.IsDead($car)
 goto_if_false @DRUGS3_19448
@@ -2951,3 +3003,280 @@ $onmission = 0
 Mission.Finish
 return 
 
+
+// Co-op locals: 600..602 roster, 603..605 owned transport, 609..640 scratch.
+// These slots are above every original mission local; no shared scratch globals.
+:DRUGS3_COOP_INIT
+600@, 601@, 602@ = Coop.CollectNetworkPlayersForTheMission()
+603@ = -1
+604@ = -1
+605@ = -1
+609@ = 0
+627@ = 0
+635@ = 20.0
+639@ = 1
+return
+
+:DRUGS3_COOP_FORM_UP
+for 610@ = 0 to 2
+    606@(610@,3i) = -1
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            0085: 606@(610@,3i) = 600@(610@,3i)
+            Char.ClearTasksImmediately(600@(610@,3i))
+            Char.SetAreaVisible(600@(610@,3i), 622@)
+            if 630@ >= 0
+            then
+                Char.GiveWeapon(600@(610@,3i), 630@, 631@)
+                Char.SetCurrentWeapon(600@(610@,3i), 630@)
+            end
+        end
+    end
+end
+Coop.TeleportPlayersToHostSafely(606@, 607@, 608@)
+return
+
+:DRUGS3_COOP_TRANSPORT
+// Models are already loaded by the original mission; no waits inside peer loops.
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            if Car.DoesExist(603@(610@,3i))
+            then
+                Car.MarkAsNoLongerNeeded(603@(610@,3i))
+            end
+            603@(610@,3i) = Car.Create(632@, 617@, 618@, 619@)
+            Car.SetHeading(603@(610@,3i), 634@)
+        end
+    end
+    617@ += 5.0
+end
+return
+
+:DRUGS3_COOP_OBJECTIVE
+609@ = 1
+627@ = 0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        Coop.PrintNowForNetworkPlayer(624@s, 8000, 1, 600@(610@,3i))
+    end
+end
+return
+
+:DRUGS3_COOP_TICK
+if 609@ == 0
+then
+    return
+end
+629@ = Clock.GetGameTimer()
+if 001D: 627@ > 629@
+then
+    return
+end
+0085: 627@ = 629@
+627@ += 1000
+// The keypad/door objects are host-owned. Move the team past that barrier
+// only after the original door-open test AND the host's actual entry succeed.
+if 626@ == 2
+then
+    if 150@ == 2
+    then
+        if Char.IsInAngledArea2D($scplayer, 2167.955, -2253.054, 2175.023, -2245.327, -11.5, False)
+        then
+            626@ = 3
+            639@ = 0
+            630@ = -1
+            614@ = 2125.8
+            615@ = -2274.24
+            616@ = 19.67
+            set_lvar_text_label 624@s = 'CSH3_13'
+            gosub @DRUGS3_COOP_FORM_UP
+            gosub @DRUGS3_COOP_OBJECTIVE
+        end
+    end
+end
+// A guest cannot operate an unreplicated warehouse door. When the dealer
+// escapes, transfer guests onto the exterior chase route once, not every tick.
+if 626@ == 4
+then
+    if 182@ >= 2
+    then
+        626@ = 5
+        639@ = 1
+        for 610@ = 0 to 2
+            if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+            then
+                if not Char.IsDead(600@(610@,3i))
+                then
+                    Char.ClearTasksImmediately(600@(610@,3i))
+                    Char.SetCoordinates(600@(610@,3i), 2185.5, -2274.8, 12.5)
+                end
+            end
+        end
+        632@ = 461
+        617@ = 2181.0
+        618@ = -2283.0
+        619@ = 12.5
+        634@ = 0.0
+        gosub @DRUGS3_COOP_TRANSPORT
+        gosub @DRUGS3_COOP_OBJECTIVE
+    end
+end
+if 626@ < 4
+then
+    620@ = -1
+    if 626@ == 2
+    then
+        for 640@ = 0 to 4
+            if Char.DoesExist(64@(640@,5i))
+            then
+                if not Char.IsDead(64@(640@,5i))
+                then
+                    636@ = Coop.GetPedNetworkId(64@(640@,5i))
+                    if 636@ >= 0
+                    then
+                        0085: 620@ = 64@(640@,5i)
+                        Break
+                    end
+                end
+            end
+        end
+    end
+    if 626@ == 3
+    then
+        for 640@ = 0 to 17
+            if Char.DoesExist(83@(640@,18i))
+            then
+                if not Char.IsDead(83@(640@,18i))
+                then
+                    636@ = Coop.GetPedNetworkId(83@(640@,18i))
+                    if 636@ >= 0
+                    then
+                        0085: 620@ = 83@(640@,18i)
+                        Break
+                    end
+                end
+            end
+        end
+    end
+end
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            // Refresh removes stale targets after a death, replacement or phase transition.
+            Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+            if 623@ == 1
+            then
+                Coop.UpdateCheckpointForNetworkPlayer(614@, 615@, 616@, 15.0, 15.0, 8.0, 600@(610@,3i))
+            end
+            if 639@ == 1
+            then
+                if Car.DoesExist(603@(610@,3i))
+                then
+                    if not Car.IsDead(603@(610@,3i))
+                    then
+                        if not Char.IsInCar(600@(610@,3i), 603@(610@,3i))
+                        then
+                            636@ = Coop.GetVehicleNetworkId(603@(610@,3i))
+                            if 636@ >= 0
+                            then
+                                Coop.UpdateCarBlipForNetworkPlayer(600@(610@,3i), 603@(610@,3i), True, BlipDisplay.Both, BlipColor.Blue, 3)
+                            end
+                        end
+                    end
+                end
+            end
+            if Char.DoesExist(620@)
+            then
+                if not Char.IsDead(620@)
+                then
+                    636@ = Coop.GetPedNetworkId(620@)
+                    if 636@ >= 0
+                    then
+                        Coop.UpdateCharBlipForNetworkPlayer(600@(610@,3i), 620@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                    end
+                end
+            end
+            if Car.DoesExist(621@)
+            then
+                if not Car.IsDead(621@)
+                then
+                    636@ = Coop.GetVehicleNetworkId(621@)
+                    if 636@ >= 0
+                    then
+                        Coop.UpdateCarBlipForNetworkPlayer(600@(610@,3i), 621@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                    end
+                end
+            end
+        end
+    end
+end
+return
+
+:DRUGS3_COOP_READY
+611@ = 1
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            612@ = Char.GetAreaVisible(600@(610@,3i))
+            if 803B: 612@ == 622@
+            then
+                611@ = 0
+            end
+            if not Char.LocateAnyMeans3D(600@(610@,3i), False, 614@, 615@, 616@, 635@, 635@, 12.0)
+            then
+                611@ = 0
+            end
+        end
+    end
+end
+return
+
+:DRUGS3_COOP_CLEANUP
+609@ = 0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        if 626@ >= 3
+        then
+            if not Char.IsDead(600@(610@,3i))
+            then
+                // Only extract participants still in the warehouse footprint;
+                // a successful chase must not send guests back across Los Santos.
+                if Char.IsInAngledArea2D(600@(610@,3i), 2198.686, -2180.832, 2116.212, -2263.317, 82.0, False)
+                then
+                    Char.SetCoordinates(600@(610@,3i), 2185.5, -2274.8, 12.5)
+                end
+            end
+        end
+        if not Char.IsDead(600@(610@,3i))
+        then
+            Char.ClearTasks(600@(610@,3i))
+        end
+    end
+    // Release occupied cars rather than deleting a vehicle under a guest.
+    if Car.DoesExist(603@(610@,3i))
+    then
+        Car.MarkAsNoLongerNeeded(603@(610@,3i))
+    end
+    603@(610@,3i) = -1
+    600@(610@,3i) = 0
+end
+Player.SetControl($player1, True)
+Hud.SwitchWidescreen(False)
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+return

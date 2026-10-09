@@ -1,4 +1,5 @@
 #pragma once
+#include "object_sync.h"
 
 enum eNetworkEntityType : uint8_t;
 
@@ -30,6 +31,9 @@ public:
 		case NETWORK_ENTITY_TYPE_PED:
 			maxValue = Config::MAX_SERVER_PEDS;
 			break;
+		case NETWORK_ENTITY_TYPE_OBJECT:
+			serialize_int(stream, entityId, 1, int(ObjectSync::MAX_ID));
+			return true;
 		}
 		
 		if (maxValue == 0)

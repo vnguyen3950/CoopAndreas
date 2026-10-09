@@ -3,6 +3,12 @@
 
 :DESERT4
 script_name 'DESERT4'
+if not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+$NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
 gosub @DESERT4_47
 if 
   has_deatharrest_been_executed 
@@ -16,6 +22,7 @@ terminate_this_script
 :DESERT4_47
 Stat.RegisterMissionGiven
 $onmission = 1
+Player.SetControl($player1, False)
 wait 0
 Text.LoadMissionText('DSERT4')
 Weather.Force(WeatherType.ExtraSunnyDesert)
@@ -58,9 +65,24 @@ Char.SetHeading($scplayer, 33.1992)
 Camera.RestoreJumpcut
 Player.SetControl($player1, True)
 Streaming.LoadScene(-696.0359, 948.1198, 11.276)
+for $temp_int = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[$temp_int])
+    then
+        Char.SetAreaVisible($NETWORK_PLAYER[$temp_int], 0)
+    end
+end
+Coop.TeleportPlayersToHostSafely($NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2])
 Camera.DoFade(1, 1000)
 wait 1000
 Text.PrintNow('BUY_AIR', 10000, 1)
+for $temp_int = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[$temp_int])
+    then
+        Coop.PrintNowForNetworkPlayer('BUY_AIR', 10000, 1, $NETWORK_PLAYER[$temp_int])
+    end
+end
 goto @DESERT4_310
 
 :DESERT4_292
@@ -86,6 +108,19 @@ Stat.PlayerMadeProgress(1)
 return 
 
 :DESERT4_429
+for $temp_int = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[$temp_int])
+    then
+        Char.SetAreaVisible($NETWORK_PLAYER[$temp_int], 0)
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[$temp_int])
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[$temp_int])
+    end
+end
+Streaming.SetAreaVisible(0)
+Hud.SwitchWidescreen(False)
+Camera.RestoreJumpcut
+Player.SetControl($player1, True)
 $onmission = 0
 $timer_mobile_start = Clock.GetGameTimer()
 Mission.Finish

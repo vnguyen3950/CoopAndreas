@@ -14,10 +14,12 @@ PACKET_HANDLER(ePacketType::ON_MISSION_FLAG_SYNC, Packets::Scripts::OnMissionFla
 
 	if (CTheScripts::OnAMissionFlag)
 	{
+		const bool wasOnMission = static_cast<bool>(CTheScripts::ScriptSpace[CTheScripts::OnAMissionFlag]);
 		CTheScripts::ScriptSpace[CTheScripts::OnAMissionFlag] = pOnMissionFlagSync->bOnMission;
-		if (pOnMissionFlagSync->bOnMission == false && (bool)CTheScripts::ScriptSpace[CTheScripts::OnAMissionFlag])
+		if (wasOnMission && !pOnMissionFlagSync->bOnMission)
 		{
 			// cleanup
+			COpCodeSync::ms_bLoadingCutscene = false;
 			CNetworkCheckpoint::Remove();
 			CNetworkEntityBlip::ClearEntityBlips();
 			TheCamera.SetWideScreenOff();

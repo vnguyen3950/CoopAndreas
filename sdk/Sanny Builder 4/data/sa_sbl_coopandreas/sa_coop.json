@@ -64849,6 +64849,48 @@
                         "is_static": true
                     },
                     "short_desc": "args can be ignored by passing -1 or invalid (IsNetworkPlayerActorValid) char variable"
+                },
+                {
+                    "input": [
+                        {
+                            "name": "player_actor",
+                            "type": "Char"
+                        },
+                        {
+                            "name": "button",
+                            "type": "Button"
+                        }
+                    ],
+                    "id": "1D1D",
+                    "name": "coop_is_network_player_button_pressed",
+                    "num_params": 2,
+                    "class": "Coop",
+                    "member": "IsNetworkPlayerButtonPressed",
+                    "attrs": {
+                        "is_static": true,
+                        "is_condition": true
+                    }
+                },
+                {
+                    "input": [
+                        {
+                            "name": "player_actor",
+                            "type": "Char"
+                        },
+                        {
+                            "name": "button",
+                            "type": "Button"
+                        }
+                    ],
+                    "id": "1D1E",
+                    "name": "coop_is_network_player_button_just_pressed",
+                    "num_params": 2,
+                    "class": "Coop",
+                    "member": "IsNetworkPlayerButtonJustPressed",
+                    "attrs": {
+                        "is_static": true,
+                        "is_condition": true
+                    }
                 }
             ]
         }

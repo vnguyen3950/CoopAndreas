@@ -3,6 +3,19 @@
 
 :BCRASH1
 script_name 'BCRASH1'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+// Freeze the mission roster; disconnected or late-joining peers cannot extend it.
+$NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
+906@ = 0
+926@ = 0
+for 900@ = 0 to 2
+    910@(900@,3i) = -1
+end
 gosub @BCRASH1_922
 if 
   has_deatharrest_been_executed 
@@ -405,11 +418,23 @@ goto @BCRASH1_3510
 :BCRASH1_3534
 wait 3000
 Player.SetControl($player1, True)
+gosub @BCRASH1_COOP_START
 Hud.SwitchWidescreen(False)
 Camera.RestoreJumpcut
 Camera.SetBehindPlayer
 Text.PrintNow('BCR1_03', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_03', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 65@ = Blip.AddForCoord(98@, 101@, 104@)
+set_lvar_float_to_lvar_float 920@ = 98@
+set_lvar_float_to_lvar_float 921@ = 101@
+set_lvar_float_to_lvar_float 922@ = 104@
+gosub @BCRASH1_COOP_CHECKPOINT
 
 :BCRASH1_3584
 wait 0
@@ -504,7 +529,18 @@ Blip.Remove(65@)
 96@ = -1591.26
 97@ = 140.388
 64@ = Blip.AddForCoord(95@, 96@, 97@)
+set_lvar_float_to_lvar_float 920@ = 95@
+set_lvar_float_to_lvar_float 921@ = 96@
+set_lvar_float_to_lvar_float 922@ = 97@
+gosub @BCRASH1_COOP_CHECKPOINT
 Text.PrintNow('BCR1_18', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_18', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 if 
   $flag_bcr1_skip == 1
 goto_if_false @BCRASH1_4135
@@ -531,6 +567,10 @@ Blip.Remove(64@)
 96@ = -1591.26
 97@ = 140.388
 64@ = Blip.AddForCoord(95@, 96@, 97@)
+set_lvar_float_to_lvar_float 920@ = 95@
+set_lvar_float_to_lvar_float 921@ = 96@
+set_lvar_float_to_lvar_float 922@ = 97@
+gosub @BCRASH1_COOP_CHECKPOINT
 $bc1_cut = 0
 53@ = 1
 
@@ -625,6 +665,13 @@ goto @BCRASH1_4774
 
 :BCRASH1_4798
 Text.PrintNow('BCR1_04', 3000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_04', 3000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Blip.Remove(64@)
 if 
   not Char.IsDead(291@)
@@ -667,6 +714,13 @@ if
   268@ > 3000
 goto_if_false @BCRASH1_5029
 Text.PrintNow('BCR1_19', 3000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_19', 3000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 266@ = Clock.GetGameTimer()
 $bc1_cut = 3
 
@@ -681,6 +735,13 @@ if
   268@ > 3000
 goto_if_false @BCRASH1_5166
 Text.PrintNow('BCR1_20', 4000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_20', 4000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Camera.SetFixedPosition(-2793.092, -1510.473, 139.2297, 0.0, 0.0, 0.0)
 Camera.PointAtPoint(-2793.947, -1510.945, 139.4455, SwitchType.JumpCut)
 266@ = Clock.GetGameTimer()
@@ -1214,6 +1275,13 @@ goto @BCRASH1_8313
 
 :BCRASH1_8290
 Text.PrintNow('BCR1_10', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_10', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 $bc1_stage = 7
 
 :BCRASH1_8313
@@ -1299,6 +1367,13 @@ StuckCarCheck.AddWithWarp(322@, 1.0, 2000, True, True, True, 1)
 
 :BCRASH1_8873
 Text.PrintNow('BCR1_07', 4000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_07', 4000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 if 
   not Car.IsDead(328@)
 goto_if_false @BCRASH1_8942
@@ -1307,6 +1382,13 @@ if and
   not Char.IsInAnyCar($scplayer)
 goto_if_false @BCRASH1_8942
 Text.Print('BCR1_14', 4000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('BCR1_14', 4000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 
 :BCRASH1_8942
 Player.SetControl($player1, False)
@@ -1370,6 +1452,13 @@ Hud.SwitchWidescreen(False)
 Camera.RestoreJumpcut
 Camera.SetBehindPlayer
 Text.PrintNow('BCR1_10', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_10', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 $bc1_stage = 7
 
 :BCRASH1_9317
@@ -1397,6 +1486,13 @@ if
 goto_if_false @BCRASH1_9447
 Char.Delete(284@)
 Text.PrintNow('BCR1_09', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_09', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 goto @BCRASH1_9454
 
@@ -1496,6 +1592,13 @@ if
   not Char.LocateAnyMeansChar3D($scplayer, 284@, 100.0, 100.0, 100.0, False)
 goto_if_false @BCRASH1_10134
 Text.PrintNow('BCR1_12', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_12', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 
 :BCRASH1_10134
@@ -1519,6 +1622,13 @@ if
 goto_if_false @BCRASH1_10293
 Car.SetPlaybackSpeed(322@, 0.8)
 Text.PrintNow('BCR1_15', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_15', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 57@ = 1
 
 :BCRASH1_10293
@@ -1596,6 +1706,13 @@ if
   not Char.LocateAnyMeansChar3D($scplayer, 284@, 25.0, 25.0, 25.0, False)
 goto_if_false @BCRASH1_10889
 Text.PrintNow('BCR1_12', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_12', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 
 :BCRASH1_10889
@@ -1628,6 +1745,13 @@ if
 goto_if_false @BCRASH1_11075
 Char.Delete(284@)
 Text.PrintNow('BCR1_09', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_09', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 goto @BCRASH1_11082
 
@@ -1683,6 +1807,13 @@ Car.LockDoors(322@, CarLock.Unlocked)
 
 :BCRASH1_11338
 Text.PrintNow('BCR1_09', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_09', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 
 :BCRASH1_11361
@@ -1742,6 +1873,13 @@ goto_if_false @BCRASH1_11700
 Blip.Remove(285@)
 285@ = Blip.AddForChar(284@)
 Text.PrintNow('BCR1_08', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_08', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 $bc1_stage = 7
 
 :BCRASH1_11700
@@ -1755,6 +1893,13 @@ if
   not Char.DoesExist(284@)
 goto_if_false @BCRASH1_11775
 Text.PrintNow('BCR1_09', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_09', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 
 :BCRASH1_11775
@@ -1768,6 +1913,13 @@ if
   Char.IsHeadMissing(284@)
 goto_if_false @BCRASH1_11848
 Text.PrintNow('BCR1_09', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_09', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 
 :BCRASH1_11848
@@ -1842,6 +1994,13 @@ if
   268@ > 15000
 goto_if_false @BCRASH1_12353
 Text.PrintNow('BCR1_12', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_12', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 
 :BCRASH1_12353
@@ -1871,7 +2030,18 @@ if
   52@ == 1
 goto_if_false @BCRASH1_12538
 66@ = Blip.AddForCoord(-2044.1, -2523.86, 31.11)
+920@ = -2044.1
+921@ = -2523.86
+922@ = 31.11
+gosub @BCRASH1_COOP_CHECKPOINT
 Text.PrintNow('BCR1_17', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_17', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 $bc1_stage = 8
 
 :BCRASH1_12538
@@ -1883,6 +2053,10 @@ if
 goto_if_false @BCRASH1_12636
 if 
   Char.LocateOnFoot3D($scplayer, 1, -2044.1, -2523.86, 31.11, 1.2, 1.2, 2.0)
+goto_if_false @BCRASH1_12636
+gosub @BCRASH1_COOP_READY
+if
+    923@ == 1
 goto_if_false @BCRASH1_12636
 Char.SetAmmo($scplayer, WeaponType.Camera, 0)
 goto @BCRASH1_13609
@@ -1945,11 +2119,25 @@ if
   $bc1_in_water == 1
 goto_if_false @BCRASH1_13022
 Text.PrintNow('BCR1_16', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_16', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 goto @BCRASH1_13045
 
 :BCRASH1_13022
 Text.PrintNow('BCR1_16', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_16', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @BCRASH1_13511
 
 :BCRASH1_13045
@@ -1972,6 +2160,13 @@ if
   59@ == 0
 goto_if_false @BCRASH1_13192
 Text.PrintNow('BCR1_11', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('BCR1_11', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Blip.Remove(285@)
 270@ = Pickup.CreateWithAmmo(367, 3, 24, -2044.1, -2523.86, 31.11)
 271@ = Blip.AddForPickup(270@)
@@ -2010,6 +2205,13 @@ if or
   not Char.LocateAnyMeansCar2D($scplayer, 328@, 50.0, 50.0, False)
 goto_if_false @BCRASH1_13425
 Text.Print('BCR1_13', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('BCR1_13', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 54@ = 0
 
 :BCRASH1_13425
@@ -2020,6 +2222,13 @@ if
   not Char.IsInCar($scplayer, 328@)
 goto_if_false @BCRASH1_13483
 Text.Print('BCR1_13', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('BCR1_13', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 54@ = 0
 
 :BCRASH1_13483
@@ -2064,6 +2273,7 @@ $call_delay = 15000
 return 
 
 :BCRASH1_13680
+gosub @BCRASH1_COOP_CLEANUP
 gosub @BCRASH1_241
 gosub @BCRASH1_670
 gosub @BCRASH1_785
@@ -2142,3 +2352,113 @@ return
 //-------------Mission 40---------------
 // Originally: First Date
 
+
+// Co-op support locals 900..933 do not overlap original mission locals.
+:BCRASH1_COOP_START
+if
+    906@ == 0
+then
+    906@ = 1
+    gosub @BCRASH1_COOP_REGROUP
+    901@ = -2049.0
+    for 900@ = 0 to 2
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.GiveWeapon($NETWORK_PLAYER[900@], WeaponType.MicroUzi, 180)
+                910@(900@,3i) = Car.Create(468, 901@, -2530.0, 31.11)
+                Car.SetHeading(910@(900@,3i), 45.0)
+            end
+        end
+        901@ += 3.0
+    end
+end
+return
+
+:BCRASH1_COOP_REGROUP
+if
+    not Char.IsDead($scplayer)
+then
+    905@ = Streaming.GetAreaVisible()
+    for 900@ = 0 to 2
+        930@(900@,3i) = -1
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.SetAreaVisible($NETWORK_PLAYER[900@], 905@)
+                Char.ClearTasksImmediately($NETWORK_PLAYER[900@])
+                set_lvar_int_to_var_int 930@(900@,3i) = $NETWORK_PLAYER[900@]
+            end
+        end
+    end
+    Coop.TeleportPlayersToHostSafely(930@, 931@, 932@)
+end
+return
+
+:BCRASH1_COOP_CHECKPOINT
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.UpdateCheckpointForNetworkPlayer(920@, 921@, 922@, 4.0, 4.0, 4.0, $NETWORK_PLAYER[900@])
+    end
+end
+return
+
+:BCRASH1_COOP_READY
+// Original host trigger is retained. Check the captured roster, not all current peers.
+923@ = 1
+905@ = Streaming.GetAreaVisible()
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        if
+            Char.IsDead($NETWORK_PLAYER[900@])
+        then
+            923@ = 0
+        else
+            924@ = Char.GetAreaVisible($NETWORK_PLAYER[900@])
+            if or
+                803B: 924@ == 905@
+                not Char.LocateAnyMeans3D($NETWORK_PLAYER[900@], False, 920@, 921@, 922@, 25.0, 25.0, 10.0)
+            then
+                923@ = 0
+            end
+        end
+    end
+end
+return
+
+:BCRASH1_COOP_CLEANUP
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+    end
+end
+for 900@ = 0 to 2
+    if
+        Car.DoesExist(910@(900@,3i))
+    then
+        // Do not destroy transport underneath a rider.
+        Car.MarkAsNoLongerNeeded(910@(900@,3i))
+    end
+    910@(900@,3i) = -1
+end
+906@ = 0
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+Hud.SwitchWidescreen(False)
+Player.SetControl($player1, True)
+Text.ClearPrints
+return

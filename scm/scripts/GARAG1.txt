@@ -3,6 +3,19 @@
 
 :GARAG1
 script_name 'GARAG1'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+// Freeze the mission roster; disconnected or late-joining peers cannot extend it.
+$NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
+906@ = 0
+926@ = 0
+for 900@ = 0 to 2
+    910@(900@,3i) = -1
+end
 gosub @GARAG1_47
 if 
   has_deatharrest_been_executed 
@@ -365,6 +378,8 @@ TIMERA = 0
 World.ClearArea(1, -2028.773, 154.0429, 27.2416, 10000.0)
 World.DisableAllEntryExits(True)
 Streaming.RequestModel(585)
+Streaming.RequestModel(468)
+Streaming.RequestModel(367)
 
 :GARAG1_3297
 if 
@@ -589,6 +604,7 @@ goto @GARAG1_4163
 skip_cutscene_end 
 Audio.ClearMissionAudio(MissionAudioSlot.Slot1)
 Player.SetControl($player1, True)
+gosub @GARAG1_COOP_START
 Camera.ResetNewScriptables
 Camera.RestoreJumpcut
 Hud.SwitchWidescreen(False)
@@ -623,6 +639,13 @@ goto_if_false @GARAG1_5345
 127@ = Blip.AddForCar(34@)
 Blip.SetAsFriendly(127@, True)
 Text.PrintNow('GAR1_22', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_22', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 
 :GARAG1_4928
 if 
@@ -647,6 +670,13 @@ if
   Car.IsDead(34@)
 goto_if_false @GARAG1_5114
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 101@ = 0
 102@ = 0
 103@ = 0
@@ -662,6 +692,13 @@ if
   Char.IsDead(93@)
 goto_if_false @GARAG1_5204
 Text.PrintNow('GAR1_17', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_17', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 101@ = 0
 102@ = 0
 103@ = 0
@@ -678,6 +715,13 @@ if
 goto_if_false @GARAG1_5285
 Car.Explode(34@)
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 101@ = 0
 102@ = 0
 103@ = 0
@@ -692,11 +736,22 @@ goto @GARAG1_4928
 :GARAG1_5292
 Blip.Remove(127@)
 122@(134@,5i) = Blip.AddForCoord(54@(134@,5f), 59@(134@,5f), 64@(134@,5f))
+set_lvar_float_to_lvar_float 920@ = 54@(134@,5f)
+set_lvar_float_to_lvar_float 921@ = 59@(134@,5f)
+set_lvar_float_to_lvar_float 922@ = 64@(134@,5f)
+gosub @GARAG1_COOP_CHECKPOINT
 Blip.SetCoordAppearance(122@(134@,5i), 1)
 goto @GARAG1_5377
 
 :GARAG1_5345
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 101@ = 0
 110@ = 1
 return 
@@ -777,7 +832,7 @@ if
   not Car.IsPassengerSeatFree(34@, SeatIndex.RearRight)
 goto_if_false @GARAG1_5951
 100@ = Car.GetCharInPassengerSeat(34@, 2)
-Char.Delete(100@)
+gosub @GARAG1_COOP_FREE_SEAT
 
 :GARAG1_5951
 if 
@@ -819,6 +874,13 @@ goto @GARAG1_6228
 
 :GARAG1_6196
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 101@ = 0
 110@ = 1
 return 
@@ -1033,13 +1095,43 @@ goto_if_false @GARAG1_7558
 if 
   Car.IsPassengerSeatFree(34@, SeatIndex.TandemRear)
 goto_if_false @GARAG1_7533
-Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+if
+    Car.IsPassengerSeatFree(34@, 0)
+then
+    Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+else
+    952@ = Car.GetCharInPassengerSeat(34@, 0)
+    if
+        is_int_lvar_equal_to_int_lvar 952@ == 93@
+    then
+        // Preserve vanilla re-warp/flush when the intended NPC already owns this seat.
+        Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+    else
+        // Never overwrite a guest still occupying a reserved seat.
+        110@ = 1
+    end
+end
 goto @GARAG1_7558
 
 :GARAG1_7533
 100@ = Car.GetCharInPassengerSeat(34@, 0)
-Char.Delete(100@)
-Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+gosub @GARAG1_COOP_FREE_SEAT
+if
+    Car.IsPassengerSeatFree(34@, 0)
+then
+    Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+else
+    952@ = Car.GetCharInPassengerSeat(34@, 0)
+    if
+        is_int_lvar_equal_to_int_lvar 952@ == 93@
+    then
+        // Preserve vanilla re-warp/flush when the intended NPC already owns this seat.
+        Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+    else
+        // Never overwrite a guest still occupying a reserved seat.
+        110@ = 1
+    end
+end
 
 :GARAG1_7558
 if 
@@ -1051,13 +1143,43 @@ goto_if_false @GARAG1_7669
 if 
   Car.IsPassengerSeatFree(34@, SeatIndex.RearRight)
 goto_if_false @GARAG1_7640
-Char.WarpIntoCarAsPassenger(94@(134@,4i), 34@, 2)
+if
+    Car.IsPassengerSeatFree(34@, 2)
+then
+    Char.WarpIntoCarAsPassenger(94@(134@,4i), 34@, 2)
+else
+    952@ = Car.GetCharInPassengerSeat(34@, 2)
+    if
+        is_int_lvar_equal_to_int_lvar 952@ == 94@(134@,4i)
+    then
+        // Preserve vanilla re-warp/flush when the intended NPC already owns this seat.
+        Char.WarpIntoCarAsPassenger(94@(134@,4i), 34@, 2)
+    else
+        // Never overwrite a guest still occupying a reserved seat.
+        110@ = 1
+    end
+end
 goto @GARAG1_7669
 
 :GARAG1_7640
 100@ = Car.GetCharInPassengerSeat(34@, 2)
-Char.Delete(100@)
-Char.WarpIntoCarAsPassenger(94@(134@,4i), 34@, 2)
+gosub @GARAG1_COOP_FREE_SEAT
+if
+    Car.IsPassengerSeatFree(34@, 2)
+then
+    Char.WarpIntoCarAsPassenger(94@(134@,4i), 34@, 2)
+else
+    952@ = Car.GetCharInPassengerSeat(34@, 2)
+    if
+        is_int_lvar_equal_to_int_lvar 952@ == 94@(134@,4i)
+    then
+        // Preserve vanilla re-warp/flush when the intended NPC already owns this seat.
+        Char.WarpIntoCarAsPassenger(94@(134@,4i), 34@, 2)
+    else
+        // Never overwrite a guest still occupying a reserved seat.
+        110@ = 1
+    end
+end
 
 :GARAG1_7669
 134@ = 1
@@ -1407,6 +1529,10 @@ goto @GARAG1_9857
 
 :GARAG1_9883
 122@(134@,5i) = Blip.AddForCoord(54@(134@,5f), 59@(134@,5f), 64@(134@,5f))
+set_lvar_float_to_lvar_float 920@ = 54@(134@,5f)
+set_lvar_float_to_lvar_float 921@ = 59@(134@,5f)
+set_lvar_float_to_lvar_float 922@ = 64@(134@,5f)
+gosub @GARAG1_COOP_CHECKPOINT
 Blip.SetCoordAppearance(122@(134@,5i), 1)
 if 
   110@ == 14
@@ -1613,6 +1739,13 @@ goto @GARAG1_11687
 
 :GARAG1_11655
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 102@ = 0
 110@ = 1
 return 
@@ -1635,6 +1768,13 @@ goto @GARAG1_11783
 
 :GARAG1_11751
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 102@ = 0
 110@ = 1
 return 
@@ -1860,13 +2000,43 @@ goto_if_false @GARAG1_13231
 if 
   Car.IsPassengerSeatFree(34@, SeatIndex.TandemRear)
 goto_if_false @GARAG1_13206
-Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+if
+    Car.IsPassengerSeatFree(34@, 0)
+then
+    Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+else
+    952@ = Car.GetCharInPassengerSeat(34@, 0)
+    if
+        is_int_lvar_equal_to_int_lvar 952@ == 93@
+    then
+        // Preserve vanilla re-warp/flush when the intended NPC already owns this seat.
+        Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+    else
+        // Never overwrite a guest still occupying a reserved seat.
+        110@ = 1
+    end
+end
 goto @GARAG1_13231
 
 :GARAG1_13206
 100@ = Car.GetCharInPassengerSeat(34@, 0)
-Char.Delete(100@)
-Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+gosub @GARAG1_COOP_FREE_SEAT
+if
+    Car.IsPassengerSeatFree(34@, 0)
+then
+    Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+else
+    952@ = Car.GetCharInPassengerSeat(34@, 0)
+    if
+        is_int_lvar_equal_to_int_lvar 952@ == 93@
+    then
+        // Preserve vanilla re-warp/flush when the intended NPC already owns this seat.
+        Char.WarpIntoCarAsPassenger(93@, 34@, 0)
+    else
+        // Never overwrite a guest still occupying a reserved seat.
+        110@ = 1
+    end
+end
 
 :GARAG1_13231
 if 
@@ -2173,6 +2343,10 @@ return
 
 :GARAG1_15129
 122@(134@,5i) = Blip.AddForCoord(54@(134@,5f), 59@(134@,5f), 64@(134@,5f))
+set_lvar_float_to_lvar_float 920@ = 54@(134@,5f)
+set_lvar_float_to_lvar_float 921@ = 59@(134@,5f)
+set_lvar_float_to_lvar_float 922@ = 64@(134@,5f)
+gosub @GARAG1_COOP_CHECKPOINT
 Blip.SetCoordAppearance(122@(134@,5i), 1)
 Streaming.RequestAnimation("CRIB")
 Streaming.RequestModel(465)
@@ -2294,7 +2468,7 @@ if
   not Car.IsPassengerSeatFree(34@, SeatIndex.RearLeft)
 goto_if_false @GARAG1_15952
 100@ = Car.GetCharInPassengerSeat(34@, 1)
-Char.Delete(100@)
+gosub @GARAG1_COOP_FREE_SEAT
 
 :GARAG1_15952
 if 
@@ -2382,6 +2556,13 @@ goto @GARAG1_16501
 
 :GARAG1_16469
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 103@ = 0
 110@ = 1
 return 
@@ -2452,13 +2633,43 @@ goto_if_false @GARAG1_16944
 if 
   Car.IsPassengerSeatFree(34@, SeatIndex.RearLeft)
 goto_if_false @GARAG1_16901
-Char.WarpIntoCarAsPassenger(96@, 34@, 1)
+if
+    Car.IsPassengerSeatFree(34@, 1)
+then
+    Char.WarpIntoCarAsPassenger(96@, 34@, 1)
+else
+    952@ = Car.GetCharInPassengerSeat(34@, 1)
+    if
+        is_int_lvar_equal_to_int_lvar 952@ == 96@
+    then
+        // Preserve vanilla re-warp/flush when the intended NPC already owns this seat.
+        Char.WarpIntoCarAsPassenger(96@, 34@, 1)
+    else
+        // Never overwrite a guest still occupying a reserved seat.
+        110@ = 1
+    end
+end
 goto @GARAG1_16930
 
 :GARAG1_16901
 100@ = Car.GetCharInPassengerSeat(34@, 1)
-Char.Delete(100@)
-Char.WarpIntoCarAsPassenger(94@(134@,4i), 34@, 1)
+gosub @GARAG1_COOP_FREE_SEAT
+if
+    Car.IsPassengerSeatFree(34@, 1)
+then
+    Char.WarpIntoCarAsPassenger(94@(134@,4i), 34@, 1)
+else
+    952@ = Car.GetCharInPassengerSeat(34@, 1)
+    if
+        is_int_lvar_equal_to_int_lvar 952@ == 94@(134@,4i)
+    then
+        // Preserve vanilla re-warp/flush when the intended NPC already owns this seat.
+        Char.WarpIntoCarAsPassenger(94@(134@,4i), 34@, 1)
+    else
+        // Never overwrite a guest still occupying a reserved seat.
+        110@ = 1
+    end
+end
 
 :GARAG1_16930
 Char.SetCurrentWeapon(96@, WeaponType.Unarmed)
@@ -2508,6 +2719,10 @@ return
 
 :GARAG1_17180
 122@(134@,5i) = Blip.AddForCoord(69@, 70@, 71@)
+set_lvar_float_to_lvar_float 920@ = 69@
+set_lvar_float_to_lvar_float 921@ = 70@
+set_lvar_float_to_lvar_float 922@ = 71@
+gosub @GARAG1_COOP_CHECKPOINT
 Streaming.RequestModel(588)
 
 :GARAG1_17203
@@ -2559,6 +2774,13 @@ goto @GARAG1_17488
 
 :GARAG1_17514
 Text.PrintNow('GAR1_PH', 10000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_PH', 10000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Audio.PlayMissionAudio(MissionAudioSlot.Slot1)
 
 :GARAG1_17534
@@ -2693,7 +2915,15 @@ Char.Delete(96@)
 Char.Delete(97@)
 Char.Delete(99@)
 Car.Delete(35@)
-Car.Delete(34@)
+gosub @GARAG1_COOP_CLEAR_TOUR_CAR
+if
+    951@ == 1
+then
+    Car.Delete(34@)
+else
+    // A player may still occupy it if the scripted exit did not finish.
+    Car.MarkAsNoLongerNeeded(34@)
+end
 Cutscene.Load('GARAG1C')
 Streaming.SetAreaVisible(1)
 
@@ -2974,6 +3204,10 @@ goto_if_false @GARAG1_20515
 if 
   Car.LocateStopped3D(34@, 0, 54@(134@,5f), 59@(134@,5f), 64@(134@,5f), 2.5, 2.5, 2.5)
 goto_if_false @GARAG1_20506
+gosub @GARAG1_COOP_READY
+if
+    923@ == 1
+goto_if_false @GARAG1_20506
 if 
   118@ == 0
 goto_if_false @GARAG1_20323
@@ -3063,6 +3297,10 @@ goto_if_false @GARAG1_20903
 40@ = Car.GetHeading(34@)
 if 
   Car.Locate3D(34@, 1, -2034.59, 180.23, 28.43, 4.0, 4.0, 4.0)
+goto_if_false @GARAG1_20903
+gosub @GARAG1_COOP_READY
+if
+    923@ == 1
 goto_if_false @GARAG1_20903
 if and
   40@ > 0.0
@@ -3168,6 +3406,13 @@ goto @GARAG1_21335
 
 :GARAG1_21361
 Text.PrintNow('TRUX_AC', 10000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('TRUX_AC', 10000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Audio.PlayMissionAudio(MissionAudioSlot.Slot1)
 
 :GARAG1_21381
@@ -3201,6 +3446,13 @@ goto @GARAG1_21565
 
 :GARAG1_21505
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 101@ = 0
 102@ = 0
 103@ = 0
@@ -3215,6 +3467,13 @@ if
 goto_if_false @GARAG1_21646
 Car.Explode(34@)
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 101@ = 0
 102@ = 0
 103@ = 0
@@ -3242,6 +3501,10 @@ if or
   103@ == 1
 goto_if_false @GARAG1_21765
 122@(134@,5i) = Blip.AddForCoord(54@(134@,5f), 59@(134@,5f), 64@(134@,5f))
+set_lvar_float_to_lvar_float 920@ = 54@(134@,5f)
+set_lvar_float_to_lvar_float 921@ = 59@(134@,5f)
+set_lvar_float_to_lvar_float 922@ = 64@(134@,5f)
+gosub @GARAG1_COOP_CHECKPOINT
 Blip.SetCoordAppearance(122@(134@,5i), 1)
 
 :GARAG1_21765
@@ -3261,12 +3524,23 @@ if
   107@ == 1
 goto_if_false @GARAG1_21869
 122@(134@,5i) = Blip.AddForCoord(69@, 70@, 71@)
+set_lvar_float_to_lvar_float 920@ = 69@
+set_lvar_float_to_lvar_float 921@ = 70@
+set_lvar_float_to_lvar_float 922@ = 71@
+gosub @GARAG1_COOP_CHECKPOINT
 
 :GARAG1_21869
 goto @GARAG1_21936
 
 :GARAG1_21876
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 101@ = 0
 102@ = 0
 103@ = 0
@@ -3283,6 +3557,13 @@ goto @GARAG1_22003
 
 :GARAG1_21950
 Text.PrintNow('GAR1_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 101@ = 0
 102@ = 0
 103@ = 0
@@ -3314,6 +3595,13 @@ goto_if_false @GARAG1_22161
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_18', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_18', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 
 :GARAG1_22161
 if 
@@ -3343,6 +3631,13 @@ goto_if_false @GARAG1_22352
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_19', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_19', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 
 :GARAG1_22352
 goto @GARAG1_22384
@@ -3384,6 +3679,13 @@ goto_if_false @GARAG1_22593
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_20', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_20', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 
 :GARAG1_22593
 goto @GARAG1_22625
@@ -3425,6 +3727,13 @@ goto_if_false @GARAG1_22834
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_21', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_21', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 
 :GARAG1_22834
 goto @GARAG1_22866
@@ -3447,6 +3756,13 @@ goto_if_false @GARAG1_22949
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_17', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_17', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_22949
@@ -3467,6 +3783,13 @@ goto_if_false @GARAG1_23068
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_14', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_14', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23068
@@ -3481,6 +3804,13 @@ goto_if_false @GARAG1_23151
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_14', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_14', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23151
@@ -3498,6 +3828,13 @@ goto_if_false @GARAG1_23252
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_14', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_14', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23252
@@ -3515,6 +3852,13 @@ goto_if_false @GARAG1_23353
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_15', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_15', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23353
@@ -3529,6 +3873,13 @@ goto_if_false @GARAG1_23436
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_15', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_15', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23436
@@ -3546,6 +3897,13 @@ goto_if_false @GARAG1_23537
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_14', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_14', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23537
@@ -3563,6 +3921,13 @@ goto_if_false @GARAG1_23638
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_16', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_16', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23638
@@ -3581,6 +3946,13 @@ Char.SetCollision(96@, True)
 Char.SetHealth(96@, 0)
 110@ = 1
 Text.PrintNow('GAR1_16', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_16', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23728
@@ -3599,6 +3971,13 @@ Char.SetCollision(96@, True)
 Char.SetHealth(96@, 0)
 110@ = 1
 Text.PrintNow('GAR1_16', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_16', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23815
@@ -3616,6 +3995,13 @@ goto_if_false @GARAG1_23916
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_14', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_14', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23916
@@ -3630,6 +4016,13 @@ goto_if_false @GARAG1_23999
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_16', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_16', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_23999
@@ -3648,6 +4041,13 @@ goto_if_false @GARAG1_24107
 107@ = 0
 110@ = 1
 Text.PrintNow('GAR1_14', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('GAR1_14', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 return 
 
 :GARAG1_24107
@@ -3676,6 +4076,13 @@ Char.StartFacialTalk(242@(348@,106i), 10000)
 :GARAG1_24214
 Audio.PlayMissionAudio(MissionAudioSlot.Slot1)
 Text.PrintNow($garage1_text(348@,106s), 10000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer($garage1_text(348@,106s), 10000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 349@ = 2
 
 :GARAG1_24239
@@ -3712,6 +4119,13 @@ goto @GARAG1_24351
 
 :GARAG1_24377
 Text.PrintNow($garage1_text(348@,106s), 10000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer($garage1_text(348@,106s), 10000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Audio.PlayMissionAudio(MissionAudioSlot.Slot1)
 
 :GARAG1_24395
@@ -3743,6 +4157,9 @@ Text.PrintBig('M_FAIL', 5000, TextStyle.Middle)
 return 
 
 :GARAG1_24530
+gosub @GARAG1_COOP_CLEANUP
+Streaming.MarkModelAsNoLongerNeeded(468)
+Streaming.MarkModelAsNoLongerNeeded(367)
 Camera.ResetNewScriptables
 World.DisableAllEntryExits(False)
 if 
@@ -3842,3 +4259,203 @@ $onmission = 0
 Mission.Finish
 return 
 
+
+// Co-op support locals 900..933 do not overlap original mission locals.
+:GARAG1_COOP_START
+if
+    906@ == 0
+then
+    Streaming.LoadAllModelsNow
+    906@ = 1
+    gosub @GARAG1_COOP_REGROUP
+    901@ = -2022.0
+    for 900@ = 0 to 2
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.GiveWeapon($NETWORK_PLAYER[900@], WeaponType.Camera, 12)
+                910@(900@,3i) = Car.Create(468, 901@, 150.0, 27.8359)
+                Car.SetHeading(910@(900@,3i), 90.0)
+            end
+        end
+        901@ += 3.0
+    end
+end
+return
+
+:GARAG1_COOP_REGROUP
+if
+    not Char.IsDead($scplayer)
+then
+    905@ = Streaming.GetAreaVisible()
+    for 900@ = 0 to 2
+        930@(900@,3i) = -1
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.SetAreaVisible($NETWORK_PLAYER[900@], 905@)
+                Char.ClearTasksImmediately($NETWORK_PLAYER[900@])
+                set_lvar_int_to_var_int 930@(900@,3i) = $NETWORK_PLAYER[900@]
+            end
+        end
+    end
+    Coop.TeleportPlayersToHostSafely(930@, 931@, 932@)
+end
+return
+
+:GARAG1_COOP_CHECKPOINT
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.UpdateCheckpointForNetworkPlayer(920@, 921@, 922@, 4.0, 4.0, 4.0, $NETWORK_PLAYER[900@])
+    end
+end
+return
+
+:GARAG1_COOP_READY
+// Original host trigger is retained. Check the captured roster, not all current peers.
+923@ = 1
+905@ = Streaming.GetAreaVisible()
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        if
+            Char.IsDead($NETWORK_PLAYER[900@])
+        then
+            923@ = 0
+        else
+            924@ = Char.GetAreaVisible($NETWORK_PLAYER[900@])
+            if or
+                803B: 924@ == 905@
+                not Char.LocateAnyMeans3D($NETWORK_PLAYER[900@], False, 920@, 921@, 922@, 25.0, 25.0, 10.0)
+            then
+                923@ = 0
+            end
+        end
+    end
+end
+return
+
+:GARAG1_COOP_CLEANUP
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+    end
+end
+for 900@ = 0 to 2
+    if
+        Car.DoesExist(910@(900@,3i))
+    then
+        // Do not destroy transport underneath a rider.
+        Car.MarkAsNoLongerNeeded(910@(900@,3i))
+    end
+    910@(900@,3i) = -1
+end
+906@ = 0
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+Hud.SwitchWidescreen(False)
+Player.SetControl($player1, True)
+Text.ClearPrints
+return
+
+:GARAG1_COOP_FREE_SEAT
+// Called with the original passenger handle100@. No roster replacement or player deletion.
+if
+    Char.DoesExist(100@)
+then
+    if
+        Coop.IsNetworkPlayerActorValid(100@)
+    then
+        if
+            Car.DoesExist(34@)
+        then
+            927@ = Coop.GetVehicleNetworkId(34@)
+            if
+                927@ <> -1
+            then
+                Task.LeaveCar(100@, 34@)
+                950@ = Clock.GetGameTimer()
+                950@ += 5000
+                gosub @GARAG1_COOP_WAIT_EXIT
+            else
+                110@ = 1
+            end
+        end
+    else
+        Char.Delete(100@)
+    end
+end
+return
+
+:GARAG1_COOP_WAIT_EXIT
+// Bounded scripted exit. Disconnects/missing cars immediately release the wait.
+wait 0
+if
+    not Coop.IsNetworkPlayerActorValid(100@)
+goto_if_false @GARAG1_COOP_EXIT_ALIVE
+return
+
+:GARAG1_COOP_EXIT_ALIVE
+if
+    not Car.DoesExist(34@)
+goto_if_false @GARAG1_COOP_EXIT_CAR
+return
+
+:GARAG1_COOP_EXIT_CAR
+if
+    not Char.IsInCar(100@, 34@)
+goto_if_false @GARAG1_COOP_EXIT_TIME
+return
+
+:GARAG1_COOP_EXIT_TIME
+925@ = Clock.GetGameTimer()
+if
+    001D: 950@ > 925@
+goto_if_false @GARAG1_COOP_EXIT_TIMEOUT
+goto @GARAG1_COOP_WAIT_EXIT
+
+:GARAG1_COOP_EXIT_TIMEOUT
+110@ = 1
+return
+
+:GARAG1_COOP_CLEAR_TOUR_CAR
+951@ = 1
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        if
+            Car.DoesExist(34@)
+        then
+            if
+                Char.IsInCar($NETWORK_PLAYER[900@], 34@)
+            then
+                set_lvar_int_to_var_int 100@ = $NETWORK_PLAYER[900@]
+                gosub @GARAG1_COOP_FREE_SEAT
+                if
+                    Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                then
+                    if
+                        Char.IsInCar($NETWORK_PLAYER[900@], 34@)
+                    then
+                        951@ = 0
+                    end
+                end
+            end
+        end
+    end
+end
+return

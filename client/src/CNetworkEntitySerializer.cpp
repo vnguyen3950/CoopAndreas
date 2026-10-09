@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "network/CNetworkEntitySerializer.h"
+#include "CNetworkObjectManager.h"
 
 CEntity* CNetworkEntitySerializer::GetEntity()
 {
@@ -38,6 +39,11 @@ CEntity* CNetworkEntitySerializer::GetEntity()
 		}
 	}
 
+	if (entityType == NETWORK_ENTITY_TYPE_OBJECT)
+	{
+		int ref = CNetworkObjectManager::GetHandle(entityId);
+		return ref >= 0 && CPools::ms_pObjectPool ? CPools::ms_pObjectPool->GetAtRef(ref) : nullptr;
+	}
 	return nullptr;
 }
 
@@ -81,5 +87,10 @@ void CNetworkEntitySerializer::SetEntity(CEntity* entity)
 		{
 			entityId = networkVehicle->m_nVehicleId;
 		}
+	}
+	else if (entity->m_nType == ENTITY_TYPE_OBJECT)
+	{
+		int id = CNetworkObjectManager::GetNetworkId(entity);
+		if (id > 0) { entityType = NETWORK_ENTITY_TYPE_OBJECT; entityId = id; }
 	}
 }

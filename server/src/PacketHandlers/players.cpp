@@ -1,6 +1,7 @@
 #include "network/packets/players.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CNetworkObjectManager.h"
 #include "network/packet_handler.h"
 
 PACKET_HANDLER(
@@ -52,6 +53,12 @@ PACKET_HANDLER(ePacketType::RESPAWN_PLAYER, Packets::Players::RespawnPlayer* pRe
 PACKET_HANDLER(ePacketType::PLAYER_BULLET_SHOT, Packets::Players::PlayerBulletShot* pPlayerBulletShot, CNetworkPlayer* pNetworkPlayer)
 {
     pPlayerBulletShot->playerid = pNetworkPlayer->m_iPlayerId;
+    if (pPlayerBulletShot->bHitSomething && pPlayerBulletShot->bHitNetworkEntity
+        && pPlayerBulletShot->hitEntity.entityType == NETWORK_ENTITY_TYPE_OBJECT)
+    {
+        CNetworkObjectManager::RouteHit(*pPlayerBulletShot, pNetworkPlayer);
+        return;
+    }
     GetPacketFactory().SendToAll(*pPlayerBulletShot, pNetworkPlayer);
 }
 

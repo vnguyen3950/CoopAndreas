@@ -1,4 +1,7 @@
 # CoopAndreas
+
+This development fork adds mission participation and synchronization fixes. Its adapted menu contains **26 story mission candidates**; multiplayer mission playtesting is still pending. See [development status and build instructions](docs/DEVELOPMENT.md) and the [testing checklist](docs/TESTING.md). Upstream project: [Tornamic/CoopAndreas](https://github.com/Tornamic/CoopAndreas).
+
 [![Made in Ukraine](https://img.shields.io/badge/made_in-ukraine-ffd700.svg?labelColor=0057b7)](https://stand-with-ukraine.pp.ua)
 
 Videos, pictures, news, suggestions, and communication can be found here:

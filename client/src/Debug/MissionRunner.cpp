@@ -1,4 +1,5 @@
 #include "MissionRunner.h"
+#include "MissionSupport.h"
 #include <imgui.h>
 
 namespace
@@ -146,6 +147,10 @@ bool MissionRunner::DrawUI()
     ImGui::SetNextWindowSize(ImVec2(300.0f, 500.0f), ImGuiCond_FirstUseEver);
     ImGui::Begin("Missions");
 
+    static bool bOnlyPreparedMissions = true;
+    ImGui::Checkbox("Show adapted missions only", &bOnlyPreparedMissions);
+    ImGui::TextDisabled("Adapted scripts still need co-op playtesting.");
+
     const char* szUnavailableReason = GetLaunchUnavailableReason();
     if (szUnavailableReason)
     {
@@ -158,6 +163,9 @@ bool MissionRunner::DrawUI()
     bool bMissionLaunched = false;
     for (const SMissionEntry& mission : MISSIONS)
     {
+        const bool bPrepared = IsMissionPreparedForCoop(mission.m_nId);
+        if (bOnlyPreparedMissions && !bPrepared)
+            continue;
         bool bValidMissionId = mission.m_nId >= 0 && mission.m_nId < CTheScripts::NumberOfMissionScripts;
         ImGui::BeginDisabled(szUnavailableReason || !bValidMissionId);
 
@@ -168,6 +176,9 @@ bool MissionRunner::DrawUI()
         }
 
         ImGui::EndDisabled();
+
+        if (!bPrepared && ImGui::IsItemHovered())
+            ImGui::SetTooltip("Original single-player script; guest participation is not adapted.");
 
         if (bMissionLaunched)
         {

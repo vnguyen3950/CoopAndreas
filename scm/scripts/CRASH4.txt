@@ -3,6 +3,12 @@
 
 :CRASH4
 script_name 'CRASH4'
+if not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+gosub @CRASH4_COOP_INIT
 gosub @CRASH4_47
 if 
   has_deatharrest_been_executed 
@@ -370,10 +376,28 @@ Game.CanTriggerGangWarWhenOnAMission(True)
 Game.SetGangWarsActive(True)
 $flag_gang_war_active = 1
 Text.PrintNow('CM2_3', 8000, 1)
+// The host starts/owns the native gang war; guests support the assault.
+614@ = 1932.351
+615@ = -1189.647
+616@ = 19.063
+620@ = -1
+621@ = -1
+622@ = 0
+623@ = 1
+set_lvar_text_label 624@s = 'CM2_3'
+626@ = 1
+630@ = 32
+631@ = 300
+635@ = 100.0
+gosub @CRASH4_COOP_FORM_UP
+gosub @CRASH4_COOP_OBJECTIVE
 45@ = Blip.AddSpriteForCoord(62, 1932.351, -1189.647, 19.063)
 
 :CRASH4_2552
-if 
+gosub @CRASH4_COOP_TICK
+gosub @CRASH4_COOP_READY
+if or
+    611@ == 0
   not Player.IsInInfoZone($player1, 'GLN1')
 goto_if_false @CRASH4_2804
 wait 0
@@ -417,8 +441,11 @@ goto @CRASH4_2552
 Blip.Remove(52@)
 Text.PrintNow('CM2_5', 8000, 1)
 TIMERA = 0
+set_lvar_text_label 624@s = 'CM2_5'
+gosub @CRASH4_COOP_OBJECTIVE
 
 :CRASH4_2832
+gosub @CRASH4_COOP_TICK
 if 
   not Game.IsGangWarGoingOn
 goto_if_false @CRASH4_3096
@@ -471,6 +498,7 @@ Text.ClearThisPrint('CM2_5')
 TIMERA = 0
 
 :CRASH4_3114
+gosub @CRASH4_COOP_TICK
 if 
   47@ <> 0
 goto_if_false @CRASH4_3456
@@ -993,8 +1021,17 @@ $flag_end_guy_audio_crash4 = 0
 
 :CRASH4_6072
 Text.PrintNow('CM2_8', 8000, 1)
+// Reform for the final traitor encounter after the native war's cinematic.
+0085: 620@ = 34@
+623@ = 0
+set_lvar_text_label 624@s = 'CM2_8'
+626@ = 2
+630@ = -1
+gosub @CRASH4_COOP_FORM_UP
+gosub @CRASH4_COOP_OBJECTIVE
 
 :CRASH4_6088
+gosub @CRASH4_COOP_TICK
 if 
   38@ <> 1
 goto_if_false @CRASH4_6174
@@ -1067,6 +1104,7 @@ $add_all_ammu_blips = 1
 return 
 
 :CRASH4_6780
+gosub @CRASH4_COOP_CLEANUP
 Streaming.MarkModelAsNoLongerNeeded(#LAEJEFFERSALPHA)
 Streaming.MarkModelAsNoLongerNeeded(#LAELODPARK02)
 Streaming.MarkModelAsNoLongerNeeded(#LAEMACPARK02)
@@ -1095,3 +1133,164 @@ DecisionMaker.Remove(43@)
 Mission.Finish
 return 
 
+
+// Co-op locals: 600..602 roster, 603..605 owned transport, 609..640 scratch.
+// These slots are above every original mission local; no shared scratch globals.
+:CRASH4_COOP_INIT
+600@, 601@, 602@ = Coop.CollectNetworkPlayersForTheMission()
+603@ = -1
+604@ = -1
+605@ = -1
+609@ = 0
+627@ = 0
+635@ = 20.0
+639@ = 0
+return
+
+:CRASH4_COOP_FORM_UP
+for 610@ = 0 to 2
+    606@(610@,3i) = -1
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            0085: 606@(610@,3i) = 600@(610@,3i)
+            Char.ClearTasksImmediately(600@(610@,3i))
+            Char.SetAreaVisible(600@(610@,3i), 622@)
+            if 630@ >= 0
+            then
+                Char.GiveWeapon(600@(610@,3i), 630@, 631@)
+                Char.SetCurrentWeapon(600@(610@,3i), 630@)
+            end
+        end
+    end
+end
+Coop.TeleportPlayersToHostSafely(606@, 607@, 608@)
+return
+
+:CRASH4_COOP_OBJECTIVE
+609@ = 1
+627@ = 0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        Coop.PrintNowForNetworkPlayer(624@s, 8000, 1, 600@(610@,3i))
+    end
+end
+return
+
+:CRASH4_COOP_TICK
+if 609@ == 0
+then
+    return
+end
+629@ = Clock.GetGameTimer()
+if 001D: 627@ > 629@
+then
+    return
+end
+0085: 627@ = 629@
+627@ += 1000
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            // Refresh removes stale targets after a death, replacement or phase transition.
+            Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+            if 623@ == 1
+            then
+                Coop.UpdateCheckpointForNetworkPlayer(614@, 615@, 616@, 15.0, 15.0, 8.0, 600@(610@,3i))
+            end
+            if 639@ == 1
+            then
+                if Car.DoesExist(603@(610@,3i))
+                then
+                    if not Car.IsDead(603@(610@,3i))
+                    then
+                        if not Char.IsInCar(600@(610@,3i), 603@(610@,3i))
+                        then
+                            636@ = Coop.GetVehicleNetworkId(603@(610@,3i))
+                            if 636@ >= 0
+                            then
+                                Coop.UpdateCarBlipForNetworkPlayer(600@(610@,3i), 603@(610@,3i), True, BlipDisplay.Both, BlipColor.Blue, 3)
+                            end
+                        end
+                    end
+                end
+            end
+            if Char.DoesExist(620@)
+            then
+                if not Char.IsDead(620@)
+                then
+                    636@ = Coop.GetPedNetworkId(620@)
+                    if 636@ >= 0
+                    then
+                        Coop.UpdateCharBlipForNetworkPlayer(600@(610@,3i), 620@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                    end
+                end
+            end
+            if Car.DoesExist(621@)
+            then
+                if not Car.IsDead(621@)
+                then
+                    636@ = Coop.GetVehicleNetworkId(621@)
+                    if 636@ >= 0
+                    then
+                        Coop.UpdateCarBlipForNetworkPlayer(600@(610@,3i), 621@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                    end
+                end
+            end
+        end
+    end
+end
+return
+
+:CRASH4_COOP_READY
+611@ = 1
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            612@ = Char.GetAreaVisible(600@(610@,3i))
+            if 803B: 612@ == 622@
+            then
+                611@ = 0
+            end
+            if not Char.LocateAnyMeans3D(600@(610@,3i), False, 614@, 615@, 616@, 635@, 635@, 12.0)
+            then
+                611@ = 0
+            end
+        end
+    end
+end
+return
+
+:CRASH4_COOP_CLEANUP
+609@ = 0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        if not Char.IsDead(600@(610@,3i))
+        then
+            Char.ClearTasks(600@(610@,3i))
+        end
+    end
+    // Release occupied cars rather than deleting a vehicle under a guest.
+    if Car.DoesExist(603@(610@,3i))
+    then
+        Car.MarkAsNoLongerNeeded(603@(610@,3i))
+    end
+    603@(610@,3i) = -1
+    600@(610@,3i) = 0
+end
+Player.SetControl($player1, True)
+Hud.SwitchWidescreen(False)
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+return

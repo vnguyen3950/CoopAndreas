@@ -1,5 +1,10 @@
 :CESAR
 script_name 'CESAR'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
 
 :CESAR_11
 wait 0
@@ -12,19 +17,8 @@ terminate_this_script
 if 
   Player.IsPlaying($player1)
 goto_if_false @CESAR_344
-if 
-  $onmission == 0
-goto_if_false @CESAR_130
-if 
-  $flag_cesar_mission_counter == 0
-goto_if_false @CESAR_130
-if 
-  $cs1_race_is_go == 1
-goto_if_false @CESAR_130
-set_var_int_to_constant $race_selection = 0
-$show_race_selection = 0
-Mission.LoadAndLaunchInternal(35) // Race Tournament / 8-track / Dirt Track
-$cs1_race_is_go = 2
+// CESAR1 success starts HSRGO below; this contact cannot double-launch the race.
+goto @CESAR_130
 
 :CESAR_130
 if 
@@ -66,3 +60,25 @@ Text.PrintNow('CES_CK1', 1000, 1)
 :CESAR_344
 goto @CESAR_11
 
+
+// Main-script code survives mission-buffer replacement and works for debug replays too.
+:HSRGO
+script_name 'HSHAND'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
+// Give CESAR1 time to terminate before LOAD_AND_LAUNCH overwrites its mission buffer.
+wait 0
+if
+    $cs1_race_is_go == 1
+then
+    $race_selection = 0
+    $show_race_selection = 0
+    $cs1_race_is_go = 2
+    Mission.LoadAndLaunchInternal(35)
+else
+    $onmission = 0
+end
+terminate_this_script

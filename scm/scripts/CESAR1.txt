@@ -3,6 +3,39 @@
 
 :CESAR1
 script_name 'CESAR1'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
+// Debug/replay launch has no native contact vehicle precondition.
+if
+    not Char.IsInAnyCar($scplayer)
+then
+    Text.PrintNow('CES_CK1', 3000, 1)
+    $onmission = 0
+    $cs1_race_is_go = 0
+    Mission.Finish
+    terminate_this_script
+end
+$cs1_player_car = Char.StoreCarIsInNoSave($scplayer)
+if
+    not Car.IsLowRider($cs1_player_car)
+then
+    Text.PrintNow('CES_CK1', 3000, 1)
+    $onmission = 0
+    $cs1_race_is_go = 0
+    Mission.Finish
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+$NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
+800@ = 0
+809@ = 0
+for 802@ = 0 to 2
+    $NETWORK_PLAYER_VEHICLE[802@] = -1
+    813@(802@,3i) = 0
+end
 gosub @CESAR1_1165
 if 
   has_deatharrest_been_executed 
@@ -251,6 +284,7 @@ Cutscene.Clear
 World.ClearArea(1, 1796.0, -2118.0, 14.0, 15.0)
 World.SetCarDensityMultiplier(0.5)
 gosub @CESAR1_47
+gosub @CESAR1_COOP_START
 Camera.SetFadingColor(0, 0, 0)
 46@ = Clock.GetGameTimer()
 Camera.SetBehindPlayer
@@ -258,6 +292,7 @@ Player.SetControl($player1, False)
 
 :CESAR1_1908
 wait 0
+gosub @CESAR1_COOP_TICK
 if 
   111@ <> 0
 goto_if_false @CESAR1_2251
@@ -288,6 +323,13 @@ if
 goto_if_false @CESAR1_2073
 Audio.PlayMissionAudio(113@)
 Text.PrintNow(59@(111@,17s), 10000, 1)
+for 802@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        Coop.PrintNowForNetworkPlayer(59@(111@,17s), 10000, 1, $NETWORK_PLAYER[802@])
+    end
+end
 112@ = 3
 
 :CESAR1_2073
@@ -347,6 +389,13 @@ if
   Car.IsDead(125@)
 goto_if_false @CESAR1_2370
 Text.PrintNow('CES1_09', 7000, 1)
+for 802@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        Coop.PrintNowForNetworkPlayer('CES1_09', 7000, 1, $NETWORK_PLAYER[802@])
+    end
+end
 goto @CESAR1_4957
 
 :CESAR1_2370
@@ -453,6 +502,13 @@ Player.SetControl($player1, True)
 Hud.SwitchWidescreen(False)
 35@ = 1
 Text.PrintNow('CES1_04', 5000, 2)
+for 802@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        Coop.PrintNowForNetworkPlayer('CES1_04', 5000, 2, $NETWORK_PLAYER[802@])
+    end
+end
 39@ = 2
 46@ = Clock.GetGameTimer()
 36@ = 3
@@ -555,6 +611,13 @@ goto_if_false @CESAR1_3746
 Blip.Remove(126@)
 124@ = Blip.AddForCoord(56@, 57@, 58@)
 Text.PrintNow('CES1_05', 10000, 1)
+for 802@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        Coop.PrintNowForNetworkPlayer('CES1_05', 10000, 1, $NETWORK_PLAYER[802@])
+    end
+end
 39@ = 5
 38@ = 1
 
@@ -752,6 +815,10 @@ goto_if_false @CESAR1_4924
 if 
   Char.LocateInCar3D($scplayer, 56@, 57@, 58@, 4.0, 4.0, 4.0, True)
 goto_if_false @CESAR1_4924
+gosub @CESAR1_COOP_READY
+if
+    816@ == 1
+goto_if_false @CESAR1_4924
 Player.SetControl($player1, False)
 Camera.DoFade(0, 1000)
 
@@ -775,6 +842,7 @@ goto @CESAR1_4957
 goto @CESAR1_1908
 
 :CESAR1_4957
+$cs1_race_is_go = 0
 Text.PrintBig('M_FAIL', 5000, TextStyle.Middle)
 Streaming.MarkModelAsNoLongerNeeded(567)
 Streaming.MarkModelAsNoLongerNeeded(114)
@@ -788,6 +856,7 @@ $cs1_race_is_go = 1
 return 
 
 :CESAR1_5008
+gosub @CESAR1_COOP_RELEASE_CARS
 Blip.Remove(116@)
 Blip.Remove(126@)
 Blip.Remove(124@)
@@ -809,6 +878,7 @@ goto_if_false @CESAR1_5104
 Camera.DoFade(0, Fade.Out)
 
 :CESAR1_5104
+gosub @CESAR1_COOP_CLEANUP
 return 
 
 :CESAR1_5106
@@ -816,6 +886,13 @@ if
   Car.IsDead($cs1_player_car)
 goto_if_false @CESAR1_5146
 Text.PrintNow('CES1_08', 5000, 1)
+for 802@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        Coop.PrintNowForNetworkPlayer('CES1_08', 5000, 1, $NETWORK_PLAYER[802@])
+    end
+end
 34@ = 666
 
 :CESAR1_5146
@@ -884,6 +961,13 @@ goto_if_false @CESAR1_5499
 Blip.Remove(124@)
 124@ = Blip.AddForCoord(56@, 57@, 58@)
 Text.PrintNow('CES1_05', 10000, 1)
+for 802@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        Coop.PrintNowForNetworkPlayer('CES1_05', 10000, 1, $NETWORK_PLAYER[802@])
+    end
+end
 
 :CESAR1_5499
 Blip.Remove(116@)
@@ -893,3 +977,153 @@ Blip.Remove(116@)
 :CESAR1_5518
 return 
 
+
+// Existing shared globals are reserved from this entry through the CPRACE handoff.
+:CESAR1_COOP_START
+800@ = 1
+for 802@ = 0 to 2
+    850@(802@,3i) = -1
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        if
+            not Char.IsDead($NETWORK_PLAYER[802@])
+        then
+            Char.SetAreaVisible($NETWORK_PLAYER[802@], 0)
+            Char.ClearTasksImmediately($NETWORK_PLAYER[802@])
+            set_lvar_int_to_var_int 850@(802@,3i) = $NETWORK_PLAYER[802@]
+        end
+    end
+end
+Coop.TeleportPlayersToHostSafely(850@, 851@, 852@)
+901@ = 1819.0
+for 802@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        if
+            not Char.IsDead($NETWORK_PLAYER[802@])
+        then
+            $NETWORK_PLAYER_VEHICLE[802@] = Car.Create(567, 901@, -2124.0, 12.5547)
+            Car.SetHeading($NETWORK_PLAYER_VEHICLE[802@], 0.0)
+            Coop.UpdateCheckpointForNetworkPlayer(56@, 57@, 58@, 8.0, 8.0, 5.0, $NETWORK_PLAYER[802@])
+        end
+    end
+    901@ += 4.0
+end
+return
+
+:CESAR1_COOP_TICK
+if
+    800@ == 1
+then
+    804@ = Clock.GetGameTimer()
+    if
+        is_int_lvar_greater_than_int_lvar 804@ > 809@
+    then
+        set_lvar_int_to_lvar_int 809@ = 804@
+        809@ += 1000
+        for 802@ = 0 to 2
+            if
+                Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+            then
+                if
+                    not Char.IsDead($NETWORK_PLAYER[802@])
+                then
+                    if
+                        Car.DoesExist($NETWORK_PLAYER_VEHICLE[802@])
+                    then
+                        if
+                            not Car.IsDead($NETWORK_PLAYER_VEHICLE[802@])
+                        then
+                            823@ = Coop.GetVehicleNetworkId($NETWORK_PLAYER_VEHICLE[802@])
+                            if
+                                823@ <> -1
+                            then
+                                if
+                                    813@(802@,3i) == 0
+                                then
+                                    Task.EnterCarAsDriver($NETWORK_PLAYER[802@], $NETWORK_PLAYER_VEHICLE[802@], 10000)
+                                    813@(802@,3i) = 1
+                                end
+                                Coop.UpdateCarBlipForNetworkPlayer($NETWORK_PLAYER[802@], $NETWORK_PLAYER_VEHICLE[802@], True, BlipDisplay.Both, BlipColor.Purple, 3)
+                            end
+                        end
+                    end
+                end
+            else
+                if
+                    Car.DoesExist($NETWORK_PLAYER_VEHICLE[802@])
+                then
+                    Car.MarkAsNoLongerNeeded($NETWORK_PLAYER_VEHICLE[802@])
+                end
+                $NETWORK_PLAYER_VEHICLE[802@] = -1
+                $NETWORK_PLAYER[802@] = 0
+            end
+        end
+    end
+end
+return
+
+:CESAR1_COOP_READY
+816@ = 1
+for 802@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        if
+            Char.IsDead($NETWORK_PLAYER[802@])
+        then
+            816@ = 0
+        else
+            // A destroyed prelude car is replaced by CPRACE; it never receives fake checkpoints.
+            if
+                not Char.LocateAnyMeans3D($NETWORK_PLAYER[802@], False, 56@, 57@, 58@, 25.0, 25.0, 8.0)
+            then
+                816@ = 0
+            end
+        end
+    end
+end
+return
+
+:CESAR1_COOP_CLEANUP
+for 802@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+    then
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[802@])
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[802@])
+    end
+    if
+        $cs1_race_is_go <> 1
+    then
+        $NETWORK_PLAYER_VEHICLE[802@] = -1
+        $NETWORK_PLAYER[802@] = 0
+    end
+end
+if
+    $cs1_race_is_go <> 1
+then
+    Camera.RestoreJumpcut
+    Camera.SetBehindPlayer
+    Hud.SwitchWidescreen(False)
+    Player.SetControl($player1, True)
+    Camera.DoFade(1, 500)
+else
+    // Reserve the one-frame handoff; contact/debug triggers cannot start another mission.
+    $onmission = 1
+    start_new_script @HSRGO
+end
+return
+
+:CESAR1_COOP_RELEASE_CARS
+// Remove prelude cleanup entries BEFORE Mission.Finish, so successful handoff keeps cars.
+for 802@ = 0 to 2
+    if
+        Car.DoesExist($NETWORK_PLAYER_VEHICLE[802@])
+    then
+        Car.MarkAsNoLongerNeeded($NETWORK_PLAYER_VEHICLE[802@])
+    end
+end
+return

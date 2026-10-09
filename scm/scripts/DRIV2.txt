@@ -3,6 +3,19 @@
 
 :DRIV2
 script_name 'DRIV2'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+// Freeze the mission roster; disconnected or late-joining peers cannot extend it.
+$NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
+906@ = 0
+926@ = 0
+for 900@ = 0 to 2
+    910@(900@,3i) = -1
+end
 gosub @DRIV2_47
 if 
   has_deatharrest_been_executed 
@@ -172,6 +185,7 @@ Garage.ChangeType('TBON', GarageType.ForScriptToOpenAndClose)
 Camera.SetBehindPlayer
 Camera.RestoreJumpcut
 Player.SetControl($player1, True)
+gosub @DRIV2_COOP_START
 Camera.SetFadingColor(0, 0, 0)
 wait 500
 Camera.DoFade(1, 1500)
@@ -196,11 +210,23 @@ goto @DRIV2_1075
 :DRIV2_1206
 Path.SwitchRoadsOff(-2014.82, 181.4, -13.0, -1614.82, 581.4, 47.0)
 184@ = Blip.AddForCoord(-1814.82, 381.4, 17.09)
+920@ = -1814.82
+921@ = 381.4
+922@ = 17.09
+gosub @DRIV2_COOP_CHECKPOINT
 Blip.SetCoordAppearance(184@, 1)
 Text.PrintNow('DRV3_11', 10000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_11', 10000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 
 :DRIV2_1281
 wait 0
+gosub @DRIV2_COOP_TARGETS
 if 
 is_ps2_keyboard_key_pressed 83
 goto_if_false @DRIV2_1307
@@ -354,6 +380,13 @@ Object.Delete(39@)
 Object.Delete(40@)
 Object.Delete(41@)
 Text.PrintNow('DRV3_9', 5000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_9', 5000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 goto @DRIV2_12867
 
 :DRIV2_2209
@@ -471,10 +504,24 @@ if
   192@ > 1
 goto_if_false @DRIV2_2883
 Text.PrintNow('DRV3_5', 10000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_5', 10000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 goto @DRIV2_2899
 
 :DRIV2_2883
 Text.PrintNow('DRV3_6', 10000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_6', 10000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 
 :DRIV2_2899
 gosub @DRIV2_8280
@@ -517,7 +564,18 @@ if and
   166@ <> 1
 goto_if_false @DRIV2_3191
 185@ = Blip.AddForCoord(93@, 94@, 95@)
+set_lvar_float_to_lvar_float 920@ = 93@
+set_lvar_float_to_lvar_float 921@ = 94@
+set_lvar_float_to_lvar_float 922@ = 95@
+gosub @DRIV2_COOP_CHECKPOINT
 Text.PrintNow('DRV3_10', 7000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_10', 7000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 166@ = 1
 
 :DRIV2_3191
@@ -526,6 +584,10 @@ if
 goto_if_false @DRIV2_3265
 if 
   Char.LocateAnyMeans3D($scplayer, 1, 93@, 94@, 95@, 4.0, 4.0, 2.0)
+goto_if_false @DRIV2_3265
+gosub @DRIV2_COOP_READY
+if
+    923@ == 1
 goto_if_false @DRIV2_3265
 gosub @DRIV2_11200
 goto @DRIV2_12885
@@ -546,6 +608,13 @@ gosub @DRIV2_11715
 
 :DRIV2_3340
 Text.PrintNow('DRV3_7', 5000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_7', 5000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 goto @DRIV2_12867
 
 :DRIV2_3363
@@ -554,6 +623,13 @@ if
   157@ == 1
 goto_if_false @DRIV2_3411
 Text.PrintNow('DRV3_8', 5000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_8', 5000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 goto @DRIV2_12867
 
 :DRIV2_3411
@@ -562,6 +638,13 @@ if
   158@ == 1
 goto_if_false @DRIV2_3459
 Text.PrintNow('DRV3_9', 5000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_9', 5000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 goto @DRIV2_12867
 
 :DRIV2_3459
@@ -799,6 +882,13 @@ Object.Delete(38@(119@,4i))
 Blip.Remove(180@(119@,4i))
 Sound.AddOneOffSound(65535, 42@(119@,4f), 46@(119@,4f), 50@(119@,4f))
 Text.PrintNow('DRV3_4', 5000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_4', 5000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 123@(119@,4i) = 1
 $d2_num_packages_collected += 1
 goto @DRIV2_5666
@@ -834,6 +924,13 @@ Object.Delete(38@(119@,4i))
 Blip.Remove(180@(119@,4i))
 Sound.AddOneOffSound(65535, 42@(119@,4f), 46@(119@,4f), 50@(119@,4f))
 Text.PrintNow('DRV3_4', 5000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_4', 5000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 123@(119@,4i) = 1
 $d2_num_packages_collected += 1
 
@@ -841,6 +938,13 @@ $d2_num_packages_collected += 1
 goto @DRIV2_6011
 
 :DRIV2_5857
+gosub @DRIV2_COOP_GROUND_PARCEL
+if
+    923@ == 2
+goto_if_false @DRIV2_COOP_HOST_TOUCH
+goto @DRIV2_COOP_TAKE_PARCEL
+
+:DRIV2_COOP_HOST_TOUCH
 if 
   Char.IsTouchingObject($scplayer, 38@(119@,4i))
 goto_if_false @DRIV2_6011
@@ -848,11 +952,20 @@ if or
   Char.IsOnAnyBike($scplayer)
   Char.IsOnFoot($scplayer)
 goto_if_false @DRIV2_6011
+
+:DRIV2_COOP_TAKE_PARCEL
 42@(119@,4f), 46@(119@,4f), 50@(119@,4f) = Object.GetCoordinates(38@(119@,4i))
 Object.Delete(38@(119@,4i))
 Blip.Remove(180@(119@,4i))
 Sound.AddOneOffSound(65535, 42@(119@,4f), 46@(119@,4f), 50@(119@,4f))
 Text.PrintNow('DRV3_4', 5000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_4', 5000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 123@(119@,4i) = 1
 $d2_num_packages_collected += 1
 
@@ -1513,6 +1626,13 @@ if and
   170@ <> 1
 goto_if_false @DRIV2_10309
 Text.PrintNow('DRV3_2', 10000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_2', 10000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 170@ = 1
 
 :DRIV2_10309
@@ -1599,6 +1719,13 @@ if
   170@ <> 1
 goto_if_false @DRIV2_10799
 Text.PrintNow('DRV3_2', 10000, 0)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('DRV3_2', 10000, 0, $NETWORK_PLAYER[900@])
+    end
+end
 
 :DRIV2_10799
 119@ = 0
@@ -1684,6 +1811,7 @@ Hud.SwitchWidescreen(False)
 Camera.SetBehindPlayer
 Camera.RestoreJumpcut
 Player.SetControl($player1, True)
+gosub @DRIV2_COOP_REGROUP
 return 
 
 :DRIV2_11200
@@ -2005,6 +2133,7 @@ Audio.PlayMissionPassedTune(1)
 return 
 
 :DRIV2_12949
+gosub @DRIV2_COOP_CLEANUP
 Streaming.MarkModelAsNoLongerNeeded(498)
 Streaming.MarkModelAsNoLongerNeeded(521)
 Streaming.MarkModelAsNoLongerNeeded(#KMB_PACKET)
@@ -2079,3 +2208,227 @@ $onmission = 0
 Mission.Finish
 return 
 
+
+// Co-op support locals 900..933 do not overlap original mission locals.
+:DRIV2_COOP_START
+if
+    906@ == 0
+then
+    906@ = 1
+    gosub @DRIV2_COOP_REGROUP
+    901@ = -2630.0
+    for 900@ = 0 to 2
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.GiveWeapon($NETWORK_PLAYER[900@], WeaponType.MicroUzi, 180)
+                910@(900@,3i) = Car.Create(521, 901@, 1401.0, 5.62)
+                Car.SetHeading(910@(900@,3i), 220.0)
+            end
+        end
+        901@ += 3.0
+    end
+end
+return
+
+:DRIV2_COOP_REGROUP
+if
+    not Char.IsDead($scplayer)
+then
+    905@ = Streaming.GetAreaVisible()
+    for 900@ = 0 to 2
+        930@(900@,3i) = -1
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.SetAreaVisible($NETWORK_PLAYER[900@], 905@)
+                Char.ClearTasksImmediately($NETWORK_PLAYER[900@])
+                set_lvar_int_to_var_int 930@(900@,3i) = $NETWORK_PLAYER[900@]
+            end
+        end
+    end
+    Coop.TeleportPlayersToHostSafely(930@, 931@, 932@)
+end
+return
+
+:DRIV2_COOP_CHECKPOINT
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.UpdateCheckpointForNetworkPlayer(920@, 921@, 922@, 4.0, 4.0, 4.0, $NETWORK_PLAYER[900@])
+    end
+end
+return
+
+:DRIV2_COOP_READY
+// Original host trigger is retained. Check the captured roster, not all current peers.
+923@ = 1
+905@ = Streaming.GetAreaVisible()
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        if
+            Char.IsDead($NETWORK_PLAYER[900@])
+        then
+            923@ = 0
+        else
+            924@ = Char.GetAreaVisible($NETWORK_PLAYER[900@])
+            if or
+                803B: 924@ == 905@
+                not Char.LocateAnyMeans3D($NETWORK_PLAYER[900@], False, 920@, 921@, 922@, 25.0, 25.0, 10.0)
+            then
+                923@ = 0
+            end
+        end
+    end
+end
+return
+
+:DRIV2_COOP_CLEANUP
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+    end
+end
+for 900@ = 0 to 2
+    if
+        Car.DoesExist(910@(900@,3i))
+    then
+        // Do not destroy transport underneath a rider.
+        Car.MarkAsNoLongerNeeded(910@(900@,3i))
+    end
+    910@(900@,3i) = -1
+end
+906@ = 0
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+Hud.SwitchWidescreen(False)
+Player.SetControl($player1, True)
+Text.ClearPrints
+return
+
+:DRIV2_COOP_GROUND_PARCEL
+// Called only for an extant, detached, unheld, uncollected original object.
+923@ = 0
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        if
+            not Char.IsDead($NETWORK_PLAYER[900@])
+        then
+            924@ = Char.GetAreaVisible($NETWORK_PLAYER[900@])
+            if
+                924@ == 0
+            then
+                if or
+                    Char.IsOnAnyBike($NETWORK_PLAYER[900@])
+                    Char.IsOnFoot($NETWORK_PLAYER[900@])
+                then
+                    if
+                        Char.LocateAnyMeansObject3D($NETWORK_PLAYER[900@], 38@(119@,4i), 1.0, 1.0, 2.0, False)
+                    then
+                        923@ = 2
+                    end
+                end
+            end
+        end
+    end
+end
+return
+
+:DRIV2_COOP_TARGETS
+if and
+    906@ == 1
+    122@ == 1
+    166@ == 0
+then
+    925@ = Clock.GetGameTimer()
+    if
+        001D: 925@ > 926@
+    then
+        set_lvar_int_to_lvar_int 926@ = 925@
+        926@ += 1000
+        for 928@ = 0 to 3
+            if
+                123@(928@,4i) <> 1
+            then
+                if
+                    Car.DoesExist(58@(928@,4i))
+                then
+                    if
+                        not Car.IsDead(58@(928@,4i))
+                    then
+                        927@ = Coop.GetVehicleNetworkId(58@(928@,4i))
+                        if
+                            927@ <> -1
+                        then
+                            for 900@ = 0 to 2
+                                if
+                                    Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                                then
+                                    Coop.UpdateCarBlipForNetworkPlayer($NETWORK_PLAYER[900@], 58@(928@,4i), False, BlipDisplay.Both, BlipColor.Red, 3)
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        for 900@ = 0 to 2
+            if
+                Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+            then
+                901@, 902@, 903@ = Char.GetCoordinates($NETWORK_PLAYER[900@])
+                943@ = 1000000.0
+                944@ = 0
+                for 928@ = 0 to 3
+                    if
+                        123@(928@,4i) <> 1
+                    then
+                        if
+                            Object.DoesExist(38@(928@,4i))
+                        then
+                            if and
+                                not Object.IsAttached(38@(928@,4i))
+                                not Char.IsHoldingObject(-1, 38@(928@,4i))
+                            then
+                                940@, 941@, 942@ = Object.GetCoordinates(38@(928@,4i))
+                                945@ = Math.GetDistanceBetweenCoords2D(901@, 902@, 940@, 941@)
+                                if
+                                    0025: 943@ > 945@
+                                then
+                                    set_lvar_float_to_lvar_float 943@ = 945@
+                                    set_lvar_float_to_lvar_float 946@ = 940@
+                                    set_lvar_float_to_lvar_float 947@ = 941@
+                                    set_lvar_float_to_lvar_float 948@ = 942@
+                                    944@ = 1
+                                end
+                            end
+                        end
+                    end
+                end
+                if
+                    944@ == 1
+                then
+                    Coop.UpdateCheckpointForNetworkPlayer(946@, 947@, 948@, 1.0, 1.0, 2.0, $NETWORK_PLAYER[900@])
+                else
+                    Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[900@])
+                end
+            end
+        end
+    end
+end
+return

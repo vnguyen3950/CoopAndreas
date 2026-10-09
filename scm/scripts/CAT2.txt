@@ -1,4 +1,18 @@
 :CAT2
+script_name 'CAT2'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+// Freeze the mission roster; disconnected or late-joining peers cannot extend it.
+$NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
+906@ = 0
+926@ = 0
+for 900@ = 0 to 2
+    910@(900@,3i) = -1
+end
 gosub @CAT2_36
 if 
   has_deatharrest_been_executed 
@@ -31,7 +45,6 @@ add_continuous_sound 82@ 65535 2320.043 -8.5501 27.2047
 298@ = Char.Create(23, 294, 682.8292, -477.8332, 15.3359)
 
 :CAT2_256
-script_name 'CAT2'
 Camera.DoFade(0, 800)
 
 :CAT2_274
@@ -121,6 +134,8 @@ Char.SetCoordinates($scplayer, 2297.786, -15.5166, 26.2964)
 
 :CAT2_802
 Char.SetHeading($scplayer, 162.229)
+gosub @CAT2_COOP_REGROUP
+Streaming.RequestModel(468)
 Streaming.RequestModel(283)
 Streaming.RequestModel(346)
 Streaming.RequestModel(349)
@@ -314,11 +329,19 @@ Char.WarpIntoCarAsPassenger($catalina, 69@, 0)
 
 :CAT2_2049
 wait 0
+gosub @CAT2_COOP_TARGETS
 if 
   Char.IsDead($catalina)
 goto_if_false @CAT2_2094
 Text.ClearPrints
 Text.Print('CAT2_A1', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('CAT2_A1', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @CAT2_30119
 
 :CAT2_2094
@@ -896,9 +919,28 @@ Object.SetCollisionDamageEffect($2663, False)
 Char.FreezePosition($scplayer, False)
 Char.FreezePosition($catalina, False)
 Player.SetControl($player1, True)
+gosub @CAT2_COOP_START
+920@ = 2297.786
+921@ = -15.5166
+922@ = 26.2964
+gosub @CAT2_COOP_CHECKPOINT
 Text.ClearPrints
 Text.Print('CAT2_05', 4000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('CAT2_05', 4000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Text.Print('CAT2_06', 8000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('CAT2_06', 8000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Char.HideWeaponForScriptedCutscene($scplayer, False)
 Game.SetEveryoneIgnorePlayer($player1, False)
 Hud.SwitchWidescreen(False)
@@ -2669,6 +2711,13 @@ if and
   560@ == 0
 goto_if_false @CAT2_18323
 Text.Print('CAT2_19', 4000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('CAT2_19', 4000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 35@ = 1
 
 :CAT2_18323
@@ -3701,7 +3750,18 @@ if
 goto_if_false @CAT2_25099
 Text.ClearPrints
 Text.Print('CAT2_16', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('CAT2_16', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 40@ = Blip.AddForCoord(867.6723, -30.3543, 62.1893)
+920@ = 867.6723
+921@ = -30.3543
+922@ = 62.1893
+gosub @CAT2_COOP_CHECKPOINT
 361@ = 0
 126@ = 4
 
@@ -4042,6 +4102,10 @@ set_lvar_int_to_constant 541@ = 8732
 if and
   Char.LocateAnyMeans3D($scplayer, 1, 863.6693, -30.852, 62.1615, 4.0, 4.0, 4.0)
   Char.LocateAnyMeans3D($catalina, 0, 863.6693, -30.852, 62.1615, 4.0, 4.0, 4.0)
+goto_if_false @CAT2_27418
+gosub @CAT2_COOP_READY
+if
+    923@ == 1
 goto_if_false @CAT2_27418
 Blip.Remove(40@)
 Player.SetControl($player1, False)
@@ -4536,6 +4600,8 @@ $cat_liquor_banter = 2
 return 
 
 :CAT2_30482
+gosub @CAT2_COOP_CLEANUP
+Streaming.MarkModelAsNoLongerNeeded(468)
 Audio.ClearMissionAudio(MissionAudioSlot.Slot3)
 if 
   Object.DoesExist($pc_door)
@@ -4726,6 +4792,13 @@ Blip.SetAsFriendly(372@, True)
 Blip.ChangeDisplay(40@, BlipDisplay.Neither)
 Text.ClearPrints
 Text.Print('CAT2_14', 4000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('CAT2_14', 4000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 
 :CAT2_31463
 if 
@@ -5051,6 +5124,13 @@ goto_if_false @CAT2_34055
 Audio.PlayMissionAudio(557@)
 Text.ClearPrints
 Text.Print(374@(560@,60s), 10000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer(374@(560@,60s), 10000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 559@ += 1
 630@ = 0
 560@ += 1
@@ -5189,3 +5269,249 @@ goto @CAT2_34497
 :CAT2_34497
 return 
 
+
+// Co-op support locals 900..933 do not overlap original mission locals.
+:CAT2_COOP_START
+if
+    906@ == 0
+then
+    906@ = 1
+    Streaming.LoadAllModelsNow
+    901@ = 2296.0
+    for 900@ = 0 to 2
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.GiveWeapon($NETWORK_PLAYER[900@], WeaponType.Pistol, 120)
+                910@(900@,3i) = Car.Create(468, 901@, -22.0, 25.4844)
+                Car.SetHeading(910@(900@,3i), 90.0)
+            end
+        end
+        901@ += 3.0
+    end
+end
+return
+
+:CAT2_COOP_REGROUP
+if
+    not Char.IsDead($scplayer)
+then
+    905@ = Streaming.GetAreaVisible()
+    for 900@ = 0 to 2
+        930@(900@,3i) = -1
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.SetAreaVisible($NETWORK_PLAYER[900@], 905@)
+                Char.ClearTasksImmediately($NETWORK_PLAYER[900@])
+                set_lvar_int_to_var_int 930@(900@,3i) = $NETWORK_PLAYER[900@]
+            end
+        end
+    end
+    Coop.TeleportPlayersToHostSafely(930@, 931@, 932@)
+end
+return
+
+:CAT2_COOP_CHECKPOINT
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.UpdateCheckpointForNetworkPlayer(920@, 921@, 922@, 4.0, 4.0, 4.0, $NETWORK_PLAYER[900@])
+    end
+end
+return
+
+:CAT2_COOP_READY
+// Original host trigger is retained. Check the captured roster, not all current peers.
+923@ = 1
+905@ = Streaming.GetAreaVisible()
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        if
+            Char.IsDead($NETWORK_PLAYER[900@])
+        then
+            923@ = 0
+        else
+            924@ = Char.GetAreaVisible($NETWORK_PLAYER[900@])
+            if or
+                803B: 924@ == 905@
+                not Char.LocateAnyMeans3D($NETWORK_PLAYER[900@], False, 920@, 921@, 922@, 25.0, 25.0, 10.0)
+            then
+                923@ = 0
+            end
+        end
+    end
+end
+return
+
+:CAT2_COOP_CLEANUP
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+    end
+end
+for 900@ = 0 to 2
+    if
+        Car.DoesExist(910@(900@,3i))
+    then
+        // Do not destroy transport underneath a rider.
+        Car.MarkAsNoLongerNeeded(910@(900@,3i))
+    end
+    910@(900@,3i) = -1
+end
+906@ = 0
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+Hud.SwitchWidescreen(False)
+Player.SetControl($player1, True)
+Text.ClearPrints
+return
+
+:CAT2_COOP_TARGETS
+if and
+    906@ == 1
+    41@ >= 29
+    56@ < 9
+then
+    925@ = Clock.GetGameTimer()
+    if
+        001D: 925@ > 926@
+    then
+        set_lvar_int_to_lvar_int 926@ = 925@
+        926@ += 1000
+        if
+            Char.DoesExist(92@)
+        then
+            if
+                not Char.IsDead(92@)
+            then
+                927@ = Coop.GetPedNetworkId(92@)
+                if
+                    927@ <> -1
+                then
+                    for 900@ = 0 to 2
+                        if
+                            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                        then
+                            Coop.UpdateCharBlipForNetworkPlayer($NETWORK_PLAYER[900@], 92@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                        end
+                    end
+                end
+            end
+        end
+        if
+            Char.DoesExist(93@)
+        then
+            if
+                not Char.IsDead(93@)
+            then
+                927@ = Coop.GetPedNetworkId(93@)
+                if
+                    927@ <> -1
+                then
+                    for 900@ = 0 to 2
+                        if
+                            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                        then
+                            Coop.UpdateCharBlipForNetworkPlayer($NETWORK_PLAYER[900@], 93@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                        end
+                    end
+                end
+            end
+        end
+        if
+            Char.DoesExist(87@)
+        then
+            if
+                not Char.IsDead(87@)
+            then
+                927@ = Coop.GetPedNetworkId(87@)
+                if
+                    927@ <> -1
+                then
+                    for 900@ = 0 to 2
+                        if
+                            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                        then
+                            Coop.UpdateCharBlipForNetworkPlayer($NETWORK_PLAYER[900@], 87@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                        end
+                    end
+                end
+            end
+        end
+        if
+            Char.DoesExist(89@)
+        then
+            if
+                not Char.IsDead(89@)
+            then
+                927@ = Coop.GetPedNetworkId(89@)
+                if
+                    927@ <> -1
+                then
+                    for 900@ = 0 to 2
+                        if
+                            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                        then
+                            Coop.UpdateCharBlipForNetworkPlayer($NETWORK_PLAYER[900@], 89@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                        end
+                    end
+                end
+            end
+        end
+        if
+            Char.DoesExist(135@)
+        then
+            if
+                not Char.IsDead(135@)
+            then
+                927@ = Coop.GetPedNetworkId(135@)
+                if
+                    927@ <> -1
+                then
+                    for 900@ = 0 to 2
+                        if
+                            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                        then
+                            Coop.UpdateCharBlipForNetworkPlayer($NETWORK_PLAYER[900@], 135@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                        end
+                    end
+                end
+            end
+        end
+        if
+            Char.DoesExist(136@)
+        then
+            if
+                not Char.IsDead(136@)
+            then
+                927@ = Coop.GetPedNetworkId(136@)
+                if
+                    927@ <> -1
+                then
+                    for 900@ = 0 to 2
+                        if
+                            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                        then
+                            Coop.UpdateCharBlipForNetworkPlayer($NETWORK_PLAYER[900@], 136@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+return

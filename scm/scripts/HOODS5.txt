@@ -3,6 +3,12 @@
 
 :HOODS5
 script_name 'HOODS5'
+if not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+gosub @HOODS5_COOP_INIT
 gosub @HOODS5_251
 if 
   has_deatharrest_been_executed 
@@ -42,6 +48,7 @@ Char.SetRelationship($scplayer, RelationshipType.Hate, PedType.Mission1)
 
 :HOODS5_325
 wait 0
+gosub @HOODS5_COOP_TICK
 if 
 is_ps2_keyboard_key_pressed 83
 goto_if_false @HOODS5_351
@@ -549,6 +556,26 @@ Char.HideWeaponForScriptedCutscene($scplayer, False)
 Camera.SetBehindPlayer
 Camera.RestoreJumpcut
 Game.SetWantedMultiplier(0.2)
+614@ = 2775.793
+615@ = -1942.909
+616@ = 15.6576
+620@ = -1
+621@ = -1
+622@ = 0
+623@ = 1
+set_lvar_text_label 624@s = 'SW5_A2'
+626@ = 1
+// Separate escorts leave the host's rescue-car seats free for Sweet and his girl.
+630@ = 22
+631@ = 200
+632@ = 492
+617@ = 2505.0
+618@ = -1691.0
+619@ = 12.4
+634@ = 180.0
+gosub @HOODS5_COOP_FORM_UP
+gosub @HOODS5_COOP_TRANSPORT
+gosub @HOODS5_COOP_OBJECTIVE
 147@ = 1
 127@ = 2
 
@@ -781,6 +808,16 @@ Task.UseMobilePhone($scplayer, False)
 Path.SwitchRoadsBackToOriginal(2793.814, -1987.935, 15.3045, 2754.324, -1900.369, 9.8752)
 Path.SwitchPedRoadsBackToOriginal(2793.814, -1987.935, 15.3045, 2754.324, -1900.369, 9.8752)
 Text.Print('SW5_14', 5000, 1)
+614@ = 2764.272
+615@ = -1979.494
+616@ = 12.5394
+620@ = -1
+621@ = -1
+622@ = 0
+623@ = 1
+set_lvar_text_label 624@s = 'SW5_14'
+626@ = 2
+gosub @HOODS5_COOP_OBJECTIVE
 127@ = 4
 
 :HOODS5_5151
@@ -789,6 +826,10 @@ return
 :HOODS5_5153
 if 
   Char.LocateAnyMeans3D($scplayer, 1, 2764.272, -1979.494, 12.5394, 4.0, 4.0, 4.0)
+goto_if_false @HOODS5_5481
+gosub @HOODS5_COOP_READY
+if
+    611@ == 1
 goto_if_false @HOODS5_5481
 if 
   Char.IsInAnyCar($scplayer)
@@ -1177,6 +1218,16 @@ Camera.SetBehindPlayer
 Camera.RestoreJumpcut
 Text.ClearPrints
 Text.Print('SW5_I', 5000, 1)
+614@ = 2509.062
+615@ = -1672.527
+616@ = 12.386
+620@ = -1
+621@ = -1
+622@ = 0
+623@ = 1
+set_lvar_text_label 624@s = 'SW5_I'
+626@ = 3
+gosub @HOODS5_COOP_OBJECTIVE
 127@ = 6
 125@ = 1
 set_lvar_int_to_lvar_int 153@ = TIMERA
@@ -1473,6 +1524,10 @@ if and
 goto_if_false @HOODS5_9682
 if 
   Char.LocateAnyMeans3D($scplayer, 1, 2509.062, -1672.527, 12.386, 4.0, 4.0, 4.0)
+goto_if_false @HOODS5_9682
+gosub @HOODS5_COOP_READY
+if
+    611@ == 1
 goto_if_false @HOODS5_9682
 if and
   Char.LocateAnyMeans3D(75@, 0, 2509.062, -1672.527, 12.386, 8.0, 8.0, 4.0)
@@ -2357,6 +2412,7 @@ Stat.AwardPlayerMissionRespect(7)
 return 
 
 :HOODS5_15329
+gosub @HOODS5_COOP_CLEANUP
 $onmission = 0
 CarGenerator.Switch($gen_car7, 101)
 Game.SetScriptLimitToGangSize(99)
@@ -2448,3 +2504,211 @@ $timer_mobile_start = Clock.GetGameTimer()
 Mission.Finish
 return 
 
+
+// Co-op locals: 600..602 roster, 603..605 owned transport, 609..640 scratch.
+// These slots are above every original mission local; no shared scratch globals.
+:HOODS5_COOP_INIT
+600@, 601@, 602@ = Coop.CollectNetworkPlayersForTheMission()
+603@ = -1
+604@ = -1
+605@ = -1
+609@ = 0
+627@ = 0
+635@ = 20.0
+639@ = 1
+return
+
+:HOODS5_COOP_FORM_UP
+for 610@ = 0 to 2
+    606@(610@,3i) = -1
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            0085: 606@(610@,3i) = 600@(610@,3i)
+            Char.ClearTasksImmediately(600@(610@,3i))
+            Char.SetAreaVisible(600@(610@,3i), 622@)
+            if 630@ >= 0
+            then
+                Char.GiveWeapon(600@(610@,3i), 630@, 631@)
+                Char.SetCurrentWeapon(600@(610@,3i), 630@)
+            end
+        end
+    end
+end
+Coop.TeleportPlayersToHostSafely(606@, 607@, 608@)
+return
+
+:HOODS5_COOP_TRANSPORT
+// Models are already loaded by the original mission; no waits inside peer loops.
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            if Car.DoesExist(603@(610@,3i))
+            then
+                Car.MarkAsNoLongerNeeded(603@(610@,3i))
+            end
+            603@(610@,3i) = Car.Create(632@, 617@, 618@, 619@)
+            Car.SetHeading(603@(610@,3i), 634@)
+        end
+    end
+    617@ += 5.0
+end
+return
+
+:HOODS5_COOP_OBJECTIVE
+609@ = 1
+627@ = 0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        Coop.PrintNowForNetworkPlayer(624@s, 8000, 1, 600@(610@,3i))
+    end
+end
+return
+
+:HOODS5_COOP_TICK
+if 609@ == 0
+then
+    return
+end
+629@ = Clock.GetGameTimer()
+if 001D: 627@ > 629@
+then
+    return
+end
+0085: 627@ = 629@
+627@ += 1000
+620@ = -1
+if 626@ == 1
+then
+    for 640@ = 0 to 5
+        if Char.DoesExist(37@(640@,6i))
+        then
+            if not Char.IsDead(37@(640@,6i))
+            then
+                636@ = Coop.GetPedNetworkId(37@(640@,6i))
+                if 636@ >= 0
+                then
+                    0085: 620@ = 37@(640@,6i)
+                    Break
+                end
+            end
+        end
+    end
+end
+if 626@ == 3
+then
+    if Char.DoesExist(64@)
+    then
+        if not Char.IsDead(64@)
+        then
+            0085: 620@ = 64@
+        end
+    end
+end
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            // Refresh removes stale targets after a death, replacement or phase transition.
+            Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+            if 623@ == 1
+            then
+                Coop.UpdateCheckpointForNetworkPlayer(614@, 615@, 616@, 15.0, 15.0, 8.0, 600@(610@,3i))
+            end
+            if 639@ == 1
+            then
+                if Car.DoesExist(603@(610@,3i))
+                then
+                    if not Car.IsDead(603@(610@,3i))
+                    then
+                        if not Char.IsInCar(600@(610@,3i), 603@(610@,3i))
+                        then
+                            636@ = Coop.GetVehicleNetworkId(603@(610@,3i))
+                            if 636@ >= 0
+                            then
+                                Coop.UpdateCarBlipForNetworkPlayer(600@(610@,3i), 603@(610@,3i), True, BlipDisplay.Both, BlipColor.Blue, 3)
+                            end
+                        end
+                    end
+                end
+            end
+            if Char.DoesExist(620@)
+            then
+                if not Char.IsDead(620@)
+                then
+                    636@ = Coop.GetPedNetworkId(620@)
+                    if 636@ >= 0
+                    then
+                        Coop.UpdateCharBlipForNetworkPlayer(600@(610@,3i), 620@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                    end
+                end
+            end
+            if Car.DoesExist(621@)
+            then
+                if not Car.IsDead(621@)
+                then
+                    636@ = Coop.GetVehicleNetworkId(621@)
+                    if 636@ >= 0
+                    then
+                        Coop.UpdateCarBlipForNetworkPlayer(600@(610@,3i), 621@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                    end
+                end
+            end
+        end
+    end
+end
+return
+
+:HOODS5_COOP_READY
+611@ = 1
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            612@ = Char.GetAreaVisible(600@(610@,3i))
+            if 803B: 612@ == 622@
+            then
+                611@ = 0
+            end
+            if not Char.LocateAnyMeans3D(600@(610@,3i), False, 614@, 615@, 616@, 635@, 635@, 12.0)
+            then
+                611@ = 0
+            end
+        end
+    end
+end
+return
+
+:HOODS5_COOP_CLEANUP
+609@ = 0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        if not Char.IsDead(600@(610@,3i))
+        then
+            Char.ClearTasks(600@(610@,3i))
+        end
+    end
+    // Release occupied cars rather than deleting a vehicle under a guest.
+    if Car.DoesExist(603@(610@,3i))
+    then
+        Car.MarkAsNoLongerNeeded(603@(610@,3i))
+    end
+    603@(610@,3i) = -1
+    600@(610@,3i) = 0
+end
+Player.SetControl($player1, True)
+Hud.SwitchWidescreen(False)
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+return

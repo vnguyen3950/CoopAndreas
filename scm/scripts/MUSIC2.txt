@@ -3,6 +3,12 @@
 
 :MUSIC2
 script_name 'MUSIC2'
+if not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+gosub @MUSIC2_COOP_INIT
 gosub @MUSIC2_47
 if 
   has_deatharrest_been_executed 
@@ -140,6 +146,25 @@ Camera.DoFade(1, 1500)
 96@ = 0
 97@ = 0
 Text.PrintNow('STP2_1', 10000, 1)
+614@ = 1239.032
+615@ = -741.106
+616@ = 94.76
+620@ = -1
+621@ = -1
+622@ = 0
+623@ = 1
+set_lvar_text_label 624@s = 'STP2_1'
+626@ = 1
+// Independent bicycles avoid depending on passenger seats on the mountain trip.
+630@ = -1
+632@ = 510
+617@ = 781.0
+618@ = -1624.0
+619@ = 12.5
+634@ = 0.0
+gosub @MUSIC2_COOP_FORM_UP
+gosub @MUSIC2_COOP_TRANSPORT
+gosub @MUSIC2_COOP_OBJECTIVE
 if 
   $tripskip_s2flag > 0
 goto_if_false @MUSIC2_745
@@ -147,6 +172,7 @@ Skip.SetUp(1242.659, -748.503, 94.33, 191.586)
 
 :MUSIC2_745
 wait 0
+gosub @MUSIC2_COOP_TICK
 if 
 is_ps2_keyboard_key_pressed 83
 goto_if_false @MUSIC2_771
@@ -169,6 +195,16 @@ Skip.Clear
 Blip.Remove(61@)
 61@ = Blip.AddForCoord(1298.66, -795.58, 83.84)
 Text.PrintNow('STP2_2', 5000, 1)
+614@ = 1298.66
+615@ = -795.58
+616@ = 83.84
+620@ = -1
+621@ = -1
+622@ = 0
+623@ = 1
+set_lvar_text_label 624@s = 'STP2_2'
+626@ = 1
+gosub @MUSIC2_COOP_OBJECTIVE
 35@ = Car.Create(579, 1243.154, -805.76, 83.188)
 Car.SetHeading(35@, 1.533)
 36@ = Car.Create(580, 1255.024, -804.587, 83.934)
@@ -182,6 +218,10 @@ goto_if_false @MUSIC2_1832
 34@ = Char.GetAreaVisible($scplayer)
 if 
   34@ == 5
+goto_if_false @MUSIC2_1832
+gosub @MUSIC2_COOP_ENTRY_READY
+if
+    611@ == 1
 goto_if_false @MUSIC2_1832
 Game.SetWantedMultiplier(0.0)
 Hud.SwitchWidescreen(True)
@@ -206,7 +246,7 @@ if or
   not Streaming.HasAnimationLoaded("VENDING")
   not Streaming.HasModelLoaded(335)
   not Streaming.HasModelLoaded(24)
-Streaming.RequestModel(25)
+  not Streaming.HasModelLoaded(25)
   not Audio.HasMissionAudioLoaded(MissionAudioSlot.Slot3)
 goto_if_false @MUSIC2_1254
 wait 0
@@ -267,6 +307,22 @@ Camera.SetBehindPlayer
 Hud.SwitchWidescreen(False)
 Player.SetControl($player1, True)
 Char.GiveWeapon($scplayer, WeaponType.Knife, 1)
+614@ = 1256.871
+615@ = -801.048
+616@ = 1084.063
+620@ = -1
+621@ = -1
+622@ = 5
+623@ = 1
+set_lvar_text_label 624@s = 'STP2_39'
+626@ = 2
+// SET_CHAR_AREA_VISIBLE alone does not switch the local client's visible world.
+Streaming.SetAreaVisible(5)
+630@ = 4
+631@ = 1
+639@ = 0
+gosub @MUSIC2_COOP_FORM_UP
+gosub @MUSIC2_COOP_OBJECTIVE
 Pad.SetPlayerCycleWeaponButton($player1, False)
 Car.Delete(35@)
 Streaming.MarkModelAsNoLongerNeeded(579)
@@ -787,6 +843,29 @@ Pad.SetPlayerCycleWeaponButton($player1, True)
 :MUSIC2_6324
 Blip.SetEntryExit(61@, 1298.78, -798.2, 1.0)
 Text.PrintNow('STP2_40', 7000, 1)
+614@ = 1298.74
+615@ = -797.46
+616@ = 1083.4
+620@ = -1
+621@ = -1
+622@ = 5
+623@ = 1
+set_lvar_text_label 624@s = 'STP2_40'
+626@ = 3
+// CJ remains the book carrier; guests cover the shared retreat.
+630@ = 23
+631@ = 50
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            Char.GiveWeapon(600@(610@,3i), 630@, 631@)
+            Char.SetCurrentWeapon(600@(610@,3i), 630@)
+        end
+    end
+end
+gosub @MUSIC2_COOP_OBJECTIVE
 TIMERA = 0
 TIMERB = 0
 70@ = 3
@@ -1150,6 +1229,27 @@ Blip.Remove(66@)
 Blip.Remove(67@)
 Blip.Remove(68@)
 Text.PrintNow('STP2_30', 7000, 1)
+614@ = 788.05
+615@ = -1630.31
+616@ = 12.42
+620@ = -1
+621@ = -1
+622@ = 0
+623@ = 1
+set_lvar_text_label 624@s = 'STP2_30'
+626@ = 4
+// Everyone exits the shared interior with the host before returning to OG Loc.
+Streaming.SetAreaVisible(0)
+630@ = -1
+639@ = 1
+gosub @MUSIC2_COOP_FORM_UP
+632@ = 510
+617@ = 1306.0
+618@ = -792.0
+619@ = 83.7
+634@ = 180.0
+gosub @MUSIC2_COOP_TRANSPORT
+gosub @MUSIC2_COOP_OBJECTIVE
 70@ = 5
 TIMERA = 0
 
@@ -1171,6 +1271,10 @@ if
 goto_if_false @MUSIC2_9582
 if 
   Char.LocateAnyMeans3D($scplayer, 1, 788.05, -1630.31, 12.42, 2.0, 2.0, 5.0)
+goto_if_false @MUSIC2_9582
+gosub @MUSIC2_COOP_READY
+if
+    611@ == 1
 goto_if_false @MUSIC2_9582
 Player.SetControl($player1, False)
 Hud.SwitchWidescreen(True)
@@ -1389,6 +1493,7 @@ $flag_strap_mission_counter += 1
 return 
 
 :MUSIC2_10582
+gosub @MUSIC2_COOP_CLEANUP
 Game.SetScriptLimitToGangSize(99)
 Char.RemoveElegantly(52@)
 Pickup.Remove(60@)
@@ -1433,3 +1538,236 @@ $timer_mobile_start = Clock.GetGameTimer()
 Mission.Finish
 return 
 
+
+// Co-op locals: 600..602 roster, 603..605 owned transport, 609..640 scratch.
+// These slots are above every original mission local; no shared scratch globals.
+:MUSIC2_COOP_INIT
+600@, 601@, 602@ = Coop.CollectNetworkPlayersForTheMission()
+603@ = -1
+604@ = -1
+605@ = -1
+609@ = 0
+627@ = 0
+635@ = 20.0
+639@ = 1
+return
+
+:MUSIC2_COOP_FORM_UP
+for 610@ = 0 to 2
+    606@(610@,3i) = -1
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            0085: 606@(610@,3i) = 600@(610@,3i)
+            Char.ClearTasksImmediately(600@(610@,3i))
+            Char.SetAreaVisible(600@(610@,3i), 622@)
+            if 630@ >= 0
+            then
+                Char.GiveWeapon(600@(610@,3i), 630@, 631@)
+                Char.SetCurrentWeapon(600@(610@,3i), 630@)
+            end
+        end
+    end
+end
+Coop.TeleportPlayersToHostSafely(606@, 607@, 608@)
+return
+
+:MUSIC2_COOP_TRANSPORT
+// Models are already loaded by the original mission; no waits inside peer loops.
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            if Car.DoesExist(603@(610@,3i))
+            then
+                Car.MarkAsNoLongerNeeded(603@(610@,3i))
+            end
+            603@(610@,3i) = Car.Create(632@, 617@, 618@, 619@)
+            Car.SetHeading(603@(610@,3i), 634@)
+        end
+    end
+    617@ += 5.0
+end
+return
+
+:MUSIC2_COOP_OBJECTIVE
+609@ = 1
+627@ = 0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        Coop.PrintNowForNetworkPlayer(624@s, 8000, 1, 600@(610@,3i))
+    end
+end
+return
+
+:MUSIC2_COOP_TICK
+if 609@ == 0
+then
+    return
+end
+629@ = Clock.GetGameTimer()
+if 001D: 627@ > 629@
+then
+    return
+end
+0085: 627@ = 629@
+627@ += 1000
+if or
+    626@ == 2
+    626@ == 3
+then
+    620@ = -1
+    for 640@ = 0 to 7
+        if Char.DoesExist(37@(640@,8i))
+        then
+            if not Char.IsDead(37@(640@,8i))
+            then
+                636@ = Coop.GetPedNetworkId(37@(640@,8i))
+                if 636@ >= 0
+                then
+                    0085: 620@ = 37@(640@,8i)
+                    Break
+                end
+            end
+        end
+    end
+end
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            // Refresh removes stale targets after a death, replacement or phase transition.
+            Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+            if 623@ == 1
+            then
+                Coop.UpdateCheckpointForNetworkPlayer(614@, 615@, 616@, 15.0, 15.0, 8.0, 600@(610@,3i))
+            end
+            if 639@ == 1
+            then
+                if Car.DoesExist(603@(610@,3i))
+                then
+                    if not Car.IsDead(603@(610@,3i))
+                    then
+                        if not Char.IsInCar(600@(610@,3i), 603@(610@,3i))
+                        then
+                            636@ = Coop.GetVehicleNetworkId(603@(610@,3i))
+                            if 636@ >= 0
+                            then
+                                Coop.UpdateCarBlipForNetworkPlayer(600@(610@,3i), 603@(610@,3i), True, BlipDisplay.Both, BlipColor.Blue, 3)
+                            end
+                        end
+                    end
+                end
+            end
+            if Char.DoesExist(620@)
+            then
+                if not Char.IsDead(620@)
+                then
+                    636@ = Coop.GetPedNetworkId(620@)
+                    if 636@ >= 0
+                    then
+                        Coop.UpdateCharBlipForNetworkPlayer(600@(610@,3i), 620@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                    end
+                end
+            end
+            if Car.DoesExist(621@)
+            then
+                if not Car.IsDead(621@)
+                then
+                    636@ = Coop.GetVehicleNetworkId(621@)
+                    if 636@ >= 0
+                    then
+                        Coop.UpdateCarBlipForNetworkPlayer(600@(610@,3i), 621@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                    end
+                end
+            end
+        end
+    end
+end
+return
+
+:MUSIC2_COOP_READY
+611@ = 1
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            612@ = Char.GetAreaVisible(600@(610@,3i))
+            if 803B: 612@ == 622@
+            then
+                611@ = 0
+            end
+            if not Char.LocateAnyMeans3D(600@(610@,3i), False, 614@, 615@, 616@, 635@, 635@, 12.0)
+            then
+                611@ = 0
+            end
+        end
+    end
+end
+return
+
+:MUSIC2_COOP_CLEANUP
+Streaming.SetAreaVisible(0)
+609@ = 0
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer(600@(610@,3i))
+        Coop.RemoveCheckpointForNetworkPlayer(600@(610@,3i))
+        612@ = Char.GetAreaVisible(600@(610@,3i))
+        if 612@ == 5
+        then
+            Char.SetAreaVisible(600@(610@,3i), 0)
+            Char.SetCoordinates(600@(610@,3i), 1299.664, -800.546, 83.148)
+        end
+        if not Char.IsDead(600@(610@,3i))
+        then
+            Char.ClearTasks(600@(610@,3i))
+        end
+    end
+    // Release occupied cars rather than deleting a vehicle under a guest.
+    if Car.DoesExist(603@(610@,3i))
+    then
+        Car.MarkAsNoLongerNeeded(603@(610@,3i))
+    end
+    603@(610@,3i) = -1
+    600@(610@,3i) = 0
+end
+Player.SetControl($player1, True)
+Hud.SwitchWidescreen(False)
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+return
+
+:MUSIC2_COOP_ENTRY_READY
+// A guest already through the door also satisfies the entry rendezvous.
+611@ = 1
+for 610@ = 0 to 2
+    if Coop.IsNetworkPlayerActorValid(600@(610@,3i))
+    then
+        if not Char.IsDead(600@(610@,3i))
+        then
+            612@ = Char.GetAreaVisible(600@(610@,3i))
+            if 612@ == 0
+            then
+                if not Char.LocateAnyMeans3D(600@(610@,3i), False, 1298.66, -795.58, 83.84, 20.0, 20.0, 12.0)
+                then
+                    611@ = 0
+                end
+            else
+                if 612@ <> 5
+                then
+                    611@ = 0
+                end
+            end
+        end
+    end
+end
+return

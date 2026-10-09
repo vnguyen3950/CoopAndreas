@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CNetworkObjectManager.h"
 #include "PlayerHooks.h"
 #include "CKeySync.h"
 #include "CAimSync.h"
@@ -125,6 +126,9 @@ static void __fastcall CWeapon__DoBulletImpact_Hook(CWeapon* weapon, SKIP_EDX, C
         CollectShotSnapshot(packet, owner, startPoint, endPoint, colPoint, victim, incrementalHit, ((CPed*)owner)->GetWeapon().m_eWeaponType);
         GetPacketFactory().Send(packet);
 
+        // The host validates and applies damage to scripted object authority.
+        // Skip local native glass/force effects on its guest-side replica too.
+        if (!CLocalPlayer::m_bIsHost && victim && CNetworkObjectManager::GetNetworkId(victim) > 0) return;
         weapon->DoBulletImpact(owner, victim, startPoint, endPoint, colPoint, incrementalHit);
     }
     else if (owner->m_nType == eEntityType::ENTITY_TYPE_PED)
@@ -257,7 +261,8 @@ void __fastcall CPedDamageResponseCalculator__ComputeWillKillPed_Hook(
 
 bool __fastcall CPlayerPed__CanPlayerStartMission_Hook(CPlayerPed* This, SKIP_EDX)
 {
-    return This->CanPlayerStartMission() /* && CLocalPlayer::m_bIsHost*/;
+    // Contact scripts must reject guests before changing local mission state.
+    return CLocalPlayer::m_bIsHost && This->CanPlayerStartMission();
 }
 
 void __fastcall CPlayerPed__ProcessWeaponSwitch_Hook(CPlayerPed* This, SKIP_EDX, CPad* pad)

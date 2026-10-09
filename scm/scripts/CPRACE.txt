@@ -1,4 +1,38 @@
 :CPRACE
+script_name 'CPRACE'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
+800@ = 0
+801@ = 0
+805@ = 0
+807@ = 0
+808@ = 0
+809@ = 0
+for 802@ = 0 to 2
+    810@(802@,3i) = -1
+    813@(802@,3i) = 0
+    856@(802@,3i) = 0
+end
+if and
+    $race_selection == 0
+    $show_race_selection == 0
+then
+    // Register only this story-race instance, not every later CPRACE tournament.
+    script_name 'HSRACE'
+    800@ = 1
+    Coop.EnableSyncingThisScript()
+    if
+        $cs1_race_is_go <> 2
+    then
+        $NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
+        for 802@ = 0 to 2
+            $NETWORK_PLAYER_VEHICLE[802@] = -1
+        end
+    end
+end
 gosub @CPRACE_112
 if 
   has_deatharrest_been_executed 
@@ -28,7 +62,6 @@ terminate_this_script
 :CPRACE_112
 $onmission = 1
 $disable_mod_garage = 1
-script_name 'CPRACE'
 wait 0
 World.DisableAllEntryExits(True)
 Text.LoadMissionText('RACETOR')
@@ -371,6 +404,7 @@ goto_if_false @CPRACE_2668
 229@ = 0
 
 :CPRACE_2668
+gosub @CPRACE_COOP_TICK
 253@ = 0
 switch_start 49@ total_jumps 15 default_jump 0 @CPRACE_20805 jumps 0 @CPRACE_2803 1 @CPRACE_5836 2 @CPRACE_7391 3 @CPRACE_7577 4 @CPRACE_7924 5 @CPRACE_8660 6 @CPRACE_8772
 switch_continued 7 @CPRACE_11220 8 @CPRACE_11297 9 @CPRACE_11382 10 @CPRACE_11467 11 @CPRACE_12351 12 @CPRACE_12351 13 @CPRACE_19581 14 @CPRACE_20088 -1 @CPRACE_20805
@@ -1401,6 +1435,7 @@ Camera.DoFade(1, 500)
 goto @CPRACE_8848
 
 :CPRACE_11173
+gosub @CPRACE_COOP_GRID
 Player.SetControl($player1, False)
 Camera.SetBehindPlayer
 Camera.RestoreJumpcut
@@ -1415,6 +1450,13 @@ Streaming.RequestAnimation("RIOT")
 goto @CPRACE_20805
 
 :CPRACE_11220
+gosub @CPRACE_COOP_LOBBY
+if
+    816@ == 0
+goto_if_false @CPRACE_COOP_COUNTDOWN
+goto @CPRACE_20805
+
+:CPRACE_COOP_COUNTDOWN
 Game.SetEveryoneIgnorePlayer($player1, True)
 Game.SetAllCarsCanBeDamaged(False)
 Text.PrintBig('RACES_4', 1100, TextStyle.MiddleSmaller)
@@ -1478,6 +1520,16 @@ Streaming.RemoveAnimation("CAR")
 if 
   is_int_lvar_greater_than_int_lvar 256@ > 253@
 goto_if_false @CPRACE_11829
+if
+    800@ == 1
+then
+    if
+        253@ >= 6
+    then
+        // Never attach native AI stuck-car warps to a human-driven vehicle.
+        goto @CPRACE_11815
+    end
+end
 if 
   not Car.IsDead(379@(253@,16i))
 goto_if_false @CPRACE_11815
@@ -1572,6 +1624,7 @@ Hud.DisplayTimerWithString($races_timer, TimerDirection.Up, 'TIMER')
 :CPRACE_12333
 Text.ClearThisPrintBigNow(TextStyle.BottomRight)
 49@ = 11
+gosub @CPRACE_COOP_GO
 
 :CPRACE_12344
 goto @CPRACE_20805
@@ -1580,6 +1633,16 @@ goto @CPRACE_20805
 if 
   is_int_lvar_greater_than_int_lvar 256@ > 253@
 goto_if_false @CPRACE_18590
+if
+    800@ == 1
+then
+    if
+        253@ >= 6
+    then
+        // Human slots never execute NPC AI, catch-up teleports or wander tasks.
+        goto @CPRACE_18576
+    end
+end
 if 
   not Char.IsDead(395@(253@,16i))
 goto_if_false @CPRACE_18123
@@ -1649,6 +1712,12 @@ if
 goto_if_false @CPRACE_13345
 254@ = 0
 set_lvar_int_to_lvar_int 36@ = 256@
+if
+    800@ == 1
+then
+    // These blip loops cover only the original five AI, not host/guest actors.
+    36@ = 6
+end
 36@ -= 1
 
 :CPRACE_12904
@@ -1719,6 +1788,12 @@ Checkpoint.Delete(449@)
 Blip.Remove(54@)
 254@ = 0
 set_lvar_int_to_lvar_int 36@ = 256@
+if
+    800@ == 1
+then
+    // These blip loops cover only the original five AI, not host/guest actors.
+    36@ = 6
+end
 36@ -= 1
 
 :CPRACE_13409
@@ -1992,6 +2067,15 @@ goto_if_false @CPRACE_15498
 if 
   is_int_lvar_greater_than_int_lvar 256@ > 252@
 goto_if_false @CPRACE_15047
+if
+    800@ == 1
+then
+    if
+        252@ >= 6
+    then
+        goto @CPRACE_15047
+    end
+end
 set_lvar_int_to_lvar_int 447@ = 257@(252@,16i)
 447@ -= 4
 if 
@@ -2107,6 +2191,7 @@ goto_if_false @CPRACE_15944
 if 
   is_int_lvar_equal_to_int_lvar 273@(253@,16i) == 224@
 goto_if_false @CPRACE_16620
+gosub @CPRACE_COOP_RECORD_FINISH
 if 
   is_int_lvar_equal_to_int_var 395@(253@,16i) == $scplayer
 goto_if_false @CPRACE_16209
@@ -2464,6 +2549,7 @@ Car.MarkAsNoLongerNeeded(379@(253@,16i))
 goto @CPRACE_12351
 
 :CPRACE_18590
+gosub @CPRACE_COOP_STANDINGS
 if 
   256@ > 1
 goto_if_false @CPRACE_19517
@@ -2511,6 +2597,12 @@ Text.DisplayWith2Numbers($6913, $6927, 'RACES32', 36@, 224@)
 :CPRACE_18950
 set_lvar_int_to_lvar_int 450@ = 229@
 450@ += 1
+if
+    800@ == 1
+then
+    set_lvar_int_to_lvar_int 841@ = 450@
+    set_lvar_int_to_lvar_int 450@ = 840@
+end
 gosub @CPRACE_47594
 if 
   223@ == 1
@@ -2601,6 +2693,12 @@ goto @CPRACE_19517
 Text.DisplayWith2Numbers($6907, $6921, 'TIME_0', 452@, 453@)
 
 :CPRACE_19517
+if
+    800@ == 1
+then
+    // Restore the native NPC-only qualification before any story/result branch.
+    set_lvar_int_to_lvar_int 450@ = 841@
+end
 if 
   $race_selection == 7
 goto_if_false @CPRACE_19542
@@ -2617,6 +2715,15 @@ gosub @CPRACE_50980
 goto @CPRACE_20805
 
 :CPRACE_19581
+gosub @CPRACE_COOP_WAIT_RESULTS
+if
+    816@ == 0
+goto_if_false @CPRACE_COOP_RESULTS_READY
+// Continue native AI checkpoints while remaining captured humans race.
+253@ = 0
+goto @CPRACE_12351
+
+:CPRACE_COOP_RESULTS_READY
 if 
   $show_race_selection == 0
 goto_if_false @CPRACE_19766
@@ -2651,6 +2758,7 @@ goto_if_false @CPRACE_19766
 Text.PrintBig('M_FAIL', 3000, TextStyle.Middle)
 
 :CPRACE_19766
+gosub @CPRACE_COOP_RESULTS
 Hud.ClearTimer($races_timer)
 if 
   is_int_var_greater_than_int_lvar $cprace_best_times($race_selection,30i) > 451@
@@ -2804,6 +2912,15 @@ goto @CPRACE_20777
 Text.DisplayWith2Numbers($6905, $6920, 'TIME_0', 452@, 453@)
 
 :CPRACE_20777
+if
+    800@ == 1
+then
+    gosub @CPRACE_47594
+    Text.SetScale(0.5, 1.6)
+    Text.Display(30.0, 100.0, 'RACES30')
+    Text.DisplayWithNumber(180.0, 100.0, 'NUMBER', 840@)
+    Text.DisplayWithNumber(225.0, 100.0, 'OUT_OF', 256@)
+end
 if 
   is_int_var_greater_than_int_var $game_timer > $races_timer
 goto_if_false @CPRACE_20798
@@ -6478,6 +6595,16 @@ Char.SetAreaVisible($scplayer, 0)
 if 
   is_int_lvar_greater_than_int_lvar 256@ > 253@
 goto_if_false @CPRACE_51978
+if
+    800@ == 1
+then
+    if
+        253@ >= 6
+    then
+        // These are live network players, not race-created AI pedestrians.
+        goto @CPRACE_51937
+    end
+end
 if 
   not is_int_lvar_equal_to_int_lvar 253@ == 442@
 goto_if_false @CPRACE_51937
@@ -6553,6 +6680,631 @@ Char.SetAreaVisible($scplayer, 0)
 $disable_all_cranes = 0
 $disable_mod_garage = 0
 $onmission = 0
+gosub @CPRACE_COOP_CLEANUP
 Mission.Finish
 return 
 
+
+// High Stakes: existing six racers plus up to three captured human guests.
+// Locals 800 through 859 are separate from original locals 0 through 742. Array 289 was unused finish storage.
+:CPRACE_COOP_GRID
+if
+    800@ == 1
+then
+    Streaming.RequestModel(567)
+    Streaming.LoadAllModelsNow
+    905@ = Clock.GetGameTimer()
+    905@ += 15000
+    for 802@ = 0 to 2
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[802@])
+            then
+                if
+                    Car.DoesExist($NETWORK_PLAYER_VEHICLE[802@])
+                then
+                    if
+                        Car.IsDead($NETWORK_PLAYER_VEHICLE[802@])
+                    then
+                        Car.MarkAsNoLongerNeeded($NETWORK_PLAYER_VEHICLE[802@])
+                        $NETWORK_PLAYER_VEHICLE[802@] = -1
+                    end
+                else
+                    $NETWORK_PLAYER_VEHICLE[802@] = -1
+                end
+                if
+                    Car.DoesExist($NETWORK_PLAYER_VEHICLE[802@])
+                then
+                    if
+                        not Car.IsLowRider($NETWORK_PLAYER_VEHICLE[802@])
+                    then
+                        Car.MarkAsNoLongerNeeded($NETWORK_PLAYER_VEHICLE[802@])
+                        $NETWORK_PLAYER_VEHICLE[802@] = -1
+                    end
+                end
+                gosub @CPRACE_COOP_START_POSITION
+                // Make every missing transport a real lowrider, never a phantom racer.
+                if
+                    $NETWORK_PLAYER_VEHICLE[802@] == -1
+                then
+                    $NETWORK_PLAYER_VEHICLE[802@] = Car.Create(567, 901@, 902@, 12.3828)
+                end
+                if
+                    Car.DoesExist($NETWORK_PLAYER_VEHICLE[802@])
+                then
+                    if
+                        not Car.IsDead($NETWORK_PLAYER_VEHICLE[802@])
+                    then
+                        set_lvar_int_to_lvar_int 810@(802@,3i) = 256@
+                        set_lvar_int_to_lvar_int 803@ = 256@
+                        set_lvar_int_to_var_int 395@(803@,16i) = $NETWORK_PLAYER[802@]
+                        set_lvar_int_to_var_int 379@(803@,16i) = $NETWORK_PLAYER_VEHICLE[802@]
+                        716@(803@,16i) = Car.GetModel(379@(803@,16i))
+                        700@(803@,16i) = 7
+                        257@(803@,16i) = 0
+                        273@(803@,16i) = 0
+                        289@(803@,16i) = 0
+                        305@(803@,16i) = 0
+                        412@(803@,16i) = 0
+                        set_lvar_float_to_lvar_float 331@(803@,16f) = 454@
+                        set_lvar_float_to_lvar_float 347@(803@,16f) = 536@
+                        set_lvar_float_to_lvar_float 363@(803@,16f) = 618@
+                        Car.SetAsMissionCar(379@(803@,16i))
+                        // Separate rows behind the original grid, facing checkpoint1.
+                        gosub @CPRACE_COOP_START_POSITION
+                        Car.SetCoordinates(379@(803@,16i), 901@, 902@, 12.3828)
+                        Car.SetHeading(379@(803@,16i), 90.0)
+                        Char.SetAreaVisible($NETWORK_PLAYER[802@], 0)
+                        // Targeted safe teleport handles players who arrived in a different car.
+                        set_lvar_int_to_var_int 850@ = $NETWORK_PLAYER[802@]
+                        Coop.TeleportPlayersToHostSafely(850@, -1, -1)
+                        256@ += 1
+                        801@ += 1
+                    end
+                end
+            end
+        end
+    end
+end
+return
+
+:CPRACE_COOP_LOBBY
+816@ = 1
+if
+    800@ == 1
+then
+    for 802@ = 0 to 2
+        set_lvar_int_to_lvar_int 803@ = 810@(802@,3i)
+        if
+            803@ <> -1
+        then
+            if
+                not Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+            then
+                gosub @CPRACE_COOP_DNF
+                continue
+            end
+            if
+                Char.IsDead($NETWORK_PLAYER[802@])
+            then
+                gosub @CPRACE_COOP_DNF
+                continue
+            end
+            if
+                not Car.DoesExist(379@(803@,16i))
+            then
+                gosub @CPRACE_COOP_DNF
+                continue
+            end
+            if
+                Car.IsDead(379@(803@,16i))
+            then
+                gosub @CPRACE_COOP_DNF
+                continue
+            end
+            if
+                Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+            then
+                if
+                    Car.DoesExist(379@(803@,16i))
+                then
+                    if
+                        not Car.IsDead(379@(803@,16i))
+                    then
+                        823@ = Coop.GetVehicleNetworkId(379@(803@,16i))
+                        if
+                            823@ <> -1
+                        then
+                            if
+                                813@(802@,3i) == 0
+                            then
+                                // The mapping now exists: replay the exact grid placement reliably.
+                                gosub @CPRACE_COOP_START_POSITION
+                                Car.SetCoordinates(379@(803@,16i), 901@, 902@, 12.3828)
+                                Car.SetHeading(379@(803@,16i), 90.0)
+                                Task.EnterCarAsDriver($NETWORK_PLAYER[802@], 379@(803@,16i), 10000)
+                                813@(802@,3i) = 1
+                                Coop.UpdateCarBlipForNetworkPlayer($NETWORK_PLAYER[802@], 379@(803@,16i), True, BlipDisplay.Both, BlipColor.Purple, 3)
+                            end
+                            823@ = Car.GetDriver(379@(803@,16i))
+                            set_lvar_int_to_var_int 822@ = $NETWORK_PLAYER[802@]
+                            if and
+                                is_int_lvar_equal_to_int_lvar 823@ == 822@
+                                Char.IsInCar($NETWORK_PLAYER[802@], 379@(803@,16i))
+                            then
+                                continue
+                            end
+                        end
+                    end
+                end
+            else
+                gosub @CPRACE_COOP_DNF
+                continue
+            end
+            804@ = Clock.GetGameTimer()
+            if
+                is_int_lvar_greater_than_int_lvar 804@ > 905@
+            then
+                gosub @CPRACE_COOP_DNF
+            else
+                816@ = 0
+            end
+        end
+    end
+end
+return
+
+:CPRACE_COOP_GO
+if
+    800@ == 1
+then
+    804@ = Clock.GetGameTimer()
+    set_lvar_int_to_lvar_int 808@ = 804@
+    808@ += 300000
+    for 802@ = 0 to 2
+        set_lvar_int_to_lvar_int 803@ = 810@(802@,3i)
+        if
+            803@ <> -1
+        then
+            if
+                Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+            then
+                Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[802@])
+                gosub @CPRACE_COOP_MARKER
+            end
+        end
+    end
+end
+return
+
+:CPRACE_COOP_TICK
+if and
+    800@ == 1
+    49@ >= 11
+    49@ <= 13
+then
+    804@ = Clock.GetGameTimer()
+    if and
+        is_int_lvar_greater_than_int_lvar 804@ > 808@
+        49@ < 13
+    then
+        // A bounded race-wide timeout cannot fabricate a host win.
+        $failed_cesar_race = 1
+        Text.PrintBig('M_FAIL', 3000, TextStyle.Middle)
+        goto @CPRACE_103
+    end
+    for 802@ = 0 to 2
+        set_lvar_int_to_lvar_int 803@ = 810@(802@,3i)
+        if
+            803@ <> -1
+        then
+            if
+                289@(803@,16i) > 0
+            then
+                continue
+            end
+            if
+                not Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+            then
+                gosub @CPRACE_COOP_DNF
+                continue
+            end
+            if
+                Char.IsDead($NETWORK_PLAYER[802@])
+            then
+                gosub @CPRACE_COOP_DNF
+                continue
+            end
+            if
+                not Car.DoesExist(379@(803@,16i))
+            then
+                gosub @CPRACE_COOP_DNF
+                continue
+            end
+            if
+                Car.IsDead(379@(803@,16i))
+            then
+                Coop.PrintNowForNetworkPlayer('RACES24', 5000, 1, $NETWORK_PLAYER[802@])
+                gosub @CPRACE_COOP_DNF
+                continue
+            end
+            823@ = Car.GetDriver(379@(803@,16i))
+            set_lvar_int_to_var_int 822@ = $NETWORK_PLAYER[802@]
+            if and
+                is_int_lvar_equal_to_int_lvar 823@ == 822@
+                Char.IsInCar($NETWORK_PLAYER[802@], 379@(803@,16i))
+            then
+                if
+                    305@(803@,16i) > 0
+                then
+                    305@(803@,16i) = 0
+                    Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[802@])
+                    gosub @CPRACE_COOP_MARKER
+                end
+                if
+                    Char.LocateInCar3D($NETWORK_PLAYER[802@], 331@(803@,16f), 347@(803@,16f), 363@(803@,16f), 322@, 323@, 324@, False)
+                then
+                    // Only this participant's next ordered checkpoint can advance.
+                    257@(803@,16i) += 1
+                    if
+                        is_int_lvar_greater_than_int_lvar 250@ > 257@(803@,16i)
+                    then
+                        set_lvar_int_to_lvar_int 817@ = 257@(803@,16i)
+                        set_lvar_float_to_lvar_float 331@(803@,16f) = 454@(817@,82f)
+                        set_lvar_float_to_lvar_float 347@(803@,16f) = 536@(817@,82f)
+                        set_lvar_float_to_lvar_float 363@(803@,16f) = 618@(817@,82f)
+                        gosub @CPRACE_COOP_MARKER
+                    else
+                        273@(803@,16i) = 1
+                        set_lvar_int_to_lvar_int 289@(803@,16i) = 804@
+                        if
+                            807@ == 0
+                        then
+                            set_lvar_int_to_lvar_int 807@ = 804@
+                            807@ += 60000
+                        end
+                        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[802@])
+                    end
+                end
+            else
+                if
+                    305@(803@,16i) == 0
+                then
+                    set_lvar_int_to_lvar_int 305@(803@,16i) = 804@
+                    305@(803@,16i) += 25400
+                    Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[802@])
+                    823@ = Coop.GetVehicleNetworkId(379@(803@,16i))
+                    if
+                        823@ <> -1
+                    then
+                        Coop.UpdateCarBlipForNetworkPlayer($NETWORK_PLAYER[802@], 379@(803@,16i), True, BlipDisplay.Both, BlipColor.Purple, 3)
+                    end
+                end
+                if
+                    is_int_lvar_greater_than_int_lvar 804@ > 305@(803@,16i)
+                then
+                    Coop.PrintNowForNetworkPlayer('RACES20', 5000, 1, $NETWORK_PLAYER[802@])
+                    gosub @CPRACE_COOP_DNF
+                end
+            end
+            if
+                807@ > 0
+            then
+                if and
+                    is_int_lvar_greater_than_int_lvar 804@ > 807@
+                    289@(803@,16i) == 0
+                then
+                    gosub @CPRACE_COOP_DNF
+                end
+            end
+        end
+    end
+end
+return
+
+:CPRACE_COOP_MARKER
+Coop.UpdateCheckpointForNetworkPlayer(331@(803@,16f), 347@(803@,16f), 363@(803@,16f), 322@, 323@, 324@, $NETWORK_PLAYER[802@])
+return
+
+:CPRACE_COOP_DNF
+// 803@ is an allocated guest race slot, even if the actor disconnected.
+856@(802@,3i) = 0
+273@(803@,16i) = -1
+257@(803@,16i) = -1
+if
+    Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+then
+    Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[802@])
+    Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[802@])
+    Coop.PrintNowForNetworkPlayer('RACES25', 5000, 1, $NETWORK_PLAYER[802@])
+    if
+        not Char.IsInAnyCar($NETWORK_PLAYER[802@])
+    then
+        Char.ClearTasksImmediately($NETWORK_PLAYER[802@])
+    end
+end
+if
+    Car.DoesExist(379@(803@,16i))
+then
+    Car.MarkAsNoLongerNeeded(379@(803@,16i))
+end
+810@(802@,3i) = -1
+$NETWORK_PLAYER_VEHICLE[802@] = -1
+return
+
+:CPRACE_COOP_RECORD_FINISH
+if
+    800@ == 1
+then
+    if
+        289@(253@,16i) == 0
+    then
+        289@(253@,16i) = Clock.GetGameTimer()
+    end
+    if
+        is_int_lvar_equal_to_int_lvar 253@ == 442@
+    then
+        if
+            807@ == 0
+        then
+            807@ = Clock.GetGameTimer()
+            807@ += 60000
+        end
+    end
+end
+return
+
+:CPRACE_COOP_RANK
+// Rank by real completion time, then ordered progress and distance. Ties use grid slot.
+821@ = 1
+for 818@ = 0 to 15
+    if
+        is_int_lvar_greater_than_int_lvar 256@ > 818@
+    then
+        if
+            not is_int_lvar_equal_to_int_lvar 818@ == 820@
+        then
+            if
+                273@(818@,16i) >= 0
+            then
+                if
+                    289@(818@,16i) > 0
+                then
+                    if
+                        289@(820@,16i) == 0
+                    then
+                        821@ += 1
+                    else
+                        if
+                            is_int_lvar_greater_than_int_lvar 289@(820@,16i) > 289@(818@,16i)
+                        then
+                            821@ += 1
+                        else
+                            if and
+                                is_int_lvar_equal_to_int_lvar 289@(820@,16i) == 289@(818@,16i)
+                                is_int_lvar_greater_than_int_lvar 820@ > 818@
+                            then
+                                821@ += 1
+                            end
+                        end
+                    end
+                else
+                    if
+                        289@(820@,16i) == 0
+                    then
+                        819@ = 1
+                        if
+                            818@ >= 6
+                        then
+                            if
+                                not Coop.IsNetworkPlayerActorValid(395@(818@,16i))
+                            then
+                                819@ = 0
+                            end
+                        end
+                        if
+                            not Char.DoesExist(395@(818@,16i))
+                        then
+                            819@ = 0
+                        end
+                        if
+                            819@ == 1
+                        then
+                            if
+                                Char.IsDead(395@(818@,16i))
+                            then
+                                819@ = 0
+                            end
+                        end
+                        if
+                            819@ == 1
+                        then
+                            if
+                                is_int_lvar_greater_than_int_lvar 257@(818@,16i) > 257@(820@,16i)
+                            then
+                                821@ += 1
+                            else
+                                if
+                                    is_int_lvar_equal_to_int_lvar 257@(818@,16i) == 257@(820@,16i)
+                                then
+                                    824@, 825@, 826@ = Char.GetCoordinates(395@(820@,16i))
+                                    827@, 828@, 829@ = Char.GetCoordinates(395@(818@,16i))
+                                    831@ = Math.GetDistanceBetweenCoords3D(824@, 825@, 826@, 331@(820@,16f), 347@(820@,16f), 363@(820@,16f))
+                                    832@ = Math.GetDistanceBetweenCoords3D(827@, 828@, 829@, 331@(820@,16f), 347@(820@,16f), 363@(820@,16f))
+                                    if
+                                        is_float_lvar_greater_than_float_lvar 831@ > 832@
+                                    then
+                                        821@ += 1
+                                    else
+                                        if and
+                                            is_float_lvar_equal_to_float_lvar 831@ == 832@
+                                            is_int_lvar_greater_than_int_lvar 820@ > 818@
+                                        then
+                                            821@ += 1
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+return
+
+:CPRACE_COOP_STANDINGS
+if
+    800@ == 1
+then
+    // Native 229/450 qualify the host against the original five NPCs only.
+    // 840 is the inclusive host placement, separate from story qualification/rewards.
+    set_lvar_int_to_lvar_int 820@ = 442@
+    gosub @CPRACE_COOP_RANK
+    set_lvar_int_to_lvar_int 840@ = 821@
+    for 802@ = 0 to 2
+        set_lvar_int_to_lvar_int 820@ = 810@(802@,3i)
+        if
+            820@ <> -1
+        then
+            819@ = 0
+            if
+                289@(820@,16i) > 0
+            then
+                819@ = 1
+            else
+                if
+                    Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+                then
+                    819@ = 1
+                end
+            end
+            if
+                819@ == 1
+            then
+                gosub @CPRACE_COOP_RANK
+                set_lvar_int_to_lvar_int 856@(802@,3i) = 821@
+            end
+        end
+    end
+end
+return
+
+:CPRACE_COOP_WAIT_RESULTS
+816@ = 1
+if
+    800@ == 1
+then
+    for 802@ = 0 to 2
+        set_lvar_int_to_lvar_int 803@ = 810@(802@,3i)
+        if
+            803@ <> -1
+        then
+            if
+                289@(803@,16i) == 0
+            then
+                816@ = 0
+            end
+        end
+    end
+end
+return
+
+:CPRACE_COOP_RESULTS
+if
+    800@ == 1
+then
+    gosub @CPRACE_COOP_STANDINGS
+    for 802@ = 0 to 2
+        set_lvar_int_to_lvar_int 803@ = 810@(802@,3i)
+        if
+            803@ <> -1
+        then
+            if
+                Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+            then
+                Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[802@])
+                if
+                    289@(803@,16i) > 0
+                then
+                    if
+                        856@(802@,3i) == 1
+                    then
+                        Coop.PrintNowForNetworkPlayer('RACES18', 8000, 1, $NETWORK_PLAYER[802@])
+                    else
+                        if
+                            856@(802@,3i) == 2
+                        then
+                            Coop.PrintNowForNetworkPlayer('RACES42', 8000, 1, $NETWORK_PLAYER[802@])
+                        else
+                            if
+                                856@(802@,3i) == 3
+                            then
+                                Coop.PrintNowForNetworkPlayer('RACES43', 8000, 1, $NETWORK_PLAYER[802@])
+                            else
+                                // Existing targeted GXT API has no number argument for RACES44.
+                                Coop.PrintNowForNetworkPlayer('RACES_8', 8000, 1, $NETWORK_PLAYER[802@])
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+return
+
+:CPRACE_COOP_CLEANUP
+if
+    800@ == 1
+then
+    for 802@ = 0 to 2
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[802@])
+        then
+            Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[802@])
+            Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[802@])
+            if
+                not Char.IsInAnyCar($NETWORK_PLAYER[802@])
+            then
+                Char.ClearTasksImmediately($NETWORK_PLAYER[802@])
+            end
+        end
+        if
+            Car.DoesExist($NETWORK_PLAYER_VEHICLE[802@])
+        then
+            // A finished/disqualified driver may still occupy this car.
+            Car.MarkAsNoLongerNeeded($NETWORK_PLAYER_VEHICLE[802@])
+        end
+        $NETWORK_PLAYER_VEHICLE[802@] = -1
+        $NETWORK_PLAYER[802@] = 0
+    end
+    $cs1_race_is_go = 0
+    Streaming.MarkModelAsNoLongerNeeded(567)
+    Camera.RestoreJumpcut
+    Camera.SetBehindPlayer
+    Hud.SwitchWidescreen(False)
+    Player.SetControl($player1, True)
+    Text.ClearPrints
+    Camera.DoFade(1, 500)
+end
+return
+
+:CPRACE_COOP_START_POSITION
+// All slots use separate rows behind the original six-car grid, facing west.
+901@ = 1530.0
+902@ = -1878.0
+if
+    802@ == 1
+then
+    902@ = -1866.0
+end
+if
+    802@ == 2
+then
+    901@ = 1542.0
+end
+return

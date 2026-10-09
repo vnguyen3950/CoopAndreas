@@ -3,6 +3,12 @@
 
 :CASINO7
 script_name 'CASINO7'
+if not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+$NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
 gosub @CASINO7_47
 if 
   has_deatharrest_been_executed 
@@ -17,6 +23,7 @@ terminate_this_script
 Text.LoadMissionText('CASINO7')
 Stat.RegisterMissionGiven
 $onmission = 1
+Player.SetControl($player1, False)
 wait 0
 Streaming.SetAreaVisible(11)
 Cutscene.Load('CAS_7B')
@@ -59,6 +66,14 @@ Streaming.RequestCollision(2025.8, 1007.87)
 Streaming.LoadSceneInDirection(2025.8, 1007.87, 9.81, 279.83)
 Char.SetCoordinates($scplayer, 2025.8, 1007.87, 9.81)
 Char.SetHeading($scplayer, 279.83)
+for $temp_int = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[$temp_int])
+    then
+        Char.SetAreaVisible($NETWORK_PLAYER[$temp_int], 0)
+    end
+end
+Coop.TeleportPlayersToHostSafely($NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2])
 Camera.RestoreJumpcut
 Player.SetControl($player1, True)
 Camera.DoFade(1, 2000)
@@ -78,6 +93,19 @@ Stat.PlayerMadeProgress(1)
 return 
 
 :CASINO7_360
+for $temp_int = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[$temp_int])
+    then
+        Char.SetAreaVisible($NETWORK_PLAYER[$temp_int], 0)
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[$temp_int])
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[$temp_int])
+    end
+end
+Streaming.SetAreaVisible(0)
+Hud.SwitchWidescreen(False)
+Camera.RestoreJumpcut
+Player.SetControl($player1, True)
 $onmission = 0
 $timer_mobile_start = Clock.GetGameTimer()
 Mission.Finish

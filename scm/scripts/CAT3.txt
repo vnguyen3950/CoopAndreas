@@ -3,6 +3,19 @@
 
 :CAT3
 script_name 'CAT3'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+// Freeze the mission roster; disconnected or late-joining peers cannot extend it.
+$NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
+906@ = 0
+926@ = 0
+for 900@ = 0 to 2
+    910@(900@,3i) = -1
+end
 gosub @CAT3_1452
 if 
   has_deatharrest_been_executed 
@@ -19,6 +32,7 @@ Streaming.RequestModel(95)
 Streaming.RequestModel(514)
 Streaming.RequestModel(584)
 Streaming.RequestModel(475)
+Streaming.RequestModel(468)
 Streaming.LoadAllModelsNow
 
 :CAT3_72
@@ -75,6 +89,10 @@ Char.GiveWeapon($catalina, WeaponType.Shotgun, 30000)
 return 
 309@ = Blip.AddForChar($catalina)
 41@ = Blip.AddForCoord(50@, 51@, 52@)
+set_lvar_float_to_lvar_float 920@ = 50@
+set_lvar_float_to_lvar_float 921@ = 51@
+set_lvar_float_to_lvar_float 922@ = 52@
+gosub @CAT3_COOP_CHECKPOINT
 Streaming.MarkModelAsNoLongerNeeded(348)
 return 
 
@@ -464,6 +482,7 @@ World.SetCarDensityMultiplier(0.5)
 
 :CAT3_3696
 wait 0
+gosub @CAT3_COOP_TARGET
 if 
   301@ <> 0
 goto_if_false @CAT3_4141
@@ -505,6 +524,13 @@ Char.ShutUpForScriptedSpeech(244@, True)
 :CAT3_3891
 Audio.PlayMissionAudio(303@)
 Text.PrintNow(132@(301@,56s), 10000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer(132@(301@,56s), 10000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 302@ = 3
 
 :CAT3_3917
@@ -786,6 +812,7 @@ Streaming.RemoveAnimation("MISC")
 World.ClearArea(1, $509, $515, $521, 200.0)
 Char.SetHeading($scplayer, 332@)
 Player.SetControl($player1, True)
+gosub @CAT3_COOP_START
 Hud.SwitchWidescreen(False)
 Camera.RestoreJumpcut
 Camera.SetBehindPlayer
@@ -814,6 +841,13 @@ if and
   not Car.IsDead(334@)
 goto_if_false @CAT3_5847
 Text.PrintNow('CAT3_02', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('CAT3_02', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 if 
   Char.IsInCar($scplayer, 327@)
 goto_if_false @CAT3_5847
@@ -930,6 +964,10 @@ Char.RemoveFromGroup($catalina)
 Blip.Remove(309@)
 Blip.Remove(41@)
 41@ = Blip.AddForCoord(50@, 51@, 52@)
+set_lvar_float_to_lvar_float 920@ = 50@
+set_lvar_float_to_lvar_float 921@ = 51@
+set_lvar_float_to_lvar_float 922@ = 52@
+gosub @CAT3_COOP_CHECKPOINT
 Hud.ClearCounter($c3_trailer_health_display)
 Hud.DisplayCounterWithString($c3_trailer_health_display, CounterDisplay.Bar, 'CAT3_11')
 Char.WarpIntoCarAsPassenger($catalina, 327@, 0)
@@ -938,6 +976,10 @@ goto @CAT3_6427
 :CAT3_6387
 Blip.Remove(41@)
 41@ = Blip.AddForCoord(50@, 51@, 52@)
+set_lvar_float_to_lvar_float 920@ = 50@
+set_lvar_float_to_lvar_float 921@ = 51@
+set_lvar_float_to_lvar_float 922@ = 52@
+gosub @CAT3_COOP_CHECKPOINT
 Hud.ClearCounter($c3_trailer_health_display)
 Hud.DisplayCounterWithString($c3_trailer_health_display, CounterDisplay.Bar, 'CAT3_11')
 
@@ -1176,6 +1218,13 @@ if
   37@ == 4
 goto_if_false @CAT3_7948
 Text.Print('CAT3_05', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintForNetworkPlayer('CAT3_05', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 37@ = -4
 
 :CAT3_7948
@@ -1756,6 +1805,13 @@ goto @CAT3_11758
 Camera.DoFade(1, 300)
 Text.ClearPrints
 Text.PrintNow('CAT3_08', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('CAT3_08', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @CAT3_17048
 
 :CAT3_11758
@@ -1763,6 +1819,13 @@ goto @CAT3_11788
 
 :CAT3_11765
 Text.PrintNow('CAT3_08', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('CAT3_08', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @CAT3_17048
 
 :CAT3_11788
@@ -1773,6 +1836,10 @@ goto_if_false @CAT3_12172
 if or
   Car.Locate3D(327@, 1, 50@, 51@, 52@, 5.0, 5.0, 5.0)
   Car.Locate3D(334@, 0, 50@, 51@, 52@, 5.0, 5.0, 5.0)
+goto_if_false @CAT3_12172
+gosub @CAT3_COOP_READY
+if
+    923@ == 1
 goto_if_false @CAT3_12172
 Player.SetControl($player1, False)
 Camera.DoFade(0, 500)
@@ -2419,6 +2486,10 @@ if or
 goto_if_false @CAT3_15516
 Blip.Remove(41@)
 41@ = Blip.AddForCoord(50@, 51@, 52@)
+set_lvar_float_to_lvar_float 920@ = 50@
+set_lvar_float_to_lvar_float 921@ = 51@
+set_lvar_float_to_lvar_float 922@ = 52@
+gosub @CAT3_COOP_CHECKPOINT
 Blip.SetAsFriendly(41@, True)
 Hud.ClearCounter($c3_trailer_health_display)
 Hud.DisplayCounterWithString($c3_trailer_health_display, CounterDisplay.Bar, 'CAT3_11')
@@ -2473,6 +2544,13 @@ if or
 goto_if_false @CAT3_15781
 Text.ClearPrints
 Text.PrintNow('CAT3_06', 10000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('CAT3_06', 10000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @CAT3_17048
 
 :CAT3_15781
@@ -2484,6 +2562,13 @@ if
 goto_if_false @CAT3_15840
 Text.ClearPrints
 Text.PrintNow('CAT3_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('CAT3_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @CAT3_17048
 
 :CAT3_15840
@@ -2495,6 +2580,13 @@ if
 goto_if_false @CAT3_15899
 Text.ClearPrints
 Text.PrintNow('CAT3_09', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('CAT3_09', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @CAT3_17048
 
 :CAT3_15899
@@ -2542,6 +2634,13 @@ Char.StartFacialTalk(244@, 10000)
 :CAT3_16094
 Audio.PlayMissionAudio(303@)
 Text.PrintNow(132@(301@,56s), 10000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer(132@(301@,56s), 10000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 302@ = 3
 
 :CAT3_16120
@@ -2710,6 +2809,13 @@ goto @CAT3_16987
 
 :CAT3_17011
 Text.PrintNow('CAT3_08', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('CAT3_08', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Player.SetControl($player1, True)
 goto @CAT3_17048
 
@@ -2756,6 +2862,8 @@ $flag_cat_mission3_passed = 1
 return 
 
 :CAT3_17250
+gosub @CAT3_COOP_CLEANUP
+Streaming.MarkModelAsNoLongerNeeded(468)
 Blip.Remove(328@)
 Blip.Remove(335@)
 Blip.Remove(341@)
@@ -3003,6 +3111,10 @@ goto_if_false @CAT3_18516
 128@ = 4
 Blip.Remove(41@)
 41@ = Blip.AddForCoord(50@, 51@, 52@)
+set_lvar_float_to_lvar_float 920@ = 50@
+set_lvar_float_to_lvar_float 921@ = 51@
+set_lvar_float_to_lvar_float 922@ = 52@
+gosub @CAT3_COOP_CHECKPOINT
 Hud.ClearCounter($c3_trailer_health_display)
 Hud.DisplayCounterWithString($c3_trailer_health_display, CounterDisplay.Bar, 'CAT3_11')
 
@@ -3066,6 +3178,13 @@ if
   35@ <> 3
 goto_if_false @CAT3_18818
 Text.PrintNow('CAT3_01', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('CAT3_01', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 
 :CAT3_18818
 49@ = 0
@@ -3073,3 +3192,167 @@ Text.PrintNow('CAT3_01', 5000, 1)
 :CAT3_18825
 return 
 
+
+// Co-op support locals 900..933 do not overlap original mission locals.
+:CAT3_COOP_START
+if
+    906@ == 0
+then
+    906@ = 1
+    gosub @CAT3_COOP_REGROUP
+    901@ = 651.0
+    for 900@ = 0 to 2
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.GiveWeapon($NETWORK_PLAYER[900@], WeaponType.MicroUzi, 180)
+                910@(900@,3i) = Car.Create(468, 901@, -566.0, 15.37)
+                Car.SetHeading(910@(900@,3i), 90.0)
+            end
+        end
+        901@ += 3.0
+    end
+end
+return
+
+:CAT3_COOP_REGROUP
+if
+    not Char.IsDead($scplayer)
+then
+    905@ = Streaming.GetAreaVisible()
+    for 900@ = 0 to 2
+        930@(900@,3i) = -1
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.SetAreaVisible($NETWORK_PLAYER[900@], 905@)
+                Char.ClearTasksImmediately($NETWORK_PLAYER[900@])
+                set_lvar_int_to_var_int 930@(900@,3i) = $NETWORK_PLAYER[900@]
+            end
+        end
+    end
+    Coop.TeleportPlayersToHostSafely(930@, 931@, 932@)
+end
+return
+
+:CAT3_COOP_CHECKPOINT
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.UpdateCheckpointForNetworkPlayer(920@, 921@, 922@, 4.0, 4.0, 4.0, $NETWORK_PLAYER[900@])
+    end
+end
+return
+
+:CAT3_COOP_READY
+// Original host trigger is retained. Check the captured roster, not all current peers.
+923@ = 1
+905@ = Streaming.GetAreaVisible()
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        if
+            Char.IsDead($NETWORK_PLAYER[900@])
+        then
+            923@ = 0
+        else
+            924@ = Char.GetAreaVisible($NETWORK_PLAYER[900@])
+            if or
+                803B: 924@ == 905@
+                not Char.LocateAnyMeans3D($NETWORK_PLAYER[900@], False, 920@, 921@, 922@, 25.0, 25.0, 10.0)
+            then
+                923@ = 0
+            end
+        end
+    end
+end
+return
+
+:CAT3_COOP_CLEANUP
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+    end
+end
+for 900@ = 0 to 2
+    if
+        Car.DoesExist(910@(900@,3i))
+    then
+        // Do not destroy transport underneath a rider.
+        Car.MarkAsNoLongerNeeded(910@(900@,3i))
+    end
+    910@(900@,3i) = -1
+end
+906@ = 0
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+Hud.SwitchWidescreen(False)
+Player.SetControl($player1, True)
+Text.ClearPrints
+return
+
+:CAT3_COOP_TARGET
+if
+    906@ == 1
+then
+    925@ = Clock.GetGameTimer()
+    if
+        001D: 925@ > 926@
+    then
+        set_lvar_int_to_lvar_int 926@ = 925@
+        926@ += 1000
+        if
+            Car.DoesExist(327@)
+        then
+            if
+                not Car.IsDead(327@)
+            then
+                927@ = Coop.GetVehicleNetworkId(327@)
+                if
+                    927@ <> -1
+                then
+                    for 900@ = 0 to 2
+                        if
+                            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                        then
+                            Coop.UpdateCarBlipForNetworkPlayer($NETWORK_PLAYER[900@], 327@, True, BlipDisplay.Both, BlipColor.Purple, 3)
+                        end
+                    end
+                end
+            end
+        end
+        if
+            Car.DoesExist(340@)
+        then
+            if
+                not Car.IsDead(340@)
+            then
+                927@ = Coop.GetVehicleNetworkId(340@)
+                if
+                    927@ <> -1
+                then
+                    for 900@ = 0 to 2
+                        if
+                            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                        then
+                            Coop.UpdateCarBlipForNetworkPlayer($NETWORK_PLAYER[900@], 340@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+return

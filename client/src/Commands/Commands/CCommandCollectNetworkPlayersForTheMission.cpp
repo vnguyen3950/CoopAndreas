@@ -9,10 +9,10 @@ void CCommandCollectNetworkPlayersForTheMission::Process(CRunningScript* script)
 
 	for (auto networkPlayer : CNetworkPlayerManager::m_pPlayers)
 	{
-		if (auto player = networkPlayer->m_pPed)
-		{
-			ScriptParams[i] = CPools::GetPedRef(networkPlayer->m_pPed);
-		}
+		if (!networkPlayer || !networkPlayer->m_pPed || !networkPlayer->m_pPed->IsVTableValid())
+			continue;
+
+		ScriptParams[i] = CPools::GetPedRef(networkPlayer->m_pPed);
 
 		if (++i >= 3)
 			break;

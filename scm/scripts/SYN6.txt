@@ -3,6 +3,19 @@
 
 :SYN6
 script_name 'SYN6'
+if
+    not Coop.IsHost()
+then
+    terminate_this_script
+end
+Coop.EnableSyncingThisScript()
+// Freeze the mission roster; disconnected or late-joining peers cannot extend it.
+$NETWORK_PLAYER[0], $NETWORK_PLAYER[1], $NETWORK_PLAYER[2] = Coop.CollectNetworkPlayersForTheMission()
+906@ = 0
+926@ = 0
+for 900@ = 0 to 2
+    910@(900@,3i) = -1
+end
 gosub @SYN6_47
 if 
   has_deatharrest_been_executed 
@@ -216,6 +229,7 @@ TIMERA = 0
 
 :SYN6_1606
 wait 0
+gosub @SYN6_COOP_TARGET
 if 
   142@ <> 0
 goto_if_false @SYN6_1963
@@ -247,6 +261,13 @@ if
 goto_if_false @SYN6_1778
 Audio.PlayMissionAudio(140@)
 Text.PrintNow(104@(142@,12s), 10000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer(104@(142@,12s), 10000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 144@ = 3
 
 :SYN6_1778
@@ -372,6 +393,7 @@ goto_if_false @SYN6_2387
 86@ = 0
 Hud.SwitchWidescreen(False)
 Player.SetControl($player1, True)
+gosub @SYN6_COOP_START
 Camera.SetBehindPlayer
 Camera.RestoreJumpcut
 84@ = 15
@@ -439,6 +461,13 @@ Task.UseMobilePhone($scplayer, False)
 Streaming.MarkModelAsNoLongerNeeded(330)
 Char.HideWeaponForScriptedCutscene($scplayer, False)
 Text.PrintNow('SYN6_01', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_01', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 84@ = 110
 goto @SYN6_2796
 
@@ -449,6 +478,10 @@ goto_if_false @SYN6_2860
 Char.ClearTasks($scplayer)
 Char.HideWeaponForScriptedCutscene($scplayer, False)
 34@ = Blip.AddForCoord(-1680.377, 705.462, 30.2209)
+920@ = -1680.377
+921@ = 705.462
+922@ = 30.2209
+gosub @SYN6_COOP_CHECKPOINT
 84@ = -13
 85@ = 0
 
@@ -748,6 +781,13 @@ if
 goto_if_false @SYN6_4557
 Text.ClearPrints
 Text.PrintNow('SYN6_20', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_20', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Blip.Remove(62@)
 if 
   not Car.IsDead(149@)
@@ -758,6 +798,18 @@ Car.UnpausePlayback(149@)
 
 :SYN6_4550
 65@ = 2
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        if
+            not Char.IsDead($NETWORK_PLAYER[900@])
+        then
+            Char.GiveWeapon($NETWORK_PLAYER[900@], WeaponType.RocketLauncher, 6)
+        end
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[900@])
+    end
+end
 
 :SYN6_4557
 if 
@@ -1039,6 +1091,13 @@ Camera.SetFadingColor(1, 0, 0)
 Game.SetEveryoneIgnorePlayer($player1, False)
 Hud.SwitchWidescreen(False)
 Text.PrintNow('SYN6_03', 8000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_03', 8000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 Game.SetAllCarsCanBeDamaged(True)
 if 
   not Car.IsDead(149@)
@@ -1137,6 +1196,13 @@ if
   Char.LocateAnyMeansCar3D($scplayer, 149@, 40.0, 40.0, 40.0, False)
 goto_if_false @SYN6_7178
 Text.PrintNow('SYN6_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 60@ += 1
 if 
   not Char.IsDead(151@)
@@ -1170,6 +1236,13 @@ if
   Car.HasBeenDamagedByChar(149@, $scplayer)
 goto_if_false @SYN6_7376
 Text.PrintNow('SYN6_07', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_07', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 60@ += 1
 if 
   not Char.IsDead(151@)
@@ -1249,6 +1322,13 @@ goto @SYN6_7656
 
 :SYN6_7633
 Text.PrintNow('SYN6_06', 5000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_06', 5000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @SYN6_9151
 
 :SYN6_7656
@@ -1341,6 +1421,13 @@ if
 goto_if_false @SYN6_8171
 Text.ClearPrints
 Text.PrintNow('SYN6_12', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_12', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 81@ = 1
 
 :SYN6_8171
@@ -1355,6 +1442,13 @@ if
 goto_if_false @SYN6_8266
 Text.ClearPrints
 Text.PrintNow('SYN6_13', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_13', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 81@ = 0
 
 :SYN6_8266
@@ -1363,6 +1457,13 @@ if
 goto_if_false @SYN6_8322
 Text.ClearPrints
 Text.PrintNow('SYN6_08', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_08', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @SYN6_9151
 
 :SYN6_8322
@@ -1377,6 +1478,13 @@ if
 goto_if_false @SYN6_8419
 Text.ClearPrints
 Text.PrintNow('SYN6_10', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_10', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @SYN6_9151
 
 :SYN6_8419
@@ -1517,6 +1625,13 @@ Char.DetachFromCar(152@)
 :SYN6_9119
 Text.ClearPrints
 Text.PrintNow('SYN6_09', 6000, 1)
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.PrintNowForNetworkPlayer('SYN6_09', 6000, 1, $NETWORK_PLAYER[900@])
+    end
+end
 goto @SYN6_9169
 
 :SYN6_9144
@@ -1539,6 +1654,7 @@ Stat.PlayerMadeProgress(1)
 return 
 
 :SYN6_9238
+gosub @SYN6_COOP_CLEANUP
 $tlf_underway = 2
 Audio.ClearMissionAudio(MissionAudioSlot.Slot3)
 Blip.Remove(34@)
@@ -1565,3 +1681,148 @@ $onmission = 0
 Mission.Finish
 return 
 
+
+// Co-op support locals 900..933 do not overlap original mission locals.
+:SYN6_COOP_START
+if
+    906@ == 0
+then
+    906@ = 1
+    gosub @SYN6_COOP_REGROUP
+    901@ = -2023.0
+    for 900@ = 0 to 2
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.GiveWeapon($NETWORK_PLAYER[900@], WeaponType.Pistol, 120)
+                910@(900@,3i) = Car.Create(521, 901@, 143.0, 27.8359)
+                Car.SetHeading(910@(900@,3i), 90.0)
+            end
+        end
+        901@ += 3.0
+    end
+end
+return
+
+:SYN6_COOP_REGROUP
+if
+    not Char.IsDead($scplayer)
+then
+    905@ = Streaming.GetAreaVisible()
+    for 900@ = 0 to 2
+        930@(900@,3i) = -1
+        if
+            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+        then
+            if
+                not Char.IsDead($NETWORK_PLAYER[900@])
+            then
+                Char.SetAreaVisible($NETWORK_PLAYER[900@], 905@)
+                Char.ClearTasksImmediately($NETWORK_PLAYER[900@])
+                set_lvar_int_to_var_int 930@(900@,3i) = $NETWORK_PLAYER[900@]
+            end
+        end
+    end
+    Coop.TeleportPlayersToHostSafely(930@, 931@, 932@)
+end
+return
+
+:SYN6_COOP_CHECKPOINT
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.UpdateCheckpointForNetworkPlayer(920@, 921@, 922@, 4.0, 4.0, 4.0, $NETWORK_PLAYER[900@])
+    end
+end
+return
+
+:SYN6_COOP_READY
+// Original host trigger is retained. Check the captured roster, not all current peers.
+923@ = 1
+905@ = Streaming.GetAreaVisible()
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        if
+            Char.IsDead($NETWORK_PLAYER[900@])
+        then
+            923@ = 0
+        else
+            924@ = Char.GetAreaVisible($NETWORK_PLAYER[900@])
+            if or
+                803B: 924@ == 905@
+                not Char.LocateAnyMeans3D($NETWORK_PLAYER[900@], False, 920@, 921@, 922@, 25.0, 25.0, 10.0)
+            then
+                923@ = 0
+            end
+        end
+    end
+end
+return
+
+:SYN6_COOP_CLEANUP
+for 900@ = 0 to 2
+    if
+        Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+    then
+        Coop.RemoveCheckpointForNetworkPlayer($NETWORK_PLAYER[900@])
+        Coop.ClearAllEntityBlipsForNetworkPlayer($NETWORK_PLAYER[900@])
+    end
+end
+for 900@ = 0 to 2
+    if
+        Car.DoesExist(910@(900@,3i))
+    then
+        // Do not destroy transport underneath a rider.
+        Car.MarkAsNoLongerNeeded(910@(900@,3i))
+    end
+    910@(900@,3i) = -1
+end
+906@ = 0
+Camera.RestoreJumpcut
+Camera.SetBehindPlayer
+Hud.SwitchWidescreen(False)
+Player.SetControl($player1, True)
+Text.ClearPrints
+return
+
+:SYN6_COOP_TARGET
+// Throttled mapping retries keep the replacement/chasing helicopter visible.
+if
+    65@ == 2
+then
+    925@ = Clock.GetGameTimer()
+    if
+        001D: 925@ > 926@
+    then
+        set_lvar_int_to_lvar_int 926@ = 925@
+        926@ += 1000
+        if
+            Car.DoesExist(149@)
+        then
+            if
+                not Car.IsDead(149@)
+            then
+                927@ = Coop.GetVehicleNetworkId(149@)
+                if
+                    927@ <> -1
+                then
+                    for 900@ = 0 to 2
+                        if
+                            Coop.IsNetworkPlayerActorValid($NETWORK_PLAYER[900@])
+                        then
+                            Coop.UpdateCarBlipForNetworkPlayer($NETWORK_PLAYER[900@], 149@, False, BlipDisplay.Both, BlipColor.Red, 3)
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+return

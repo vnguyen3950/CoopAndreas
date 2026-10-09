@@ -17,7 +17,7 @@ enum class eSyncedParamType
     // any `CVehicle` (aka car)
     VEHICLE,
 
-    // not in use yet
+    // Script-created host-authoritative objects (monotonic network identity).
     OBJECT,
 
     MAX_PARAMS
@@ -61,11 +61,11 @@ class COpCodeSync
 {
 public:
 	static inline bool ms_bSyncingEnabled = true;
-	static inline bool ms_bLoadingCutscene = true;
+	static inline bool ms_bLoadingCutscene = false;
 	static inline bool ms_abLoadingMissionAudio[4];
 	
     static inline uint32_t ms_iFreeSyncedScript = 0;
-    static inline char ms_aszSyncedScripts[256][8];
+    static inline char ms_aszSyncedScripts[256][9];
 
     static inline OpcodeParameter scriptParamsBuffer[NUM_SYNCED_PARAMS];
     static inline bool ms_bProcessingTaskSequence = false;

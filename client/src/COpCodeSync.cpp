@@ -38,6 +38,9 @@
 #include "CEntryExitMarkerSync.h"
 #include <CTaskSequenceSync.h>
 #include <CNetworkAnimQueue.h>
+#include "CNetworkObjectManager.h"
+
+static_assert(sizeof(OpcodeSyncHeader) == 4 && sizeof(OpcodeParameter) == 4, "Object opcode wire layout changed");
 
 // Keep sorted!
 const SSyncedOpCode syncedOpcodes[] =
@@ -141,6 +144,31 @@ const SSyncedOpCode syncedOpcodes[] =
     {0x00AB, true, {eSyncedParamType::VEHICLE}}, // set_car_coordinates [Car] {x} [float] {y} [float] {z} [float]
     {0x0175, true, {eSyncedParamType::VEHICLE}}, // set_car_heading [Car] {heading} [float]
     
+    // Script-created objects. Lifecycle, queries, Slide and Break publish native
+    // snapshots only; primitive setters use ordered OBJECT parameter remapping.
+    {0x0107}, {0x029B},
+    {0x0108, true, {eSyncedParamType::OBJECT}},
+    {0x01C4, true, {eSyncedParamType::OBJECT}},
+    {0x0176, true, {eSyncedParamType::OBJECT}},
+    {0x01BB, true, {eSyncedParamType::OBJECT}},
+    {0x0366, true, {eSyncedParamType::OBJECT}},
+    {0x034E, true, {eSyncedParamType::OBJECT}},
+    {0x0723, true, {eSyncedParamType::OBJECT}},
+    {0x01BC, true, {eSyncedParamType::OBJECT}},
+    {0x0177, true, {eSyncedParamType::OBJECT}},
+    {0x035D, true, {eSyncedParamType::OBJECT}},
+    {0x0381, true, {eSyncedParamType::OBJECT}},
+    {0x0382, true, {eSyncedParamType::OBJECT}},
+    {0x0392, true, {eSyncedParamType::OBJECT}},
+    {0x0453, true, {eSyncedParamType::OBJECT}},
+    {0x0550, true, {eSyncedParamType::OBJECT}},
+    {0x0566, true, {eSyncedParamType::OBJECT}},
+    {0x071F, true, {eSyncedParamType::OBJECT}},
+    {0x0750, true, {eSyncedParamType::OBJECT}},
+    {0x0875, true, {eSyncedParamType::OBJECT}},
+    {0x08D2, true, {eSyncedParamType::OBJECT}},
+    {0x09CA, true, {eSyncedParamType::OBJECT}},
+
     // Explosions
     {0x070C, true, {eSyncedParamType::VEHICLE}}, // explode_car_in_cutscene [Car]
     
@@ -168,6 +196,7 @@ static uint16_t textParamCount = 0;
 
 static uint32_t lastOpCodeProcessed;
 static CRunningScript* lastProcessedScript;
+static bool activeOpcodeScope = false;
 
 static uint8_t currentStringIdx = 0;
 
@@ -198,7 +227,7 @@ bool COpCodeSync::IsOpcodeSyncable(int opcode, int* opcodeIdx, bool ignoreOpCode
     {
         for (size_t i = 0; i < ms_iFreeSyncedScript; ++i)
         {
-            if (strnicmp(ms_aszSyncedScripts[i], lastProcessedScript->m_szName, 7) == 0)
+            if (strnicmp(ms_aszSyncedScripts[i], lastProcessedScript->m_szName, 8) == 0)
             {
                 bScriptSynced = true;
                 break;
@@ -242,7 +271,7 @@ std::vector<uint8_t> COpCodeSync::SerializeOpcode(int idx, int& outSize)
     std::vector<uint8_t> buffer(dataSize);
     uint8_t* pCurrent = buffer.data();
 
-    OpcodeSyncHeader header;
+    OpcodeSyncHeader header{};
     header.opcode = lastOpCodeProcessed;
     header.intParamCount = scriptParamCount;
     header.stringParamCount = textParamCount;
@@ -257,6 +286,14 @@ std::vector<uint8_t> COpCodeSync::SerializeOpcode(int idx, int& outSize)
             //CChat::AddMessage("Parsing complex opcode %04x parameter %d...", header.opcode, i);
             switch (syncedOpcodes[idx].m_aParamTypes[i])
             {
+            case eSyncedParamType::OBJECT:
+            {
+                int token = CNetworkObjectManager::GetHostToken(scriptParamsBuffer[i].value);
+                if (token <= 0) { outSize = 0; return {}; }
+                scriptParamsBuffer[i].entityType = eSyncedParamType::OBJECT;
+                scriptParamsBuffer[i].entityId = token;
+                break;
+            }
             case eSyncedParamType::PED:
             {
                 //CChat::AddMessage("Trying to parse a ped handle %d...", scriptParamsBuffer[i].value);
@@ -309,19 +346,17 @@ std::vector<uint8_t> COpCodeSync::SerializeOpcode(int idx, int& outSize)
                     //CChat::AddMessage("Parsed player id %d (me)...", CNetworkPlayerManager::m_nMyId);
                     break;
                 }
-                else scriptParamsBuffer[i].value = -1;
-
-                if (auto player = CWorld::Players[scriptParamsBuffer[i].value].m_pPed)
+                const int internalPlayerId = scriptParamsBuffer[i].value;
+                scriptParamsBuffer[i].value = -1;
+                for (auto* networkPlayer : CNetworkPlayerManager::m_pPlayers)
                 {
-                    if (auto networkPlayer = CNetworkPlayerManager::GetPlayer(player))
+                    if (networkPlayer && networkPlayer->m_pPed && networkPlayer->GetInternalId() == internalPlayerId)
                     {
                         scriptParamsBuffer[i].entityType = eSyncedParamType::PLAYER;
                         scriptParamsBuffer[i].entityId = networkPlayer->m_iPlayerId;
-                        //CChat::AddMessage("Parsed player id %d...", networkPlayer->m_iPlayerId);
+                        break;
                     }
-                    else scriptParamsBuffer[i].value = -1;
                 }
-                else scriptParamsBuffer[i].value = -1;
 
                 break;
             }
@@ -391,8 +426,23 @@ void BuildAndSendOpcode()
     if (!COpCodeSync::IsOpcodeSyncable(lastOpCodeProcessed, &idx))
         return;
 
+    if (ObjectSync::IsObjectOpcode(uint16_t(lastOpCodeProcessed)))
+    {
+        // Native Command<> calls outside this VM dispatch must never inherit
+        // a stale registered script pointer and create unrelated network objects.
+        if (!activeOpcodeScope || !lastProcessedScript || !lastProcessedScript->m_bIsMission
+            || !CLocalPlayer::m_bIsHost || !COpCodeSync::ms_bSyncingEnabled) return;
+        CNetworkObjectManager::ObserveOpcode(uint16_t(lastOpCodeProcessed),
+            reinterpret_cast<const int*>(COpCodeSync::scriptParamsBuffer), scriptParamCount, ScriptParams[0]);
+        if (ObjectSync::IsSnapshotOnlyOpcode(uint16_t(lastOpCodeProcessed)))
+        { scriptParamCount = 0; textParamCount = 0; return; }
+    }
+
     int dataSize = 0;
     std::vector<uint8_t> buffer = COpCodeSync::SerializeOpcode(idx, dataSize);
+    if (!dataSize || (ObjectSync::IsObjectOpcode(uint16_t(lastOpCodeProcessed))
+        && !ObjectSync::ValidOpcode(buffer.data(), buffer.size())))
+    { scriptParamCount = 0; textParamCount = 0; return; }
 
     // TODO(v0.3.1-alpha): serialize directly into the packet structure avoiding std::vector creation
     static Packets::Scripts::OpCodeSync packet{};
@@ -439,6 +489,12 @@ void COpCodeSync::HandlePacket(const uint8_t* buffer, int bufferSize)
         return;
     }
 
+    if (ObjectSync::IsObjectOpcode(header.opcode))
+    {
+        if (!ObjectSync::ValidOpcode(buffer, bufferSize)) return;
+        if (CNetworkObjectManager::QueueOpcode(buffer, bufferSize)) return;
+    }
+
     memset(scriptParamsBuffer, 0, sizeof(scriptParamsBuffer));
     memset(textLengthBuffer, 0, sizeof(textLengthBuffer));
     memset(textParamBuffer, 0, sizeof(textParamBuffer));
@@ -481,6 +537,15 @@ void COpCodeSync::HandlePacket(const uint8_t* buffer, int bufferSize)
             {
                 switch (syncedOpcodes[idx].m_aParamTypes[i])
                 {
+                case eSyncedParamType::OBJECT:
+                {
+                    if (scriptParamsBuffer[i].entityType != eSyncedParamType::OBJECT
+                        || scriptParamsBuffer[i].entityId <= 0) return;
+                    int ref = CNetworkObjectManager::GetHandle(scriptParamsBuffer[i].entityId);
+                    if (ref < 0) return;
+                    scriptParamsBuffer[i].value = ref;
+                    break;
+                }
                 case eSyncedParamType::PED:
                 {
                     /*if (header.opcode == 0x0605)    
@@ -563,6 +628,8 @@ void COpCodeSync::HandlePacket(const uint8_t* buffer, int bufferSize)
                 }
                 case eSyncedParamType::PLAYER:
                 {
+                    if (scriptParamsBuffer[i].value == -1)
+                        return;
                     /*if (scriptParamsBuffer[i].entityId == CNetworkPlayerManager::m_nMyId)
                     {*/
                         scriptParamsBuffer[i].value = 0;
@@ -678,11 +745,16 @@ void COpCodeSync::HandlePacket(const uint8_t* buffer, int bufferSize)
     {
         CHud::m_BigMessage[1][0] = 0;
     }
+    else if (lastOpCodeProcessed == 0x02E4 || lastOpCodeProcessed == 0x02EA) // load_cutscene / clear_cutscene
+    {
+        // A new scene or teardown cancels a start deferred for the previous scene.
+        COpCodeSync::ms_bLoadingCutscene = false;
+    }
     else if (lastOpCodeProcessed == 0x02E7) // start_cutscene
     {
-        if(CCutsceneMgr::ms_cutsceneLoadStatus != 2)
+        COpCodeSync::ms_bLoadingCutscene = CCutsceneMgr::ms_cutsceneLoadStatus != 2;
+        if (COpCodeSync::ms_bLoadingCutscene)
         {
-            COpCodeSync::ms_bLoadingCutscene = true;
             return; // dont process opcode
         }
     }
@@ -751,12 +823,18 @@ void __declspec(naked) FinishedOpcodeProcessing_Hook()
         mov lastOpCodeProcessed, ecx
         mov lastProcessedScript, esi
 
+        mov activeOpcodeScope, 1
+        mov scriptParamCount, 0
+        mov textParamCount, 0
+
         mov ecx, esi
         call edx
 
         push eax
         call BuildAndSendOpcode
         pop eax
+
+        mov activeOpcodeScope, 0
 
         test al, al
 
@@ -790,7 +868,7 @@ void __declspec(naked) CRunningScript__CollectParameters_Hook_GetSyncingParams()
         pushad
     }
 
-    if (lastProcessedScript 
+    if (activeOpcodeScope && lastProcessedScript
         && (COpCodeSync::IsOpcodeSyncable(lastOpCodeProcessed) || CTaskSequenceSync::IsNeededToCollectParametes((eScriptCommands)lastOpCodeProcessed)))
     {
         CollectParamsProperly();
@@ -862,6 +940,7 @@ static void FinishedProcessingScripts()
 
 void COpCodeSync::Init()
 {
+    CNetworkObjectManager::Init();
     DWORD temp;
     injector::UnprotectMemory(0x464080, 5, temp);
     injector::UnprotectMemory(0x463D50, 6, temp);

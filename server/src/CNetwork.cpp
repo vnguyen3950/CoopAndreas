@@ -6,6 +6,7 @@
 #include "network/packets/system.h"
 #include "serialize.h"
 #include "stdafx.h"
+#include "CNetworkObjectManager.h"
 #include <network/packets/vehicles.h>
 #include <network/packets/peds.h>
 #include <network/packets/scripts.h>
@@ -116,6 +117,7 @@ void CNetwork::HandlePlayerDisconnected(ENetEvent& event)
 
     CNetworkPedManager::RemoveAllHostedAndNotify(pNetworkPlayer);
     CNetworkVehicleManager::RemoveAllHostedAndNotify(pNetworkPlayer);
+    CNetworkObjectManager::RemoveOwner(pNetworkPlayer);
 
     CNetworkPlayerManager::Remove(pNetworkPlayer);
 

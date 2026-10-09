@@ -12,3 +12,27 @@ vsxmake2022/
 vsxmake2026/
 output/
 compile_commands.json
+
+# Local game labs, generated outputs, and credentials
+/artifacts/
+/script-build/
+/staging/
+/game-lab/
+/captures/
+/backups/
+/tools/
+.env
+.env.*
+*.dmp
+*.pdb
+*.ilk
+*.log
+/CoopAndreasSA.dll
+/server.exe
+/proxy.dll
+/eax.dll
+/eax_orig.dll
+/LaunchCoopAndreas.exe
+/gta_sa.exe
+/gta-sa.exe
+/III.VC.SA.WindowedMode.asi
