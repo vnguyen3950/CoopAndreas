@@ -88,4 +88,26 @@ int main(){Start();CVehicle cab,child;CNetworkVehicle pc,cc;Map(pc,cab,0,403,1,1
  expect(CNetworkVehicleManager::GetVehicle(8)==first && first && first->m_generation==10,
         "First Process preserves current-peer vehicle created after handshake Reset");
  ReceiveVehicleSpawn(&spawn);expect(nativeSpawn==count,"First HELLO replay cannot duplicate the already live current-peer native vehicle");
+ // Independent confirmation counterexamples: retirement and a newer live birth.
+ Start();CVehicle confirmNative;auto* activeTemp=new CNetworkVehicle;
+ Map(*activeTemp,confirmNative,9,403,0,991);CNetworkVehicleManager::Remove(activeTemp);
+ activeTemp->m_nTempId=1;activeTemp->m_requestToken=22;CNetworkVehicleManager::m_apTempVehicles[1]=activeTemp;
+ removal.vehicleid=9;removal.generation=20;ReceiveVehicleRemove(&removal);
+ confirm.tempid=1;confirm.vehicleid=9;confirm.generation=20;confirm.requestToken=22;ReceiveVehicleConfirm(&confirm);
+ expect(!CNetworkVehicleManager::FindVehicle(9),"Matching confirmation cannot resurrect a retired vehicle birth");
+ expect(!CNetworkVehicleManager::m_apTempVehicles[1]&&CPools::pool.IsObjectValid(&confirmNative),
+        "Retired confirmation releases only matching temp wrapper and preserves native local car");
+ Start();CVehicle newNative,oldNative;CNetworkVehicle newMapping;Map(newMapping,newNative,9,403,21,992);
+ activeTemp=new CNetworkVehicle;Map(*activeTemp,oldNative,9,403,0,993);CNetworkVehicleManager::Remove(activeTemp);
+ activeTemp->m_nTempId=1;activeTemp->m_requestToken=22;CNetworkVehicleManager::m_apTempVehicles[1]=activeTemp;
+ confirm.requestToken=23;ReceiveVehicleConfirm(&confirm);
+ expect(CNetworkVehicleManager::m_apTempVehicles[1]==activeTemp,"Rejected foreign nonce cannot consume a newer temp token");
+ confirm.requestToken=22;ReceiveVehicleConfirm(&confirm);
+ expect(CNetworkVehicleManager::m_pVehicles.size()==1&&CNetworkVehicleManager::GetVehicle(9)==&newMapping,
+        "Older confirmation cannot append a second wrapper over a newer live birth");
+ expect(!CNetworkVehicleManager::m_apTempVehicles[1]&&CPools::pool.IsObjectValid(&oldNative),
+        "Older confirmation cleanup preserves newer mapping and native local car");
+ Start();spawn.vehicleid=9;spawn.generation=21;spawn.modelid=435;CTrailerSync::QueueSpawn(spawn);CTrailerSync::Reset(true);
+ expect(!CTrailerSync::CanSpawn(9,20)&&CTrailerSync::CanSpawn(9,21),"Connected script reset preserves observed birth high-water and permits equal retry");
+ CTrailerSync::Reset();expect(CTrailerSync::CanSpawn(9,20),"New connection namespace clears prior observed birth high-water");
  std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;}

@@ -18,6 +18,7 @@ PACKET_HANDLER(
     vehicle->m_generation=birth;vehicle->m_pSyncer=pNetworkPlayer;
     vehicle->m_nPrimaryColor=pVehicleSpawn->color1;vehicle->m_nSecondaryColor=pVehicleSpawn->color2;vehicle->m_nCreatedBy=pVehicleSpawn->createdBy;
     CNetworkVehicleManager::Add(vehicle);
+    pVehicleSpawn->serverTime=g_serverTime;
     GetPacketFactory().SendToAll(*pVehicleSpawn,pNetworkPlayer);
     Packets::Vehicles::VehicleConfirm confirm;confirm.tempid=pVehicleSpawn->tempid;confirm.vehicleid=id;
     confirm.generation=birth;confirm.requestToken=pVehicleSpawn->requestToken;GetPacketFactory().Send(confirm,pNetworkPlayer);
@@ -31,6 +32,7 @@ PACKET_HANDLER(
     {
         if (vehicle->m_pSyncer == pNetworkPlayer && vehicle->m_generation==pVehicleRemove->generation)
         {
+            pVehicleRemove->serverTime=g_serverTime;
             GetPacketFactory().SendToAll(*pVehicleRemove, pNetworkPlayer);
 
             CFireSync::VehicleChanged(vehicle,true);

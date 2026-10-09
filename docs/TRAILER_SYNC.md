@@ -32,6 +32,13 @@ Room policy: normal shutdown disconnects and existing authenticated vehicle remo
 
 ## Headless evidence and human checks
 
+Root integration additionally rejects confirmations for retired or older births,
+releases only the matching temporary nonce, and preserves newer queued birth
+high-water across connected script reset. Generic spawn/remove relays use the
+server clock so a sender cannot reorder their lifecycle against confirmations.
+The original independent retirement/confirmation and queued-model cases failed
+before these guards and pass against the corrected actual handlers/constructor.
+
 Run `python tests/trailer/run_tests.py --output .cache/trailer-headless/unique-new-name`. Actual module codecs/services, birth extension serializer lines, vehicle handlers, manager getters/temp allocator, constructor/CreateVehicle and CreateHosted are extracted from hashed production source. SDK/native primitives are recorded doubles; they do not execute game addresses. Birth extraction deliberately omits unchanged legacy position/rotation compression; its wire test covers the newly changed birth/nonce/syncer fields. Disabling actual parent-owner attach validation must cause two failures. Native lifecycle/physics is not proven by codec tests.
 
 The isolated release builds use actual trailer worktree source, unique cache output, x86 MSVC and GTA_SA_DIR cleared. No SDK/SCM/config edits, deployment or gameplay was performed. Root owns final enum order/version, merged integration and fire native readiness adoption.

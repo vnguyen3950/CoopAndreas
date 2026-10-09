@@ -38,4 +38,15 @@ int main(){Start();CVehicleModelInfo model;CModelInfo::ms_modelInfoPtrs[435]=&mo
  expect(GetPacketFactory().sent.size()==duplicateCount && CNetworkVehicleManager::GetVehicle(12)==fresh,
         "Duplicate confirmation of valid current mapping cannot emit orphan removal");
  CNetworkVehicleManager::Remove(fresh);fresh->m_pVehicle=nullptr;delete fresh;
+ Start();CVehicleModelInfo olderModel;olderModel.m_nVehicleType=0;CModelInfo::ms_modelInfoPtrs[403]=&olderModel;
+ CModelInfo::ms_modelInfoPtrs[435]=&model;CStreaming::loadSucceeds=false;CStreaming::ms_aInfoForModel[435].m_nLoadState=0;
+ spawn.vehicleid=9;spawn.generation=21;spawn.modelid=435;ReceiveVehicleSpawn(&spawn);
+ expect(!CNetworkVehicleManager::FindVehicle(9)&&pendingSpawns[9]&&pendingSpawns[9]->generation==21,
+        "Newer birth remains staged while its model is unavailable");
+ CStreaming::loadSucceeds=true;spawn.generation=20;spawn.modelid=403;auto constructorsBeforeOld=sdkConstructors;ReceiveVehicleSpawn(&spawn);
+ expect(!CNetworkVehicleManager::FindVehicle(9)&&sdkConstructors==constructorsBeforeOld,
+        "Older ready model cannot construct a vehicle while newer birth is staged");
+ expect(pendingSpawns[9]&&pendingSpawns[9]->generation==21,"Rejected older spawn retains exact newer pending lifecycle");
+ CTimer::m_snTimeInMilliseconds+=500;CTrailerSync::Process();auto* restored=CNetworkVehicleManager::GetVehicle(9);
+ expect(restored&&restored->m_generation==21,"Newest staged birth still constructs successfully after readiness returns");
  std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;}

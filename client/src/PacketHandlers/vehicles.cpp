@@ -14,6 +14,7 @@ PACKET_HANDLER(ePacketType::VEHICLE_SPAWN, Packets::Vehicles::VehicleSpawn* pVeh
 #endif
 
     if(!CTrailerSync::CanSpawn(pVehicleSpawn->vehicleid,pVehicleSpawn->generation))return;
+    CTrailerSync::ObserveBirth(pVehicleSpawn->vehicleid,pVehicleSpawn->generation);
     if(!CTrailerSync::GameplayReady()){CTrailerSync::QueueSpawn(*pVehicleSpawn);return;}
     if(auto* existing=CNetworkVehicleManager::FindVehicle(pVehicleSpawn->vehicleid)) {
         if(existing->m_generation>pVehicleSpawn->generation ||
@@ -49,11 +50,21 @@ PACKET_HANDLER(ePacketType::VEHICLE_CONFIRM, Packets::Vehicles::VehicleConfirm* 
 #endif
 
     if(CTrailerSync::RetireOrphan(*pVehicleConfirm))return;
+    if(!CTrailerSync::CanConfirm(pVehicleConfirm->vehicleid,pVehicleConfirm->generation)){
+        CTrailerSync::DiscardConfirm(*pVehicleConfirm);return;
+    }
     if (pVehicleConfirm->tempid < ARRAY_SIZE(CNetworkVehicleManager::m_apTempVehicles))
     {
         CNetworkVehicle* pTempVehicle = CNetworkVehicleManager::m_apTempVehicles[pVehicleConfirm->tempid];
         if (TrailerSync::Counter(pVehicleConfirm->generation) && CTrailerSync::ConfirmValid(pTempVehicle,pVehicleConfirm->requestToken))
         {
+            // A current confirmation supersedes older wrappers for this ID.
+            while(auto* older=CNetworkVehicleManager::FindVehicle(pVehicleConfirm->vehicleid)){
+                CNetworkVehicleManager::Remove(older);older->m_bPreserveBirth=true;older->m_bSyncing=false;
+                if(older->m_pVehicle==pTempVehicle->m_pVehicle)older->m_pVehicle=nullptr;
+                delete older;
+            }
+            CTrailerSync::ObserveBirth(pVehicleConfirm->vehicleid,pVehicleConfirm->generation);
             pTempVehicle->m_nVehicleId = pVehicleConfirm->vehicleid;
             pTempVehicle->m_generation=pVehicleConfirm->generation;
             CNetworkVehicleManager::Add(pTempVehicle);
