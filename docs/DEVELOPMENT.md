@@ -17,7 +17,9 @@ This is a source development branch. All four x86 release targets and the full s
 - Replace PR #106's balance/star/cheat mirroring with a server-owned wallet, explicit wanted policy and a bounded shared-cheat subset. See [session policy and native checks](SHARED_SESSION.md) for accounting, migration and coverage limits.
 - Add NPC-driven vehicle state parity, unanimous native cutscene voting, per-player maximum health/air state and bars, guarded reconnect cleanup and proportional map pins. See [non-mission checks](NON_MISSION_SYNC.md).
 
-The current gameplay extension uses local protocol **0.5.0-alpha**. Clients and server must match; the existing handshake rejects earlier 0.4.x and 0.3.x builds. Launcher authentication is unchanged. The reviewed world batch adds NPC lifetimes/replay, canonical fire, shared discovery/waypoints and host-controlled gang wars; see [world tests and limits](WORLD_SYNC.md).
+Development source now uses **0.6.0-alpha** for changed player and vehicle lifecycle payloads. Clients and server must match; the existing handshake rejects 0.5 and earlier builds. The prepared `mission-batch-007` remains the reviewed **0.5.0-alpha** world package; see [world tests and limits](WORLD_SYNC.md).
+
+The next increment has integrated five verified native idle/chat visual associations and an acknowledged actor-life API shared with the pickup work. Independent tests pass 82 service, 4,243 codec, 40 cross-role and 100,017 contract assertions; the stale-birth mutation fails three expected checks. All four x86 targets compile, and the isolated production-server ENet fixture passes 35 map/actor-life/respawn checks. Native animation blending and gameplay remain unvalidated. Trailer and ordinary pickup lanes are still undergoing implementation and review; follow [current tasks](../tasks/todo.md) and [animation runtime checks](../tests/player_animation/README.md).
 
 ## Adapted story candidates
 

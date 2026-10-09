@@ -15,7 +15,7 @@ Native gameplay testing remains with the user. Prepared `mission-batch-007` sele
 
 ## Next authorized non-mission increment
 
-- [ ] Player idle/gesture animation synchronization (`player-animation-sync`).
+- [x] Player idle/gesture animation synchronization (`player-animation-sync`): bounded source review, codec/service tests and combined SDK build passed; native gameplay remains pending.
 - [ ] Native trailer/tractor attachment, articulation and lifetime synchronization (`trailer-sync`).
 - [ ] Ordinary pickup lifecycle and collector accounting (`pickup-lifecycle`).
 
@@ -64,7 +64,7 @@ Acceptance: marker geometry keeps its proportions at 4:3, 16:9 and ultrawide res
 ## Queued after this batch
 
 - Passenger gamepad support: skipped by user request.
-- [ ] Idle/gesture animation synchronization.
+- [x] Bounded idle/chat visual animation synchronization; broader native task replay remains outside this slice.
 - [ ] Broader pickup lifetime/collection/reward accounting.
 - [ ] Additional shared cheat entries with verified action/toggle semantics.
 - [ ] Gang-group recruitment and trailer synchronization beyond the current gang-war slice.
