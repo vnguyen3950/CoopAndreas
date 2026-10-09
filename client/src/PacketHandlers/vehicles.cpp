@@ -48,6 +48,7 @@ PACKET_HANDLER(ePacketType::VEHICLE_CONFIRM, Packets::Vehicles::VehicleConfirm* 
     CChat::AddMessage("VEHICLE CONFIRM %d %d", pVehicleConfirm->vehicleid, pVehicleConfirm->tempid);
 #endif
 
+    if(CTrailerSync::RetireOrphan(*pVehicleConfirm))return;
     if (pVehicleConfirm->tempid < ARRAY_SIZE(CNetworkVehicleManager::m_apTempVehicles))
     {
         CNetworkVehicle* pTempVehicle = CNetworkVehicleManager::m_apTempVehicles[pVehicleConfirm->tempid];

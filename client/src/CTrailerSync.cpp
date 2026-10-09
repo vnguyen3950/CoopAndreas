@@ -10,6 +10,10 @@ std::array<Observation,TrailerSync::MaxVehicles> observations{};
 std::array<uint32_t,TrailerSync::MaxVehicles> intents{};
 std::array<std::unique_ptr<Packets::Vehicles::VehicleSpawn>,TrailerSync::MaxVehicles> pendingSpawns{};
 std::array<uint32_t,TrailerSync::MaxVehicles> retired{},pendingBirth{},attemptTime{};
+struct Canceled {uint32_t token=0;uint8_t slot=255;};
+std::array<Canceled,TrailerSync::MaxVehicles> canceled{};size_t canceledCursor=0;
+void RememberCanceled(CNetworkVehicle* v){if(v && !v->m_generation && TrailerSync::Counter(v->m_requestToken) && v->m_nTempId<255){
+ canceled[canceledCursor]={v->m_requestToken,v->m_nTempId};canceledCursor=(canceledCursor+1)%canceled.size();}}
 uint32_t scene=0,acknowledgedScene=0,lastHello=0,peerConnection=0;
 bool scriptsReady=false,nativeEnabled=false,controllingRestart=false;int replay=0;
 bool Pool(CVehicle* v,int ref=-1){return v && CPools::ms_pVehiclePool && CPools::ms_pVehiclePool->IsObjectValid(v) &&
@@ -93,13 +97,14 @@ void CTrailerSync::Init(){NativeInit();
  gameShutdownEvent.before+=[]{Reset();scriptsReady=false;};
 }
 void CTrailerSync::Reset(bool preserveBirths){
- for(auto& temp:CNetworkVehicleManager::m_apTempVehicles)if(temp){auto* expired=temp;temp=nullptr;expired->m_pVehicle=nullptr;delete expired;}
+ if(!preserveBirths){canceled={};canceledCursor=0;}
+ for(auto& temp:CNetworkVehicleManager::m_apTempVehicles)if(temp){if(preserveBirths)RememberCanceled(temp);auto* expired=temp;temp=nullptr;expired->m_pVehicle=nullptr;delete expired;}
  for(auto& p:pendingSpawns)p.reset();for(auto& a:applied)Clear(a);Room()={};observations={};intents={};pendingBirth={};attemptTime={};acknowledgedScene=lastHello=0;
  if(!preserveBirths){peerConnection=CNetwork::m_pPeer?CNetwork::m_pPeer->connectID:0;retired={};for(auto* v:CNetworkVehicleManager::m_pVehicles)if(v){v->m_createdScene=0;v->m_generation=0;}}
 }
 void CTrailerSync::NativeRemoved(CVehicle* native){
  for(auto& temp:CNetworkVehicleManager::m_apTempVehicles)if(temp && temp->m_pVehicle==native && temp->m_requestToken && NativeValid(temp)){
-  auto* expired=temp;temp=nullptr;expired->m_pVehicle=nullptr;delete expired;
+  RememberCanceled(temp);auto* expired=temp;temp=nullptr;expired->m_pVehicle=nullptr;delete expired;
  }
  auto* v=CNetworkVehicleManager::GetVehicle(native);if(!v)return;
  VehicleRemoved(v->m_nVehicleId,v->m_generation);v->m_createdScene=0;v->m_nVehiclePoolRef=-1;}
@@ -152,4 +157,14 @@ void CTrailerSync::QueueSpawn(const Packets::Vehicles::VehicleSpawn& p){
 bool CTrailerSync::CanSpawn(int id,uint32_t birth){return id>=0 && id<TrailerSync::MaxVehicles && TrailerSync::Counter(birth) && birth>retired[id];}
 void CTrailerSync::RetireVehicle(int id,uint32_t birth){if(id<0||id>=TrailerSync::MaxVehicles||!TrailerSync::Counter(birth))return;
  retired[id]=(std::max)(retired[id],birth);if(pendingSpawns[id]&&pendingSpawns[id]->generation<=birth)pendingSpawns[id].reset();VehicleRemoved(id,birth);
+}
+
+bool CTrailerSync::RetireOrphan(const Packets::Vehicles::VehicleConfirm& p){
+ if(!CNetwork::m_bAuthenticated || !TrailerSync::Counter(p.generation) || !TrailerSync::Counter(p.requestToken) || p.tempid>=255)return false;
+ if(auto* current=CNetworkVehicleManager::GetVehicle(p.vehicleid))if(current->m_generation==p.generation)return false;
+ for(auto& dead:canceled)if(dead.token==p.requestToken && dead.slot==p.tempid){
+  dead={};Packets::Vehicles::VehicleRemove remove;remove.vehicleid=p.vehicleid;remove.generation=p.generation;
+  RetireVehicle(p.vehicleid,p.generation);GetPacketFactory().Send(remove);return true;
+ }
+ return false;
 }
