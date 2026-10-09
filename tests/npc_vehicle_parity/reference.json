@@ -1,0 +1,52 @@
+{
+  "BaseCommit": "7a09780",
+  "ImplementationCommit": "267018552ad46b04247476c22ae5b03b3c7652ea",
+  "RuntimeValidated": false,
+  "Packet": "PED_DRIVER_UPDATE",
+  "NewBits": 24,
+  "HornImplemented": false,
+  "PacketCases": 10368,
+  "Assertions": 464023,
+  "Failures": 0,
+  "AuthorityMutationFailures": 3,
+  "ExistingPlayerAuthorityAssertions": 73,
+  "ProductionHashes": {
+    "shared/network/packets/peds.h": "7B9FEA1148869D8877415B038412B1247888FE95C4BA5D6BE6390A917B48918E",
+    "shared/network/packets/players.h": "AB2D30BAE982B516CB8681622B07632C7420CF7123AED8B648F9F1083D1262D4",
+    "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+    "shared/network/packet_types.h": "47EF4E9B4A17853F5448D9189FEA4440AB622607D496A47A82D23826C7146D22",
+    "shared/network/serializable_types.h": "7227EA7BEA741F98D160D238575B20770832925BEDA7FEA4DB2F4E96B64FF94A",
+    "shared/network/vehicle_authority.h": "22E90BAE6AB917630E05C65E2D71F9E22276221787CBABB2C1DFBEBB2943A5DD",
+    "shared/config.h": "4E208BB02DE1502FDA5470F715A85F9F589B49296EA13D03DC0F41FCE66BE0B6",
+    "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CVehicle.h": "E0AD648962233E9138051AB645A486624A7B3C3CF5C35B1218F83D93F7E859F0",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CWeapon.h": "16083D28B9E6F628656F23FF9E4D8202DDE4018A0030646C437D182A820A2235",
+    "third_party/plugin-sdk/plugin_sa/game_sa/eWeaponType.h": "C7A3170581A559BD0D91B7410E91CFBDB4A2E27B77AA6B3AE99F43E994EEC182",
+    "client/src/CNetworkPedManager.cpp": "58271761A3993C11B842871FBB74079B04D46AAB115A0442DF1AD8E361ED7288",
+    "client/src/PacketHandlers/peds.cpp": "C195EA1B7C2FE546BFB45B2FDB87FF2E1878D88463595476E8CF06D6BC36BD48",
+    "server/src/PacketHandlers/peds.cpp": "A6299D52640E90A9825875CC1E9CD1EDDFB3C3CAD49B6AD336618EA8D1D28E84"
+  },
+  "TestHashes": {
+    "tests.cpp": "8754EB55A4752420F4A42D612E6DB6E88023E68AA9ED22759130F4DCAED01FDA",
+    "doubles.h": "49E2E0EA477CBA45764E120D161CF35A14FF54ADF375CEFF684A8825831D2F1F",
+    "run_tests.py": "91EBDF7E115A07001C40874BD3985E2A63E4C08C8171F467EC71BC478331B6C7"
+  },
+  "ExtractedPacketHash": "0DCB355D5E29A8442B69C2A0775CDEAB5DC6A1ED08EE943258121A1C0EBC9C3C",
+  "ExtractedHandlersHash": "4DC05C5ADD92D470D1440DB0B4519CAC21E920443C03C29292DAE11D7557F2E6",
+  "Evidence": {
+    "Green": ".cache/npc-vehicle-parity/final-001/result.json",
+    "Mutation": ".cache/npc-vehicle-parity/mutation-final-001/result.json",
+    "ClientBuild": ".cache/npc-vehicle-parity/build-client.log",
+    "ServerBuild": ".cache/npc-vehicle-parity/build-server.log"
+  },
+  "Build": {
+    "Targets": [
+      "client",
+      "server"
+    ],
+    "Architecture": "x86",
+    "Mode": "release",
+    "Output": "build/npc-vehicle-parity",
+    "GameInstallEnvironmentUnset": true
+  }
+}
