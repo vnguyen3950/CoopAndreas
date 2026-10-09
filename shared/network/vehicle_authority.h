@@ -9,4 +9,11 @@ constexpr bool CanUpdateDriver(const Player* sender, const Player* syncer, const
 {
     return sender && (driver ? driver == sender : syncer == sender);
 }
+// NPC driving follows the ped's owner, which can differ from the idle vehicle
+// syncer. A reliable player entry takes precedence over stale NPC snapshots.
+template <typename Player>
+constexpr bool CanUpdateNpcDriver(const Player* sender, const Player* pedSyncer, const Player* playerDriver) noexcept
+{
+    return sender && sender == pedSyncer && !playerDriver;
+}
 }

@@ -1,6 +1,7 @@
 #include "network/packets/peds.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "network/vehicle_authority.h"
 
 PACKET_HANDLER(ePacketType::PED_SPAWN, Packets::Peds::PedSpawn* pPedSpawn, CNetworkPlayer* pNetworkPlayer)
 {
@@ -130,6 +131,7 @@ PACKET_HANDLER(ePacketType::PED_ONFOOT, Packets::Peds::PedOnFoot* pPedOnFoot, CN
 PACKET_HANDLER(
     ePacketType::PED_DRIVER_UPDATE, Packets::Peds::PedDriverUpdate* pPedDriverUpdate, CNetworkPlayer* pNetworkPlayer)
 {
+    if (!pNetworkPlayer) return;
     CNetworkPed* pNetworkPed = CNetworkPedManager::GetPed(pPedDriverUpdate->pedid);
     if (pNetworkPed == nullptr)
     {
@@ -147,6 +149,9 @@ PACKET_HANDLER(
     {
         return;
     }
+
+    if (!VehicleAuthority::CanUpdateNpcDriver(pNetworkPlayer, pNetworkPed->m_pSyncer, pNetworkVehicle->m_pPlayers[0]))
+        return;
 
     pNetworkVehicle->m_bUsedByPed = true;
     pNetworkVehicle->m_vecPosition = pPedDriverUpdate->pos;

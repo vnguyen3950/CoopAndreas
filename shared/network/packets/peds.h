@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include <eModelID.h>
 #include <ePedType.h>
 #include <CPed.h>
@@ -164,6 +165,10 @@ public:
     float planeGearState{};         // plane
     uint16_t miscComponentAngle{};  // automobile/mtruck/plane
 
+    bool engineState{}, lightState{}, engineBroken{}, sirenOrAlarm{};
+    uint16_t alarmState{}; // Includes the native 65535 armed-alarm sentinel.
+    float dirtLevel{};
+
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
@@ -281,6 +286,15 @@ private:
         }
 #pragma endregion
 
+        // Append to this NPC driver stream, preserving its existing prefix.
+        serialize_bool(stream, engineState);
+        serialize_bool(stream, lightState);
+        serialize_bool(stream, engineBroken);
+        serialize_bool(stream, sirenOrAlarm);
+        serialize_uint16(stream, alarmState);
+        if (Stream::IsWriting)
+            dirtLevel = std::isfinite(dirtLevel) ? std::clamp(dirtLevel, 0.0f, 15.0f) : 0.0f;
+        serialize_compressed_float(stream, dirtLevel, 0.0f, 15.0f, 1.0f);
         return true;
     }
 };

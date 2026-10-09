@@ -116,6 +116,9 @@ void CNetworkPedManager::Update()
 
         if (pNetworkVehicle && pPed->m_nPedFlags.bInVehicle)
         {
+            if (!pVehicle->IsVTableValid() || !pVehicle->m_matrix
+                || pNetworkPed->m_nPedId < 0 || pNetworkVehicle->m_nVehicleId < 0)
+                continue;
             bool isDriver = (pVehicle->m_pDriver == pPed);
 
             if (isDriver)
@@ -145,6 +148,12 @@ void CNetworkPedManager::Update()
                 packet.color2 = pVehicle->m_nSecondaryColor;
 
                 packet.health = pVehicle->m_fHealth;
+                packet.engineState = pVehicle->m_nVehicleFlags.bEngineOn;
+                packet.lightState = pVehicle->m_nVehicleFlags.bLightsOn;
+                packet.engineBroken = pVehicle->m_nVehicleFlags.bEngineBroken;
+                packet.sirenOrAlarm = pVehicle->m_nVehicleFlags.bSirenOrAlarm;
+                packet.alarmState = pVehicle->m_nAlarmState;
+                packet.dirtLevel = pVehicle->m_fDirtLevel;
 
                 packet.paintjob = pVehicle->GetRemapIndex();
 

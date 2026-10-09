@@ -179,7 +179,7 @@ PACKET_HANDLER(ePacketType::PED_DRIVER_UPDATE, Packets::Peds::PedDriverUpdate* p
     }
 
     CVehicle* pVehicle = pNetworkVehicle->m_pVehicle;
-    if (pVehicle == nullptr || !pVehicle->IsVTableValid())
+    if (pVehicle == nullptr || !pVehicle->IsVTableValid() || !pVehicle->m_matrix)
     {
         return;
     }
@@ -195,6 +195,12 @@ PACKET_HANDLER(ePacketType::PED_DRIVER_UPDATE, Packets::Peds::PedDriverUpdate* p
     {
         return;
     }
+
+    // Ped ownership drives this stream; the idle vehicle syncer may be local.
+    // Neither a newly local NPC nor a player already in the driver seat may be
+    // displaced by an older unreliable NPC snapshot.
+    if (pNetworkPed->m_bSyncing || (pVehicle->m_pDriver && pVehicle->m_pDriver->IsPlayer()))
+        return;
 
     if (pPed->m_pVehicle != pVehicle || !pPed->m_nPedFlags.bInVehicle)
     {
@@ -246,6 +252,12 @@ PACKET_HANDLER(ePacketType::PED_DRIVER_UPDATE, Packets::Peds::PedDriverUpdate* p
     pVehicle->m_fGasPedal = pNetworkPed->m_fGasPedal = pPedDriverUpdate->gasPedal;
     pVehicle->m_fBreakPedal = pNetworkPed->m_fBreakPedal = pPedDriverUpdate->breakPedal;
     pVehicle->m_fSteerAngle = pNetworkPed->m_fSteerAngle = pPedDriverUpdate->steerAngle;
+    pVehicle->m_nVehicleFlags.bEngineOn = pPedDriverUpdate->engineState;
+    pVehicle->m_nVehicleFlags.bLightsOn = pPedDriverUpdate->lightState;
+    pVehicle->m_nVehicleFlags.bEngineBroken = pPedDriverUpdate->engineBroken;
+    pVehicle->m_nVehicleFlags.bSirenOrAlarm = pPedDriverUpdate->sirenOrAlarm;
+    pVehicle->m_nAlarmState = pPedDriverUpdate->alarmState;
+    pVehicle->m_fDirtLevel = pPedDriverUpdate->dirtLevel;
 }
 
 PACKET_HANDLER(ePacketType::PED_PASSENGER_UPDATE, Packets::Peds::PedPassengerSync* pPedPassengerSync)
