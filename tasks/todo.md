@@ -38,9 +38,9 @@ Acceptance: marker geometry keeps its proportions at 4:3, 16:9 and ultrawide res
 - [x] Review each worker's tests and committed diff.
 - [x] Resolve packet enum/startup conflicts, select matching protocol and run existing/new checks.
 - [x] Build all four release targets and verify unchanged SCM/SDK against the reviewed script pair.
-- [ ] Update README/status/testing docs; commit and push the development branch.
-- [ ] Freeze a matched package and verify its updater in a filesystem fixture.
-- [ ] Hand off human tests; native runtime validation remains pending until the user reports results.
+- [x] Update README/status/testing docs; commit and push the development branch.
+- [x] Freeze a matched package and verify its updater in a filesystem fixture.
+- [x] Hand off human tests; native runtime validation remains pending until the user reports results.
 
 ## Queued after this batch
 
