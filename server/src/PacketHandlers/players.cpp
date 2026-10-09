@@ -2,6 +2,7 @@
 #include "network/packet_types.h"
 #include "stdafx.h"
 #include "CCutsceneVotes.h"
+#include "CMapSync.h"
 #include "CNetworkObjectManager.h"
 #include "network/packet_handler.h"
 
@@ -40,10 +41,7 @@ PACKET_HANDLER(ePacketType::ENEX_TRANSITION, Packets::Players::EnExTransition* p
 
 PACKET_HANDLER(ePacketType::PLAYER_PLACE_WAYPOINT, Packets::Players::PlayerPlaceWaypoint* pPlayerPlaceWaypoint, CNetworkPlayer* pNetworkPlayer)
 {
-    pNetworkPlayer->m_waypointState = *pPlayerPlaceWaypoint;
-
-    pPlayerPlaceWaypoint->playerid = pNetworkPlayer->m_iPlayerId;
-    GetPacketFactory().SendToAll(*pPlayerPlaceWaypoint, pNetworkPlayer);
+    CMapSyncServer::Waypoint(*pPlayerPlaceWaypoint, pNetworkPlayer);
 }
 
 PACKET_HANDLER(ePacketType::RESPAWN_PLAYER, Packets::Players::RespawnPlayer* pRespawnPlayer, CNetworkPlayer* pNetworkPlayer)

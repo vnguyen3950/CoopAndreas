@@ -7,6 +7,7 @@
 #include "config.h"
 #include "eWeaponType.h"
 #include "network/packet.h"
+#include "network/map_sync.h"
 #include "math_utils.h"
 #include "network/serializable_types.h"
 #include "serialize.h"
@@ -362,30 +363,35 @@ private:
 
 class PlayerPlaceWaypoint : public Packet
 {
-    DEFINE_PACKET_TYPE(PlayerPlaceWaypoint, ePacketType::PLAYER_PLACE_WAYPOINT, ePacketChannel::EVENT);
+    DEFINE_PACKET_TYPE(PlayerPlaceWaypoint, ePacketType::PLAYER_PLACE_WAYPOINT, ePacketChannel::SYSTEM);
 
 public:
     SenderPlayerId playerid{};
     bool place = false;
     CVector2D position = CVector2D(0.0f, 0.0f);
+    uint32_t generation = 0, sequence = 0;
+    bool Valid() const
+    {
+        return playerid.value >= 0 && playerid.value < Config::MAX_SERVER_PLAYERS
+            && generation <= MapSync::MAX_COUNTER && sequence && sequence <= MapSync::MAX_COUNTER
+            && MapSync::ValidWaypoint(place, position.x, position.y);
+    }
 
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
+        if (Stream::IsWriting && !Valid()) return false;
         serialize_object(stream, playerid);
-
+        serialize_int(stream, generation, 0, MapSync::MAX_COUNTER);
+        serialize_int(stream, sequence, 1, MapSync::MAX_COUNTER);
         serialize_bool(stream, place);
         if (place)
         {
-            if (Stream::IsWriting)
-            {
-                position.x = std::clamp(position.x, -3000.0f, 3000.0f);
-                position.y = std::clamp(position.y, -3000.0f, 3000.0f);
-            }
             serialize_compressed_float(stream, position.x, -3000.0f, 3000.0f, 1.0f);
             serialize_compressed_float(stream, position.y, -3000.0f, 3000.0f, 1.0f);
         }
-        return true;
+        else if (Stream::IsReading) position = CVector2D(0.0f, 0.0f);
+        return Valid();
     }
 };
 

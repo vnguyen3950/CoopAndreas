@@ -9,6 +9,7 @@
 #include "CPlayerVitalsSync.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
+#include "CMapSync.h"
 #include "CNetworkObjectManager.h"
 #include <network/packets/vehicles.h>
 #include <network/packets/peds.h>
@@ -122,6 +123,7 @@ void CNetwork::HandlePlayerDisconnected(ENetEvent& event)
     CNetworkVehicleManager::RemoveAllHostedAndNotify(pNetworkPlayer);
     CNetworkObjectManager::RemoveOwner(pNetworkPlayer);
     CCutsceneVotes::Leave(pNetworkPlayer);
+    CMapSyncServer::Leave(pNetworkPlayer);
     CSessionSync::Leave(pNetworkPlayer);
 
     CNetworkPlayerManager::Remove(pNetworkPlayer);
@@ -292,6 +294,15 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
     CNetworkPlayerManager::AssignHostToFirstPlayer();
     CSessionSync::Join(pNewNetworkPlayer);
     CCutsceneVotes::Join(pNewNetworkPlayer);
+    // Existing hosts do not change on every join; announce that host to this
+    // newcomer before its ordered map snapshot and other host-bound state.
+    if (auto* host = CNetworkPlayerManager::GetHost())
+    {
+        Packets::System::PlayerAssignHost assignment;
+        assignment.playerid = host->m_iPlayerId;
+        GetPacketFactory().Send(assignment, pNewNetworkPlayer);
+    }
+    CMapSyncServer::Replay(pNewNetworkPlayer);
 }
 
 void CNetwork::SendPacketNoAuth_ENet(ENetPeer* pENetPeer, const uint8_t* data, int dataSize,

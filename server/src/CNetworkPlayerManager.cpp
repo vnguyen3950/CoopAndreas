@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
+#include "CMapSync.h"
 
 std::vector<CNetworkPlayer*> CNetworkPlayerManager::m_pPlayers;
 
@@ -87,4 +88,5 @@ void CNetworkPlayerManager::AssignHostToFirstPlayer()
     GetPacketFactory().SendToAll(playerAssignHost);
     CCutsceneVotes::HostChanged(player);
     CSessionSync::HostChanged(player);
+    CMapSyncServer::HostChanged();
 }

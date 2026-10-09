@@ -26,6 +26,7 @@ public:
     float m_afStats[14]{};
     PlayerVitals::Cache m_vitals;
     Packets::Players::PlayerPlaceWaypoint m_waypointState{};
+    uint32_t m_mapSequence = 0;
     CPedClothesDesc m_pPedClothesDesc{};
 
     struct

@@ -4,7 +4,8 @@ void CNetworkPlayerWaypoint::Process()
 {
 	for (auto player : CNetworkPlayerManager::m_pPlayers)
 	{
-		if (!player->m_waypointState.place)
+		if (!CNetwork::m_bAuthenticated || !player || !player->m_waypointState.place
+			|| !player->m_waypointState.Valid() || player->m_waypointState.generation != player->m_vitals.generation)
 			continue;
 
 		CVector vecWaypointPos = CVector(player->m_waypointState.position.x, player->m_waypointState.position.y, 0.0f);

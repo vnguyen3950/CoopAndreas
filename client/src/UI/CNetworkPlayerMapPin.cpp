@@ -1,8 +1,9 @@
 #include "stdafx.h"
+#include "CPlayerVitalsSync.h"
 
-CVector2D GetPlayerMarkerPosition()
+CVector2D GetPlayerMarkerPosition(const CVector& position)
 {
-	CVector2D vec = FindPlayerCoors(-1) - CRadar::vec2DRadarOrigin;
+	CVector2D vec = CVector2D(position.x, position.y) - CRadar::vec2DRadarOrigin;
 	CVector2D playerDirection = 
 	{ 
 		vec.x / CRadar::m_radarRange, 
@@ -45,12 +46,12 @@ void CNetworkPlayerMapPin::Process()
 {
 	for (auto player : CNetworkPlayerManager::m_pPlayers)
 	{
-		CWorld::PlayerInFocus = player->GetInternalId();
-
-		if (CWorld::PlayerInFocus == -1)
+		if (!CNetwork::m_bAuthenticated || !CPlayerVitalsSync::HasBoundPed(player))
 			continue;
 
-		CVector2D pos = GetPlayerMarkerPosition();
+		const auto& position = player->m_pPed->GetPosition();
+		if (!std::isfinite(position.x) || !std::isfinite(position.y)) continue;
+		CVector2D pos = GetPlayerMarkerPosition(position);
 		float angle = CalculateMarkerAngle(player);
 		// The native sprite rotates directly in screen pixels; use one scale
 		// for both axes so the marker keeps its proportions at any aspect ratio.
@@ -67,5 +68,4 @@ void CNetworkPlayerMapPin::Process()
 		);
 	}
 
-	CWorld::PlayerInFocus = 0;
 }

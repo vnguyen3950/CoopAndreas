@@ -8,6 +8,7 @@
 #include <CEntryExitTransitionSync.h>
 #include <CShotInfo.h>
 #include <game_sa/CTagManager.h>
+#include "CMapSync.h"
 
 // static void __cdecl CWeather__ForceWeather_Hook(short id)
 // {
@@ -35,19 +36,13 @@ static CdeclEvent<AddressList<0x5775D2, H_CALL>, PRIORITY_AFTER,
 static void PlaceWaypointHook(
     eBlipType type, CVector posn, eBlipColour color, eBlipDisplay blipDisplay, char* scriptName)
 {
-    Packets::Players::PlayerPlaceWaypoint playerPlaceWaypoint{};
-    playerPlaceWaypoint.place = true;
-    playerPlaceWaypoint.position.x = posn.x;
-    playerPlaceWaypoint.position.y = posn.y;
-    GetPacketFactory().Send(playerPlaceWaypoint);
+    CMapSync::SetWaypoint(true, posn.x, posn.y);
 }
 
 // hide waypoint
 static void __fastcall CRadar__ClearBlip_Hook_Waypoint(int blipIndex, SKIP_EDX)
 {
-    Packets::Players::PlayerPlaceWaypoint playerPlaceWaypoint{};
-    playerPlaceWaypoint.place = false;
-    GetPacketFactory().Send(playerPlaceWaypoint);
+    CMapSync::SetWaypoint(false);
 
     CRadar::ClearBlip(blipIndex);
 }

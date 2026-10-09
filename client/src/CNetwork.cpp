@@ -3,6 +3,7 @@
 #include "enet/enet.h"
 #include "stdafx.h"
 #include "CCutsceneVotes.h"
+#include "CMapSync.h"
 #include "COpCodeSync.h"
 #include "../shared/semver.h"
 #include <cassert>
@@ -140,6 +141,7 @@ void CNetwork::Disconnect()
 {
     GetPacketBuffer().Clear();
     CCutsceneVotes::Reset();
+    CMapSync::Reset();
     COpCodeSync::ms_bLoadingCutscene = false;
     CNetworkPlayerManager::RequestReset();
     if (!m_bConnected)

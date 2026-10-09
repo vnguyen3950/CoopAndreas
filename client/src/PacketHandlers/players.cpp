@@ -4,6 +4,7 @@
 #include <CAimSync.h>
 #include <CEntryExitTransitionSync.h>
 #include <CProjectileInfo.h>
+#include "CMapSync.h"
 
 PACKET_HANDLER(ePacketType::PLAYER_ONFOOT_UPDATE, Packets::Players::OnFootUpdate* pOnFootUpdate)
 {
@@ -122,17 +123,7 @@ PACKET_HANDLER(ePacketType::ENEX_TRANSITION, Packets::Players::EnExTransition* p
 
 PACKET_HANDLER(ePacketType::PLAYER_PLACE_WAYPOINT, Packets::Players::PlayerPlaceWaypoint* pPlayerPlaceWaypoint)
 {
-    CNetworkPlayer* pNetworkPlayer = CNetworkPlayerManager::GetPlayer(pPlayerPlaceWaypoint->playerid);
-    if (pNetworkPlayer == nullptr)
-    {
-        return;
-    }
-
-    pNetworkPlayer->m_waypointState = *pPlayerPlaceWaypoint;
-
-#ifdef PACKET_DEBUG_MESSAGES
-    CChat::AddMessage("WAYPOINT PLACE %d %.0f %.0f\n", packet->place, packet->position.x, packet->position.y);
-#endif
+    CMapSync::ReceiveWaypoint(*pPlayerPlaceWaypoint);
 }
 
 PACKET_HANDLER(ePacketType::RESPAWN_PLAYER, Packets::Players::RespawnPlayer* pRespawnPlayer)
