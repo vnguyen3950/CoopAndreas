@@ -1,20 +1,27 @@
 #include "stdafx.h"
 #include "CFireSync.h"
+#include "CTrailerSync.h"
 #include "CNetworkVehicle.h"
+#include <new>
 
-CNetworkVehicle::CNetworkVehicle(int vehicleid, int modelid, CVector pos, float rotation, unsigned char color1, unsigned char color2, unsigned char createdBy)
+CNetworkVehicle::CNetworkVehicle(int vehicleid, int modelid, CVector pos, float rotation, unsigned char color1, unsigned char color2, unsigned char createdBy,uint32_t generation)
 {
-    if (auto vehicle = CNetworkVehicleManager::GetVehicle(vehicleid))
+    if (auto vehicle = CNetworkVehicleManager::FindVehicle(vehicleid))
     {
-        if (vehicle->m_pVehicle && vehicle->m_pVehicle->IsVTableValid())
+        const bool current=vehicle->HasValidVehicle();
+        vehicle->m_bPreserveBirth=vehicle->m_generation==generation || !current;
+        if (current)
         {
+            CTrailerSync::NativeRemoved(vehicle->m_pVehicle);
             CWorld::Remove(vehicle->m_pVehicle);
             delete vehicle->m_pVehicle;
         }
-        CNetworkVehicleManager::Remove(vehicle);
+        vehicle->m_bSyncing=false;vehicle->m_pVehicle=nullptr;
+        CNetworkVehicleManager::Remove(vehicle);delete vehicle;
     }
 
     m_nVehicleId = vehicleid;
+    m_generation=generation;
     m_bSyncing = false;
     m_nTempId = 255;
     m_nModelId = modelid;
@@ -25,8 +32,10 @@ CNetworkVehicle::CNetworkVehicle(int vehicleid, int modelid, CVector pos, float 
 
 }
 
-bool CNetworkVehicle::CreateVehicle(int vehicleid, int modelid, CVector pos, float rotation, unsigned char color1, unsigned char color2)
+bool CNetworkVehicle::CreateVehicle(int /*vehicleid*/, int modelid, CVector pos, float rotation, unsigned char color1, unsigned char color2)
 {
+    if(modelid<MODEL_LANDSTAL || modelid>MODEL_UTILTR1 || !CPools::ms_pVehiclePool ||
+       !CPools::ms_pVehiclePool->GetNoOfFreeSpaces())return false;
     unsigned char oldFlags = CStreaming::ms_aInfoForModel[modelid].m_nFlags;
     CStreaming::RequestModel(modelid, GAME_REQUIRED);
     CStreaming::LoadAllRequestedModels(false);
@@ -37,39 +46,43 @@ bool CNetworkVehicle::CreateVehicle(int vehicleid, int modelid, CVector pos, flo
         CStreaming::SetModelTxdIsDeletable(modelid);
     }
 
-    switch (((CVehicleModelInfo*)CModelInfo::ms_modelInfoPtrs[modelid])->m_nVehicleType)
+    auto* info=static_cast<CVehicleModelInfo*>(CModelInfo::ms_modelInfoPtrs[modelid]);
+    if(!info || CStreaming::ms_aInfoForModel[modelid].m_nLoadState!=LOADSTATE_LOADED || info->m_nVehicleType==VEHICLE_TRAIN)return false;
+    void* memory=CVehicle::operator new(sizeof(CHeli));
+    if(!memory)return false;
+    switch (info->m_nVehicleType)
     {
     case VEHICLE_MTRUCK:
-        m_pVehicle = new CMonsterTruck(modelid, MISSION_VEHICLE); break;
+        m_pVehicle = ::new(memory) CMonsterTruck(modelid, MISSION_VEHICLE); break;
 
     case VEHICLE_QUAD:
-        m_pVehicle = new CQuadBike(modelid, MISSION_VEHICLE); break;
+        m_pVehicle = ::new(memory) CQuadBike(modelid, MISSION_VEHICLE); break;
 
     case VEHICLE_HELI:
-        m_pVehicle = new CHeli(modelid, MISSION_VEHICLE); break;
+        m_pVehicle = ::new(memory) CHeli(modelid, MISSION_VEHICLE); break;
 
     case VEHICLE_PLANE:
-        m_pVehicle = new CPlane(modelid, MISSION_VEHICLE); break;
+        m_pVehicle = ::new(memory) CPlane(modelid, MISSION_VEHICLE); break;
 
     case VEHICLE_BIKE:
-        m_pVehicle = new CBike(modelid, MISSION_VEHICLE);
+        m_pVehicle = ::new(memory) CBike(modelid, MISSION_VEHICLE);
         ((CBike*)m_pVehicle)->m_nDamageFlags |= 0x10; break;
 
     case VEHICLE_BMX:
-        m_pVehicle = new CBmx(modelid, MISSION_VEHICLE);
+        m_pVehicle = ::new(memory) CBmx(modelid, MISSION_VEHICLE);
         ((CBmx*)m_pVehicle)->m_nDamageFlags |= 0x10; break;
 
     case VEHICLE_TRAILER:
-        m_pVehicle = new CTrailer(modelid, MISSION_VEHICLE); break;
+        m_pVehicle = ::new(memory) CTrailer(modelid, MISSION_VEHICLE); break;
 
     case VEHICLE_BOAT:
-        m_pVehicle = new CBoat(modelid, MISSION_VEHICLE); break;
+        m_pVehicle = ::new(memory) CBoat(modelid, MISSION_VEHICLE); break;
 
     case VEHICLE_TRAIN:
-        return false;
+        CVehicle::operator delete(memory);return false;
 
     default:
-        m_pVehicle = new CAutomobile(modelid, MISSION_VEHICLE, true); break;
+        m_pVehicle = ::new(memory) CAutomobile(modelid, MISSION_VEHICLE, true); break;
     }
 
     if (!m_pVehicle)
@@ -82,6 +95,7 @@ bool CNetworkVehicle::CreateVehicle(int vehicleid, int modelid, CVector pos, flo
     m_pVehicle->m_eDoorLock = DOORLOCK_UNLOCKED;
     m_pVehicle->m_nPrimaryColor = color1;
     m_pVehicle->m_nSecondaryColor = color2;
+    m_nVehiclePoolRef=CPools::GetVehicleRef(m_pVehicle);m_createdScene=CTrailerSync::Scene();
     CWorld::Add(m_pVehicle);
 
     return true;
@@ -89,21 +103,25 @@ bool CNetworkVehicle::CreateVehicle(int vehicleid, int modelid, CVector pos, flo
 
 CNetworkVehicle::~CNetworkVehicle()
 {
-    CFireSync::VehicleRemoved(m_nVehicleId);
+    CTrailerSync::VehicleRemoved(m_nVehicleId,m_generation);
+    if(!m_bPreserveBirth)CFireSync::VehicleRemoved(m_nVehicleId);
     if (m_bSyncing)
     {
+        if (!m_generation) return;
         Packets::Vehicles::VehicleRemove vehicleRemovePacket{};
         vehicleRemovePacket.vehicleid = m_nVehicleId;
+        vehicleRemovePacket.generation=m_generation;
         GetPacketFactory().Send(vehicleRemovePacket);
     }
     else
     {
-        if (m_pVehicle && m_pVehicle->IsVTableValid())
+        if (CTrailerSync::NativeValid(this))
         {
             if (m_nBlipHandle != -1)
             {
                 CRadar::ClearBlipForEntity(eBlipType::BLIP_CAR, CPools::GetVehicleRef(m_pVehicle));
             }
+            CTrailerSync::NativeRemoved(m_pVehicle);
             CWorld::Remove(m_pVehicle);
             CWorld::RemoveReferencesToDeletedObject(m_pVehicle); // ?
             delete m_pVehicle;
@@ -113,7 +131,7 @@ CNetworkVehicle::~CNetworkVehicle()
 
 bool CNetworkVehicle::HasDriver()
 {
-    if (m_pVehicle == nullptr)
+    if (!HasValidVehicle())
         return false;
 
     return m_pVehicle->m_pDriver != nullptr;
@@ -121,19 +139,25 @@ bool CNetworkVehicle::HasDriver()
 
 CNetworkVehicle* CNetworkVehicle::CreateHosted(CVehicle* vehicle)
 {
+    static uint32_t nextRequest=0;
+    if(nextRequest==TrailerSync::MaxCounter)return nullptr;
     vehicle->m_nTimeTillWeNeedThisCar += 5000;
 
     CNetworkVehicle* networkVehicle = new CNetworkVehicle();
     networkVehicle->m_pVehicle = vehicle;
+    networkVehicle->m_requestToken=++nextRequest;networkVehicle->m_createdScene=CTrailerSync::Scene();
+    networkVehicle->m_nVehiclePoolRef=CPools::GetVehicleRef(vehicle);
     networkVehicle->m_nVehicleId = -1;
     networkVehicle->m_bSyncing = true;
     networkVehicle->m_nModelId = vehicle->m_nModelIndex;
     networkVehicle->m_nPaintJob = (char)vehicle->GetRemapIndex();
     networkVehicle->m_nTempId = CNetworkVehicleManager::AddToTempList(networkVehicle);
+    if(networkVehicle->m_nTempId==255){networkVehicle->m_pVehicle=nullptr;delete networkVehicle;return nullptr;}
     networkVehicle->m_nCreatedBy = vehicle->m_nCreatedBy;
 
     Packets::Vehicles::VehicleSpawn vehicleSpawnPacket{};
     vehicleSpawnPacket.vehicleid = 0;
+    vehicleSpawnPacket.requestToken=networkVehicle->m_requestToken;
     vehicleSpawnPacket.tempid = networkVehicle->m_nTempId;
     vehicleSpawnPacket.modelid = vehicle->m_nModelIndex;
     vehicleSpawnPacket.pos = vehicle->m_matrix->pos;
@@ -145,3 +169,4 @@ CNetworkVehicle* CNetworkVehicle::CreateHosted(CVehicle* vehicle)
 
     return networkVehicle;
 }
+bool CNetworkVehicle::HasValidVehicle() const {return CTrailerSync::NativeValid(this);}

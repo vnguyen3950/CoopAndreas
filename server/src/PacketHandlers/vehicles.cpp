@@ -1,6 +1,7 @@
 #include "network/packet_types.h"
 #include "stdafx.h"
 #include "CFireSync.h"
+#include "CTrailerSync.h"
 #include "CCutsceneVotes.h"
 #include "network/packet_handler.h"
 #include "network/packets/vehicles.h"
@@ -9,25 +10,18 @@
 PACKET_HANDLER(
     ePacketType::VEHICLE_SPAWN, Packets::Vehicles::VehicleSpawn* pVehicleSpawn, CNetworkPlayer* pNetworkPlayer)
 {
-    pVehicleSpawn->vehicleid = CNetworkVehicleManager::GetFreeID();
-    GetPacketFactory().SendToAll(*pVehicleSpawn, pNetworkPlayer);
-
-    // send it back to the syncer of the vehicle so that he knows the id
-    Packets::Vehicles::VehicleConfirm vehicleConfirmPacket{};
-    vehicleConfirmPacket.tempid = pVehicleSpawn->tempid;
-    vehicleConfirmPacket.vehicleid = pVehicleSpawn->vehicleid;
-    GetPacketFactory().Send(vehicleConfirmPacket, pNetworkPlayer);
-
-    CNetworkVehicle* vehicle = new CNetworkVehicle(
-        pVehicleSpawn->vehicleid, pVehicleSpawn->modelid, pVehicleSpawn->pos, pVehicleSpawn->rot.m_angle);
-
-    vehicle->m_pSyncer = pNetworkPlayer;
-    vehicle->m_nPrimaryColor = pVehicleSpawn->color1;
-    vehicle->m_nSecondaryColor = pVehicleSpawn->color2;
-    vehicle->m_nCreatedBy = pVehicleSpawn->createdBy;
-
+    if (pVehicleSpawn->generation || !TrailerSync::Counter(pVehicleSpawn->requestToken)) return;
+    const int id=CNetworkVehicleManager::GetFreeID();const uint32_t birth=CTrailerSync::AllocateGeneration();
+    if(id<0 || !birth) return;
+    pVehicleSpawn->vehicleid=id;pVehicleSpawn->generation=birth;
+    CNetworkVehicle* vehicle=new CNetworkVehicle(id,pVehicleSpawn->modelid,pVehicleSpawn->pos,pVehicleSpawn->rot.m_angle);
+    vehicle->m_generation=birth;vehicle->m_pSyncer=pNetworkPlayer;
+    vehicle->m_nPrimaryColor=pVehicleSpawn->color1;vehicle->m_nSecondaryColor=pVehicleSpawn->color2;vehicle->m_nCreatedBy=pVehicleSpawn->createdBy;
     CNetworkVehicleManager::Add(vehicle);
-    CFireSync::VehicleChanged(vehicle);
+    GetPacketFactory().SendToAll(*pVehicleSpawn,pNetworkPlayer);
+    Packets::Vehicles::VehicleConfirm confirm;confirm.tempid=pVehicleSpawn->tempid;confirm.vehicleid=id;
+    confirm.generation=birth;confirm.requestToken=pVehicleSpawn->requestToken;GetPacketFactory().Send(confirm,pNetworkPlayer);
+    CFireSync::VehicleChanged(vehicle);CTrailerSync::Changed(vehicle);
 }
 
 PACKET_HANDLER(
@@ -35,7 +29,7 @@ PACKET_HANDLER(
 {
     if (auto vehicle = CNetworkVehicleManager::GetVehicle(pVehicleRemove->vehicleid))
     {
-        if (vehicle->m_pSyncer == pNetworkPlayer)
+        if (vehicle->m_pSyncer == pNetworkPlayer && vehicle->m_generation==pVehicleRemove->generation)
         {
             GetPacketFactory().SendToAll(*pVehicleRemove, pNetworkPlayer);
 
@@ -54,9 +48,11 @@ PACKET_HANDLER(ePacketType::VEHICLE_IDLE_UPDATE, Packets::Vehicles::VehicleIdleU
 {
     if (auto vehicle = CNetworkVehicleManager::GetVehicle(pVehicleIdleUpdate->vehicleid))
     {
+        if (!CTrailerSync::LegacyAllowed(vehicle)) return;
         if (vehicle->m_pSyncer == pNetworkPlayer)
         {
             vehicle->m_bUsedByPed = false;
+            CTrailerSync::Changed(vehicle);
             vehicle->m_vecPosition = pVehicleIdleUpdate->pos;
             vehicle->m_vecRotation = pVehicleIdleUpdate->rot;
             GetPacketFactory().SendToAll(*pVehicleIdleUpdate, pNetworkPlayer);

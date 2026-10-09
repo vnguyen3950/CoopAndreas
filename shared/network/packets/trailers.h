@@ -37,13 +37,13 @@ private:template<class Stream> bool Serialize(Stream& s){
 };
 class Link:public Packet {
     DEFINE_PACKET_TYPE(Link,ePacketType::TRAILER_LINK,ePacketChannel::EVENT);
-public:TrailerSync::Link link{};
-private:template<class Stream> bool Serialize(Stream& s){return Trailers::EncodeLink(s,link);}
+public:TrailerSync::Link link{};uint32_t scene=0;
+private:template<class Stream> bool Serialize(Stream& s){if(Stream::IsWriting && scene>TrailerSync::MaxCounter)return false;serialize_int(s,scene,0,TrailerSync::MaxCounter);return Trailers::EncodeLink(s,link);}
 };
 class Pose:public Packet {
     DEFINE_PACKET_TYPE(Pose,ePacketType::TRAILER_POSE,ePacketChannel::SYNC);
-public:TrailerSync::Link link{};
-private:template<class Stream> bool Serialize(Stream& s){if(Stream::IsWriting&&(!link.attached||!TrailerSync::Counter(link.revision)))return false;
-    return Trailers::EncodeLink(s,link)&&link.attached&&TrailerSync::Counter(link.revision);}
+public:TrailerSync::Link link{};uint32_t scene=0;
+private:template<class Stream> bool Serialize(Stream& s){if(Stream::IsWriting&&(scene>TrailerSync::MaxCounter||!link.attached||!TrailerSync::Counter(link.revision)))return false;
+    serialize_int(s,scene,0,TrailerSync::MaxCounter);return Trailers::EncodeLink(s,link)&&link.attached&&TrailerSync::Counter(link.revision);}
 };
 }

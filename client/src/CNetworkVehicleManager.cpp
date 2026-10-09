@@ -1,9 +1,10 @@
 #include "stdafx.h"
 #include "CNetworkVehicle.h"
+#include "CTrailerSync.h"
 #include <CKeySync.h>
 #include "CNetworkVehicleManager.h"
 
-CNetworkVehicle* CNetworkVehicleManager::GetVehicle(int vehicleid)
+CNetworkVehicle* CNetworkVehicleManager::FindVehicle(int vehicleid)
 {
 	for (int i = 0; i != m_pVehicles.size(); i++)
 	{
@@ -14,7 +15,7 @@ CNetworkVehicle* CNetworkVehicleManager::GetVehicle(int vehicleid)
 	}
 	return nullptr;
 }
-CNetworkVehicle* CNetworkVehicleManager::GetVehicle(CEntity* vehicle)
+CNetworkVehicle* CNetworkVehicleManager::FindVehicle(CEntity* vehicle)
 {
 	for (int i = 0; i != m_pVehicles.size(); i++)
 	{
@@ -115,7 +116,7 @@ void CNetworkVehicleManager::UpdateIdle()
 
 	for (auto pNetworkVehicle : m_pVehicles)
 	{
-        if (!pNetworkVehicle)
+        if (!pNetworkVehicle || !pNetworkVehicle->HasValidVehicle())
             continue;
         CVehicle* pVehicle = pNetworkVehicle->m_pVehicle;
         if (!pVehicle || !pVehicle->IsVTableValid() || !pVehicle->m_matrix)
@@ -208,7 +209,7 @@ void CNetworkVehicleManager::RemoveHostedUnused()
 		if ((*it)->m_bSyncing)
 		{
 			CVehicle* vehicle = (*it)->m_pVehicle;
-			if (!IsVehiclePointerValid(vehicle))
+			if ((*it)->m_createdScene==CTrailerSync::Scene() && !(*it)->HasValidVehicle())
 			{
 				delete* it;
 				it = m_pVehicles.erase(it);
@@ -223,7 +224,7 @@ void CNetworkVehicleManager::UpdateDamageSync()
 {
 	for (auto pNetworkVehicle : m_pVehicles)
 	{
-		if (pNetworkVehicle->m_bSyncing)
+		if (pNetworkVehicle && pNetworkVehicle->HasValidVehicle() && pNetworkVehicle->m_bSyncing)
 		{
 			CVehicle* pVehicle = pNetworkVehicle->m_pVehicle;
 			if (pVehicle && pVehicle->m_nVehicleType == VEHICLE_AUTOMOBILE)
@@ -240,4 +241,9 @@ void CNetworkVehicleManager::UpdateDamageSync()
 			}
 		}
 	}
+}
+CNetworkVehicle* CNetworkVehicleManager::GetVehicle(int id) {auto* v=FindVehicle(id);return v && v->HasValidVehicle()?v:nullptr;}
+CNetworkVehicle* CNetworkVehicleManager::GetVehicle(CEntity* entity) {
+    for(auto* v:m_pVehicles)if(v && v->m_pVehicle==entity && v->HasValidVehicle())return v;
+    return nullptr;
 }

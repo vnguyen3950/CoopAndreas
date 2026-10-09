@@ -1,5 +1,6 @@
 #include "common.h"
 #include "stdafx.h"
+#include "CTrailerSync.h"
 #include "WorldHooks.h"
 #include "CNetworkVehicle.h"
 #include "CNetworkPed.h"
@@ -103,6 +104,7 @@ static void __cdecl CWorld__Remove_Hook(CEntity* entity)
     {
         CVehicle* vehicle = (CVehicle*)entity;
         CNetworkVehicle* networkVehicle = CNetworkVehicleManager::GetVehicle(vehicle);
+        CTrailerSync::NativeRemoved(vehicle);
         if (networkVehicle && networkVehicle->m_bSyncing)
         {
             CNetworkVehicleManager::Remove(networkVehicle);

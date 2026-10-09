@@ -1,6 +1,7 @@
 #include "network/packets/peds.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CTrailerSync.h"
 #include "network/vehicle_authority.h"
 
 PACKET_HANDLER(ePacketType::PED_SPAWN, Packets::Peds::PedSpawn* pPedSpawn, CNetworkPlayer* pNetworkPlayer)
@@ -124,6 +125,7 @@ PACKET_HANDLER(
     pNetworkVehicle->m_bUsedByPed = true;
     pNetworkVehicle->m_vecPosition = pPedDriverUpdate->pos;
     pNetworkVehicle->m_vecRotation = pPedDriverUpdate->rot;
+    CTrailerSync::NpcDriver(pNetworkVehicle,pNetworkPed);
 
     GetPacketFactory().SendToAll(*pPedDriverUpdate, pNetworkPlayer);
 }

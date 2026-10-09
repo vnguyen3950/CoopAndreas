@@ -1,4 +1,5 @@
 #pragma once
+#include <cstdint>
 
 #include <iostream>
 #include <vector>
@@ -14,6 +15,7 @@ public:
     CNetworkVehicle(int vehicleid, unsigned short model, CVector pos, float rot);
 
     int m_nVehicleId;
+    uint32_t m_generation=0;
     CNetworkPlayer* m_pSyncer = nullptr;
     unsigned short m_nModelId;
     CVector m_vecPosition;

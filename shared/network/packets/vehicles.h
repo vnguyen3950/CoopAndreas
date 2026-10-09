@@ -1,5 +1,6 @@
 #pragma once
 #include <CVehicle.h>
+#include "network/trailer_sync.h"
 #include <algorithm>
 #include <cmath>
 
@@ -11,6 +12,8 @@ class VehicleSpawn : public Packet
 
 public:
     int vehicleid{};
+    uint32_t generation=0;
+    uint32_t requestToken=0;
     uint8_t tempid{};
     uint16_t modelid{};
     WorldPositionCompressed pos{};
@@ -23,7 +26,10 @@ private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
+        if (Stream::IsWriting && (vehicleid<0 || vehicleid>=Config::MAX_SERVER_VEHICLES || generation>TrailerSync::MaxCounter || requestToken>TrailerSync::MaxCounter)) return false;
         serialize_int(stream, vehicleid, 0, Config::MAX_SERVER_VEHICLES - 1);
+        serialize_int(stream,generation,0,TrailerSync::MaxCounter);
+        serialize_int(stream,requestToken,0,TrailerSync::MaxCounter);
         serialize_uint8(stream, tempid);
         serialize_int(stream, modelid, MODEL_LANDSTAL, MODEL_UTILTR1);
         serialize_object(stream, pos);
@@ -40,12 +46,15 @@ class VehicleRemove : public Packet
 
 public:
     int vehicleid{};
+    uint32_t generation=0;
 
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
+        if (Stream::IsWriting && (vehicleid<0 || vehicleid>=Config::MAX_SERVER_VEHICLES || !TrailerSync::Counter(generation))) return false;
         serialize_int(stream, vehicleid, 0, Config::MAX_SERVER_VEHICLES - 1);
+        serialize_int(stream,generation,1,TrailerSync::MaxCounter);
         return true;
     }
 };
@@ -170,13 +179,18 @@ class VehicleConfirm : public Packet
 public:
     uint8_t tempid = 0;
     int vehicleid = 0;
+    uint32_t generation=0;
+    uint32_t requestToken=0;
 
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
         serialize_uint8(stream, tempid);
+        if (Stream::IsWriting && (vehicleid<0 || vehicleid>=Config::MAX_SERVER_VEHICLES || !TrailerSync::Counter(generation) || !TrailerSync::Counter(requestToken))) return false;
         serialize_int(stream, vehicleid, 0, Config::MAX_SERVER_VEHICLES - 1);
+        serialize_int(stream,generation,1,TrailerSync::MaxCounter);
+        serialize_int(stream,requestToken,1,TrailerSync::MaxCounter);
         return true;
     }
 };
@@ -461,12 +475,17 @@ class AssignVehicleSyncer : public Packet
 
 public:
     int vehicleid{};
+    uint32_t generation=0;
+    int syncerId=-1;
 
 private:
     template <typename Stream>
     bool Serialize(Stream& stream)
     {
+        if (Stream::IsWriting && (vehicleid<0 || vehicleid>=Config::MAX_SERVER_VEHICLES || !TrailerSync::Counter(generation) || syncerId< -1 || syncerId>7)) return false;
         serialize_int(stream, vehicleid, 0, Config::MAX_SERVER_VEHICLES - 1);
+        serialize_int(stream,generation,1,TrailerSync::MaxCounter);
+        serialize_int(stream,syncerId,-1,7);
 
         return true;
     }

@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "CPlayerAnimationSync.h"
 #include "CFireSync.h"
+#include "CTrailerSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
 #include "COpCodeSync.h"
@@ -77,6 +78,7 @@ PACKET_HANDLER(ePacketType::PLAYER_HANDSHAKE, Packets::System::PlayerHandshake* 
     CCutsceneVotes::Reset();
     CMapSync::Reset();
     CFireSync::Reset();
+    CTrailerSync::Reset();
     CNetworkPlayerManager::Reset();
     CNetworkPedManager::Clear();
     CNetworkPlayerManager::m_nMyId = pPlayerHandshake->yourid;

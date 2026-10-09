@@ -9,6 +9,7 @@
 #include "CPlayerAnimationSync.h"
 #include "CGangWarSync.h"
 #include "CFireSync.h"
+#include "CTrailerSync.h"
 #include "CPlayerVitalsSync.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
@@ -122,6 +123,7 @@ void CNetwork::HandlePlayerDisconnected(ENetEvent& event)
         Packets::Scripts::g_pLastEnExPlayerOwner = nullptr;
     }
 
+    CTrailerSync::Leave(pNetworkPlayer);
     CNetworkPedManager::RemoveAllHostedAndNotify(pNetworkPlayer);
     CNetworkVehicleManager::RemoveAllHostedAndNotify(pNetworkPlayer);
     CNetworkObjectManager::RemoveOwner(pNetworkPlayer);
@@ -254,6 +256,7 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
     {
         Packets::Vehicles::VehicleSpawn vehicleSpawnPacket{};
         vehicleSpawnPacket.vehicleid = i->m_nVehicleId;
+        vehicleSpawnPacket.generation=i->m_generation;
         vehicleSpawnPacket.modelid = i->m_nModelId;
         vehicleSpawnPacket.pos = i->m_vecPosition;
         vehicleSpawnPacket.rot = static_cast<float>(
@@ -309,6 +312,7 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
     }
     CMapSyncServer::Replay(pNewNetworkPlayer);
     CFireSync::Join(pNewNetworkPlayer);
+    CTrailerSync::Join(pNewNetworkPlayer);
 }
 
 void CNetwork::SendPacketNoAuth_ENet(ENetPeer* pENetPeer, const uint8_t* data, int dataSize,

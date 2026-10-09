@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "CPlayerAnimationSync.h"
 #include "CFireSync.h"
+#include "CTrailerSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
 #include "COpCodeSync.h"
@@ -146,6 +147,7 @@ void CNetwork::Disconnect()
     CCutsceneVotes::Reset();
     CMapSync::Reset();
     CFireSync::Reset();
+    CTrailerSync::Reset();
     COpCodeSync::ms_bLoadingCutscene = false;
     CNetworkPlayerManager::RequestReset();
     CNetworkPedManager::RequestReset();

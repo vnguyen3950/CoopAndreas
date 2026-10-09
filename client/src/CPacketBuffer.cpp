@@ -4,6 +4,7 @@
 #include "network/packets/system.h"
 #include "stdafx.h"
 #include "CFireSync.h"
+#include "CTrailerSync.h"
 #include "CPacketBuffer.h"
 #include "CCutsceneVotes.h"
 
@@ -11,6 +12,7 @@ void CPacketBuffer::Receive(Packet* pPacket)
 {
     CCutsceneVotes::Queue(*pPacket);
     CFireSync::Queue(*pPacket);
+    CTrailerSync::Queue(*pPacket);
     if (pPacket->GetChannel() == ePacketChannel::SYSTEM)
     {
         GetPacketHandler().ProcessPacket(pPacket);

@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "CFireSync.h"
+#include "CTrailerSync.h"
 #include <network/packets/vehicles.h>
 
 std::vector<CNetworkVehicle*> CNetworkVehicleManager::m_pVehicles;
@@ -14,6 +15,7 @@ void CNetworkVehicleManager::Remove(CNetworkVehicle* vehicle)
     auto it = std::find(m_pVehicles.begin(), m_pVehicles.end(), vehicle);
     if (it != m_pVehicles.end())
     {
+        CTrailerSync::Changed(vehicle,true);
         m_pVehicles.erase(it);
     }
 }
@@ -49,8 +51,10 @@ void CNetworkVehicleManager::RemoveAllHostedAndNotify(CNetworkPlayer* player)
         {
             Packets::Vehicles::VehicleRemove packet{};
             packet.vehicleid = (*it)->m_nVehicleId;
+            packet.generation=(*it)->m_generation;
             GetPacketFactory().SendToAll(packet, player);
 
+            CTrailerSync::Changed(*it,true);
             CFireSync::VehicleChanged(*it,true);
             delete *it;
             it = CNetworkVehicleManager::m_pVehicles.erase(it);

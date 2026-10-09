@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CTrailerSync.h"
 #include <network/packets/vehicles.h>
 
 CNetworkVehicle::CNetworkVehicle(int vehicleid, unsigned short model, CVector pos, float rot)
@@ -15,6 +16,8 @@ void CNetworkVehicle::ReassignSyncer(CNetworkPlayer* newSyncer)
     {
         Packets::Vehicles::AssignVehicleSyncer packet{};
         packet.vehicleid = m_nVehicleId;
+        packet.generation=m_generation;
+        packet.syncerId=newSyncer?newSyncer->m_iPlayerId:-1;
 
         // send to the old vehicle syncer
         if (m_pSyncer)
@@ -26,6 +29,7 @@ void CNetworkVehicle::ReassignSyncer(CNetworkPlayer* newSyncer)
         GetPacketFactory().Send(packet, newSyncer);
 
         m_pSyncer = newSyncer;
+        CTrailerSync::Changed(this);
     }
 }
 
@@ -47,4 +51,5 @@ void CNetworkVehicle::SetOccupant(int8_t seatid, CNetworkPlayer* player)
         player->m_nVehicleId = this->m_nVehicleId;
         player->m_nSeatId = seatid;
     }
+    CTrailerSync::Changed(this);
 }

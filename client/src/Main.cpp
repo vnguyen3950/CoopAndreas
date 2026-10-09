@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "CPlayerAnimationSync.h"
 #include "CFireSync.h"
+#include "CTrailerSync.h"
 #include "CCutsceneMgr.h"
 #include "UI/CDXFont.h"
 
@@ -107,6 +108,7 @@ public:
             CMapSync::Process();
             CGangWarSync::Process();
             CFireSync::Process();
+            CTrailerSync::Process();
             CNetworkAnimQueue::Process();
             CEntryExitTransitionSync::Process();
             CDiscordRPCMgr::Update();

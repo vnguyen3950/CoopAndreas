@@ -2,6 +2,7 @@
 #include "network/packet_types.h"
 #include "stdafx.h"
 #include "CFireSync.h"
+#include "CTrailerSync.h"
 #include <CCarEnterExit.h>
 #include <CTaskSimpleCarSetPedOut.h>
 
@@ -12,9 +13,17 @@ PACKET_HANDLER(ePacketType::VEHICLE_SPAWN, Packets::Vehicles::VehicleSpawn* pVeh
         pVehicleSpawn->pos.x, pVehicleSpawn->pos.y, pVehicleSpawn->pos.z, pVehicleSpawn->rot.m_angle);
 #endif
 
+    if(!CTrailerSync::CanSpawn(pVehicleSpawn->vehicleid,pVehicleSpawn->generation))return;
+    if(!CTrailerSync::GameplayReady()){CTrailerSync::QueueSpawn(*pVehicleSpawn);return;}
+    if(auto* existing=CNetworkVehicleManager::FindVehicle(pVehicleSpawn->vehicleid)) {
+        if(existing->m_generation>pVehicleSpawn->generation ||
+          (existing->m_generation==pVehicleSpawn->generation && CTrailerSync::NativeValid(existing)))return;
+    }
     CNetworkVehicle* pNetworkVehicle =
         new CNetworkVehicle(pVehicleSpawn->vehicleid, pVehicleSpawn->modelid, pVehicleSpawn->pos,
-            pVehicleSpawn->rot.m_angle, pVehicleSpawn->color1, pVehicleSpawn->color2, pVehicleSpawn->createdBy);
+            pVehicleSpawn->rot.m_angle, pVehicleSpawn->color1, pVehicleSpawn->color2, pVehicleSpawn->createdBy,pVehicleSpawn->generation);
+    if(!pNetworkVehicle->HasValidVehicle()){CTrailerSync::QueueSpawn(*pVehicleSpawn);pNetworkVehicle->m_bPreserveBirth=true;delete pNetworkVehicle;return;}
+    pNetworkVehicle->m_generation=pVehicleSpawn->generation;
     CNetworkVehicleManager::Add(pNetworkVehicle);
 }
 
@@ -23,8 +32,9 @@ PACKET_HANDLER(ePacketType::VEHICLE_REMOVE, Packets::Vehicles::VehicleRemove* pV
 #ifdef PACKET_DEBUG_MESSAGES
     CChat::AddMessage("VEHICLE REMOVE %d", pVehicleRemove->vehicleid);
 #endif
-    CNetworkVehicle* pNetworkVehicle = CNetworkVehicleManager::GetVehicle(pVehicleRemove->vehicleid);
-    if (pNetworkVehicle)
+    CTrailerSync::RetireVehicle(pVehicleRemove->vehicleid,pVehicleRemove->generation);
+    CNetworkVehicle* pNetworkVehicle = CNetworkVehicleManager::FindVehicle(pVehicleRemove->vehicleid);
+    if (pNetworkVehicle && pNetworkVehicle->m_generation==pVehicleRemove->generation)
     {
         CFireSync::VehicleRemoved(pVehicleRemove->vehicleid);
         CNetworkVehicleManager::Remove(pNetworkVehicle);
@@ -41,9 +51,10 @@ PACKET_HANDLER(ePacketType::VEHICLE_CONFIRM, Packets::Vehicles::VehicleConfirm* 
     if (pVehicleConfirm->tempid < ARRAY_SIZE(CNetworkVehicleManager::m_apTempVehicles))
     {
         CNetworkVehicle* pTempVehicle = CNetworkVehicleManager::m_apTempVehicles[pVehicleConfirm->tempid];
-        if (pTempVehicle)
+        if (TrailerSync::Counter(pVehicleConfirm->generation) && CTrailerSync::ConfirmValid(pTempVehicle,pVehicleConfirm->requestToken))
         {
             pTempVehicle->m_nVehicleId = pVehicleConfirm->vehicleid;
+            pTempVehicle->m_generation=pVehicleConfirm->generation;
             CNetworkVehicleManager::Add(pTempVehicle);
             CNetworkVehicleManager::m_apTempVehicles[pVehicleConfirm->tempid] = nullptr;
         }
@@ -61,6 +72,7 @@ PACKET_HANDLER(ePacketType::VEHICLE_IDLE_UPDATE, Packets::Vehicles::VehicleIdleU
         !pNetworkVehicle->m_pVehicle->m_matrix)
         return;
 
+    if(!CTrailerSync::LegacyAllowed(pNetworkVehicle))return;
     // Old unreliable idle snapshots can arrive after this client takes ownership.
     if (pNetworkVehicle->m_bSyncing)
         return;
@@ -401,35 +413,13 @@ PACKET_HANDLER(ePacketType::ASSIGN_VEHICLE, Packets::Vehicles::AssignVehicleSync
 {
     CNetworkVehicle* pNetworkVehicle = CNetworkVehicleManager::GetVehicle(pAssignVehicleSyncer->vehicleid);
 
-    if (!pNetworkVehicle)
+    if (!pNetworkVehicle || pNetworkVehicle->m_generation!=pAssignVehicleSyncer->generation)
     {
         return;
     }
 
-    if (pNetworkVehicle->m_bSyncing)
-    {
-#ifdef PACKET_DEBUG_MESSAGES
-        CChat::AddMessage("NOT SYNCING VEHICLE %d ANYMORE", pAssignVehicleSyncer->vehicleid);
-#endif
-        pNetworkVehicle->m_bSyncing = false;
-
-        if (auto pVehicle = pNetworkVehicle->m_pVehicle)
-        {
-            pVehicle->SetVehicleCreatedBy(eVehicleCreatedBy::MISSION_VEHICLE);
-        }
-    }
-    else
-    {
-#ifdef PACKET_DEBUG_MESSAGES
-        CChat::AddMessage("SYNCING VEHICLE %d", pAssignVehicleSyncer->vehicleid);
-#endif
-        pNetworkVehicle->m_bSyncing = true;
-
-        if (auto pVehicle = pNetworkVehicle->m_pVehicle)
-        {
-            pVehicle->SetVehicleCreatedBy(pNetworkVehicle->m_nCreatedBy);
-        }
-    }
+    pNetworkVehicle->m_bSyncing=pAssignVehicleSyncer->syncerId==CNetworkPlayerManager::m_nMyId;
+    if(auto* native=pNetworkVehicle->m_pVehicle)native->SetVehicleCreatedBy(pNetworkVehicle->m_bSyncing?pNetworkVehicle->m_nCreatedBy:eVehicleCreatedBy::MISSION_VEHICLE);
 }
 
 

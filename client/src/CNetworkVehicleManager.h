@@ -6,6 +6,8 @@ public:
     static inline CNetworkVehicle* m_apTempVehicles[255];
 
     static CNetworkVehicle* GetVehicle(int vehicleid);
+    static CNetworkVehicle* FindVehicle(int vehicleid);
+    static CNetworkVehicle* FindVehicle(CEntity* vehicle);
     static CNetworkVehicle* GetVehicle(CEntity* vehicle);
     static void Add(CNetworkVehicle* vehicle);
     static void Remove(CNetworkVehicle* vehicle);
