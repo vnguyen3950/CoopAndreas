@@ -47,7 +47,9 @@ void ApplyGrant(){
     receipt={grant.epoch,grant.id,grant.grant,grant.actor,PickupSync::Outcome::DeclinedBeforeApply,true};
     if(grant.epoch!=view.epoch||!PickupSync::SameLife(life,grant.actor)||Mission()||life.area!=0||CGame::currArea!=0){SendResult(receipt);hasGrant=false;return;}
     const PickupSync::Row*row=nullptr;for(const auto&r:view.rows)if(r.item.id==grant.id){row=&r;break;}
-    if(!row||row->grant!=grant.grant||row->collector!=CNetworkPlayerManager::m_nMyId){hasGrant=false;return;}
+    // A terminal view slot may already hold a newer item. Settle the exact
+    // issued grant even when its metadata is gone; never call native effects.
+    if(!row||row->grant!=grant.grant||row->collector!=CNetworkPlayerManager::m_nMyId){SendResult(receipt);hasGrant=false;return;}
     if(row->stage!=PickupSync::Stage::Reserved){SendResult(receipt);hasGrant=false;return;}
     Mapping*map=nullptr;for(auto&m:mappings)if(m.id==grant.id){map=&m;break;}
     if(!map||!Bound(*map)){receipt.applied=false;return;} // Model/pool unavailable: never consume or fabricate a benefit.

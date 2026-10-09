@@ -17,6 +17,32 @@ static void Setup(int model=346,int type=3,uint32_t ammo=10){
     mappings[0]={1,1,Handle(0),false};pendingGrant={};pendingGrant.operation=Packets::Pickups::Operation::Grant;pendingGrant.epoch=1;pendingGrant.sequence=8;pendingGrant.id=1;pendingGrant.grant=8;pendingGrant.actor=row.collectorLife;hasGrant=true;
     testPlayer={};localLife={10,2,7,0,0,10,true};lifeKnown=true;CTheScripts::ScriptSpace[1]=0;CGame::currArea=0;nativeCalls=nativeRemoves=nativeQueryFlags=0;GetPacketFactory().sent.clear();
 }
+static void HeldViewCases(){
+    const int savedId=CNetworkPlayerManager::m_nMyId;const bool savedHost=CLocalPlayer::m_bIsHost;
+    for(int mode=0;mode<6;++mode){
+        Setup();CNetworkPlayerManager::m_nMyId=1;CLocalPlayer::m_bIsHost=false;view.rows[0].collector=1;
+        const auto original=view.rows[0];const auto grant=pendingGrant;
+        Packets::Pickups::State state;state.reset=false;state.epoch=1;state.host=0;state.recipient=original.collectorLife;state.row=original;++state.row.item.revision;
+        if(mode==0)view.rows={};
+        else if(mode==1||mode==3){state.row.stage=PickupSync::Stage::Removed;state.row.reason=PickupSync::Reason::Ambiguous;CPickupSync::Receive(state);}
+        else if(mode==2){state.row.stage=PickupSync::Stage::Collected;CPickupSync::Receive(state);}
+        else if(mode==4){++state.row.grant;CPickupSync::Receive(state);}
+        else{state.row.collector=2;CPickupSync::Receive(state);}
+        if(mode==3){state.row.item.id=2;state.row.item.creation=2;state.row.item.revision=1;state.row.stage=PickupSync::Stage::Active;state.row.grant=0;state.row.collector=-1;state.row.collectorLife={};CPickupSync::Receive(state);
+            bool retained=false;for(const auto&row:view.rows)if(row.item.id==grant.id)retained=true;
+            expect(!retained&&hasGrant,"Actual incoming terminal/active burst replaces the view row while retaining its pending grant");
+        }
+        const auto resources=PickupNative::Capture(&testPlayer);CPickupSync::Process();
+        auto reports=[&](){unsigned count=0;for(const auto&packet:GetPacketFactory().sent){const auto*p=dynamic_cast<const Packets::Pickups::Action*>(packet.get());
+            if(p&&p->operation==Packets::Pickups::Operation::Result&&p->epoch==grant.epoch&&p->id==grant.id&&p->grant==grant.grant
+                &&PickupSync::SameLife(p->actor,grant.actor)&&p->actor.sequence==grant.actor.sequence&&p->outcome==PickupSync::Outcome::DeclinedBeforeApply)++count;}return count;};
+        expect(!hasGrant&&receipt.Matches(grant.epoch,grant.id,grant.grant,grant.actor)&&reports()==1,"Absent, terminal or replaced metadata reports exact declined accounting before dropping the pending grant");
+        expect(nativeCalls==0&&nativeQueryFlags==0&&PickupNative::Capture(&testPlayer)==resources,"Held-view decline never grants native resources or a collection query flag");
+        CPickupSync::Receive(grant);CPickupSync::Process();
+        expect(reports()==2&&nativeCalls==0&&nativeQueryFlags==0,"Duplicate held-view grant replays its exact declined receipt without native effects");
+    }
+    CNetworkPlayerManager::m_nMyId=savedId;CLocalPlayer::m_bIsHost=savedHost;
+}
 int main(){
     Setup(1240,3,0);nativeUpdate=[](CPickup*p,CPlayerPed*ped){ped->m_fHealth=100;p->m_nPickupType=0;return true;};ApplyGrant();
     expect(nativeCalls==1&&testPlayer.m_fHealth==100&&receipt.outcome==PickupSync::Outcome::Consumed&&nativeQueryFlags==1,"Actual native health benefit and local query flag follow one reserved call");
@@ -57,5 +83,6 @@ int main(){
         unsigned creates=0;for(const auto&packet:GetPacketFactory().sent){const auto*p=dynamic_cast<const Packets::Pickups::Action*>(packet.get());if(p&&p->operation==Packets::Pickups::Operation::Create)++creates;}
         expect(nativeRemoves==1&&creates==0,"Retired merged full pile is never automatically republished or re-reserved");
     }
+    HeldViewCases();
     std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;
 }
