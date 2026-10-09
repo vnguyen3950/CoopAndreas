@@ -1,0 +1,93 @@
+ID,NativeName,ProductionMode,NativeFunction,Scope
+0,CHEAT_WEAPON_SET1,Action,CCheat::WeaponCheat1,Shared; native multiplayer validation pending
+1,CHEAT_WEAPON_SET2,Action,CCheat::WeaponCheat2,Shared; native multiplayer validation pending
+2,CHEAT_WEAPON_SET3,Action,CCheat::WeaponCheat3,Shared; native multiplayer validation pending
+3,CHEAT_HEALTH_ARMOR_250K,Action,CCheat::MoneyArmourHealthCheat,Shared; native multiplayer validation pending
+4,CHEAT_WANTED_LEVEL_2STARS,Action,CCheat::WantedLevelUpCheat,Shared; native multiplayer validation pending
+5,CHEAT_CLEAR_WANTED_LEVEL,Action,CCheat::WantedLevelDownCheat,Shared; native multiplayer validation pending
+6,CHEAT_SUNNY_WEATHER,Unsupported,CCheat::SunnyWeatherCheat,Outside shared subset
+7,CHEAT_VERY_SUNNY_WEATHER,Unsupported,CCheat::ExtraSunnyWeatherCheat,Outside shared subset
+8,CHEAT_OVERCAST_WEATHER,Unsupported,CCheat::CloudyWeatherCheat,Outside shared subset
+9,CHEAT_RAINY_WEATHER,Unsupported,CCheat::RainyWeatherCheat,Outside shared subset
+10,CHEAT_FOGGY_WEATHER,Unsupported,CCheat::FoggyWeatherCheat,Outside shared subset
+11,CHEAT_FASTER_CLOCK,FlagToggle,nullptr,Shared; native multiplayer validation pending
+12,CHEAT_FASTER_GAMEPLAY,Unsupported,CCheat::FastTimeCheat,Outside shared subset
+13,CHEAT_SLOWER_GAMEPLAY,Unsupported,CCheat::SlowTimeCheat,Outside shared subset
+14,CHEAT_PEDS_ATTACK_OTHER_WITH_GOLFCLUB,Unsupported,CCheat::MayhemCheat,Outside shared subset
+15,CHEAT_HAVE_ABOUNTY_ON_YOUR_HEAD,Unsupported,CCheat::EverybodyAttacksPlayerCheat,Outside shared subset
+16,CHEAT_EVERYONE_ARMED,FlagToggle,nullptr,Shared; native multiplayer validation pending
+17,CHEAT_SPAWN_RHINO,Unsupported,CCheat::TankCheat,Outside shared subset
+18,CHEAT_SPAWN_BLOODRINGBANGER,Unsupported,CCheat::StockCarCheat,Outside shared subset
+19,CHEAT_SPAWN_RANCHER,Unsupported,CCheat::StockCar2Cheat,Outside shared subset
+20,CHEAT_SPAWN_HOTRINGA,Unsupported,CCheat::StockCar3Cheat,Outside shared subset
+21,CHEAT_SPAWN_HOTRINGB,Unsupported,CCheat::StockCar4Cheat,Outside shared subset
+22,CHEAT_SPAWN_ROMERO,Unsupported,CCheat::HearseCheat,Outside shared subset
+23,CHEAT_SPAWN_STRETCH,Unsupported,CCheat::LovefistCheat,Outside shared subset
+24,CHEAT_SPAWN_TRASHMASTER,Unsupported,CCheat::TrashmasterCheat,Outside shared subset
+25,CHEAT_SPAWN_CADDY,Unsupported,CCheat::GolfcartCheat,Outside shared subset
+26,CHEAT_BLOW_UP_ALL_CARS,Unsupported,CCheat::BlowUpCarsCheat,Outside shared subset
+27,CHEAT_INVISIBLE_CAR,FlagToggle,nullptr,Shared; native multiplayer validation pending
+28,CHEAT_PERFECT_HANDLING,FlagToggle,nullptr,Shared; native multiplayer validation pending
+29,CHEAT_SUICIDE,Unsupported,CCheat::SuicideCheat,Outside shared subset
+30,CHEAT_BGREEN_LIGHTS_CHEAT,FlagToggle,nullptr,Shared; native multiplayer validation pending
+31,CHEAT_AGGRESSIVE_DRIVERS,FlagToggle,nullptr,Shared; native multiplayer validation pending
+32,CHEAT_PINK_TRAFFIC,Unsupported,CCheat::PinkCarsCheat,Outside shared subset
+33,CHEAT_BLACK_TRAFFIC,Unsupported,CCheat::BlackCarsCheat,Outside shared subset
+34,CHEAT_CARS_ON_WATER,FlagToggle,nullptr,Shared; native multiplayer validation pending
+35,CHEAT_BOATS_FLY,FlagToggle,nullptr,Shared; native multiplayer validation pending
+36,CHEAT_FAT_PLAYER,Unsupported,CCheat::FatCheat,Outside shared subset
+37,CHEAT_MAX_MUSCLE,Unsupported,CCheat::MuscleCheat,Outside shared subset
+38,CHEAT_SKINNY_PLAYER,Unsupported,CCheat::SkinnyCheat,Outside shared subset
+39,CHEAT_ELVIS_IS_EVERYWHERE,Unsupported,CCheat::ElvisLivesCheat,Outside shared subset
+40,CHEAT_PEDS_ATTACK_YOU_WITH_ROCKETS,Unsupported,CCheat::VillagePeopleCheat,Outside shared subset
+41,CHEAT_BEACH_PARTY,Unsupported,CCheat::BeachPartyCheat,Outside shared subset
+42,CHEAT_GANGMEMBERS_EVERYWHERE,Unsupported,CCheat::GangsCheat,Outside shared subset
+43,CHEAT_GANGS_CONTROLS_THE_STREETS,Unsupported,CCheat::GangLandCheat,Outside shared subset
+44,CHEAT_NINJA_THEME,Unsupported,CCheat::NinjaCheat,Outside shared subset
+45,CHEAT_SLUT_MAGNET,Unsupported,CCheat::LoveConquersAllCheat,Outside shared subset
+46,CHEAT_CHEAP_TRAFFIC,Unsupported,CCheat::AllCarsAreShitCheat,Outside shared subset
+47,CHEAT_FAST_TRAFFIC,Unsupported,CCheat::AllCarsAreGreatCheat,Outside shared subset
+48,CHEAT_CARS_FLY,FlagToggle,nullptr,Shared; native multiplayer validation pending
+49,CHEAT_HUGE_BUNNY_HOP,FlagToggle,nullptr,Shared; native multiplayer validation pending
+50,CHEAT_SPAWN_HYDRA,Unsupported,CCheat::FlyboyCheat,Outside shared subset
+51,CHEAT_SPAWN_VORTEX,Unsupported,CCheat::VortexCheat,Outside shared subset
+52,CHEAT_SMASH_N_BOOM,FlagToggle,nullptr,Shared; native multiplayer validation pending
+53,CHEAT_ALL_CARS_HAVE_NITRO,FlagToggle,nullptr,Shared; native multiplayer validation pending
+54,CHEAT_CARS_FLOAT_AWAY_WHEN_HIT,FlagToggle,nullptr,Shared; native multiplayer validation pending
+55,CHEAT_ALWAYS_MIDNIGHT,Unsupported,CCheat::MidnightCheat,Outside shared subset
+56,CHEAT_STOP_GAME_CLOCK_ORANGE_SKY,Unsupported,CCheat::DuskCheat,Outside shared subset
+57,CHEAT_THUNDER_STORM,Unsupported,CCheat::StormCheat,Outside shared subset
+58,CHEAT_SAND_STORM,Unsupported,CCheat::SandstormCheat,Outside shared subset
+59,CHEAT_UNUSED,Unsupported,CCheat::PredatorCheat,Outside shared subset
+60,CHEAT_MEGAJUMP,FlagToggle,nullptr,Shared; native multiplayer validation pending
+61,CHEAT_INFINITE_HEALTH,FlagToggle,nullptr,Shared; native multiplayer validation pending
+62,CHEAT_INFINITE_OXYGEN,FlagToggle,nullptr,Shared; native multiplayer validation pending
+63,CHEAT_GET_PARACHUTE,Action,CCheat::ParachuteCheat,Shared; native multiplayer validation pending
+64,CHEAT_GET_JETPACK,Action,CCheat::JetpackCheat,Shared; native multiplayer validation pending
+65,CHEAT_I_DO_AS_I_PLEASE,FunctionToggle,CCheat::NotWantedCheat,Shared; native multiplayer validation pending
+66,CHEAT_SIX_WANTED_STARS,Action,CCheat::WantedCheat,Shared; native multiplayer validation pending
+67,CHEAT_MEGA_PUNCH,FlagToggle,nullptr,Shared; native multiplayer validation pending
+68,CHEAT_NEVER_GET_HUNGRY,FlagToggle,nullptr,Shared; native multiplayer validation pending
+69,CHEAT_RIOT_MODE,FunctionToggle,CCheat::RiotCheat,Shared; native multiplayer validation pending
+70,CHEAT_FUNHOUSE_THEME,Unsupported,CCheat::FunhouseCheat,Outside shared subset
+71,CHEAT_ADRENALINE_MODE,Unsupported,CCheat::AdrenalineCheat,Outside shared subset
+72,CHEAT_INFINITE_AMMO,FlagToggle,nullptr,Shared; native multiplayer validation pending
+73,CHEAT_WEAPON_AIMING_WHILE_DRIVING,Unsupported,CCheat::DrivebyCheat,Outside shared subset
+74,CHEAT_REDUCED_TRAFFIC,FlagToggle,nullptr,Shared; native multiplayer validation pending
+75,CHEAT_COUNTRY_TRAFFIC,Unsupported,CCheat::CountrysideInvasionCheat,Outside shared subset
+76,CHEAT_WANNA_BE_IN_MY_GANG,FlagToggle,nullptr,Shared; native multiplayer validation pending
+77,CHEAT_NO_ONE_CAN_STOP_US,FlagToggle,nullptr,Shared; native multiplayer validation pending
+78,CHEAT_ROCKET_MAYHEM,FlagToggle,nullptr,Shared; native multiplayer validation pending
+79,CHEAT_MAX_RESPECT,Unsupported,nullptr,Outside shared subset
+80,CHEAT_MAX_SEX_APPEAL,Unsupported,nullptr,Outside shared subset
+81,CHEAT_MAX_STAMINA,Unsupported,CCheat::StaminaCheat,Outside shared subset
+82,CHEAT_HITMAN_LEVEL_FOR_ALL_WEAPONS,Unsupported,CCheat::WeaponSkillsCheat,Outside shared subset
+83,CHEAT_MAX_DRIVING_SKILLS,Unsupported,CCheat::VehicleSkillsCheat,Outside shared subset
+84,CHEAT_SPAWN_HUNTER,Unsupported,CCheat::ApacheCheat,Outside shared subset
+85,CHEAT_SPAWN_QUAD,Unsupported,CCheat::QuadCheat,Outside shared subset
+86,CHEAT_SPAWN_TANKER_TRUCK,Unsupported,CCheat::TankerCheat,Outside shared subset
+87,CHEAT_SPAWN_DOZER,Unsupported,CCheat::DozerCheat,Outside shared subset
+88,CHEAT_SPAWN_STUNT_PLANE,Unsupported,CCheat::StuntPlaneCheat,Outside shared subset
+89,CHEAT_SPAWN_MONSTER,Unsupported,CCheat::MonsterTruckCheat,Outside shared subset
+90,CHEAT_PROSTITUTES_PAY_YOU,Unsupported,nullptr,Outside shared subset
+91,CHEAT_ALL_TAXIS_NITRO,Unsupported,nullptr,Outside shared subset

@@ -14,7 +14,7 @@ Any participant can raise the shared wanted level. A guest's death or ordinary n
 
 Cheat actions and toggles have different semantics. An accepted action executes once per connected client; historical actions are not replayed to late joiners. Toggle snapshots express the desired state, rather than asking clients to toggle again on every update. The health/armor/cash cheat adds **$250,000 once to the room**; local health/armor effects must not feed its cash effect back into the ledger.
 
-The current shared subset is **34 entries**: nine actions, two native function toggles and twenty-three flag toggles. The other fifty-eight entries are outside shared coverage. In particular, this does not establish shared vehicle-spawn, weather, themed-world or player-body cheats. Native cheat-table behavior was checked against the compatible game's source references; source review does not establish runtime hook behavior.
+The current shared subset is **34 entries**: nine actions, two native function toggles and twenty-three flag toggles. The [coverage table](SHARED_CHEAT_COVERAGE.csv) maps all ninety-two IDs; the other fifty-eight entries are outside shared coverage. In particular, this does not establish shared vehicle-spawn, weather, themed-world or player-body cheats. Native cheat-table behavior was checked against the compatible game's source references and executable table; source review does not establish runtime hook behavior.
 
 ## Human checks
 
@@ -39,3 +39,24 @@ Use a separate test installation, matching clients/server and a fresh New Game. 
 | Restart/load or recreate the local player | Native initialization does not appear as a new reward or expense. |
 
 Record the initiating player, balances/stars before and after, exact actions, connection changes, build manifest and logs. A successful ledger or serializer test is separate from these native game checks.
+
+## Source tests
+
+The checked-in tests use the production ledger and packet classes. Native-service tests retain the actual service function bodies and lifecycle callbacks, supplying recorded engine and transport doubles. Each scenario runs in a fresh process. The guest reward check covers the actual replay early-return prefix; it does not execute the rest of the native script VM.
+
+From the checkout, with Python and the Visual Studio 2022 C++ tools installed:
+
+```powershell
+python tests/session/run_session_native_tests.py --source . --output .cache/session-headless/native-001 --native-source ../gta-reversed/source/game_sa/GameLogic.cpp
+```
+
+The adjacent [gta-reversed](https://github.com/gta-reversed/gta-reversed) source supplies its actual punishment lambda for the fee tests. Pass `--msvc-env` if your `VsDevCmd.bat` is somewhere other than the Build Tools default. No game executable is loaded. Choose a new output name for each run; the runner freezes inputs, records hashes/compiler output, and rejects changes during testing.
+
+The pure ledger/helper and packet suites can be run separately:
+
+```powershell
+python tests/session/run_headless.py --source . --output .cache/session-headless/pure-001 --test tests/session/session_sync_tests.cpp --input shared/network/session_sync.h
+python tests/session/run_headless.py --source . --output .cache/session-headless/packet-001 --test tests/session/session_packet_tests.cpp --input shared/network/session_sync.h --input shared/network/packets/session.h --input shared/network/packet.h --input shared/network/packet_types.h --input third_party/serialize.h --include shared --include third_party --standard c++17 --msvc-env "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/Common7/Tools/VsDevCmd.bat"
+```
+
+The pure command finds `g++` on PATH; `--compiler` accepts another GCC executable path. Current checks pass 515 pure assertions, 9,580 packet assertions and 102 assertions across eighteen service scenarios. These checks do not prove x86 hook execution, ENet timing or native game effects. Shared shopping authorization remains outside their scope.

@@ -53,7 +53,7 @@
       "url": "https://github.com/Tornamic/CoopAndreas/pull/106",
       "already_in_base": false,
       "merge_commit": null,
-      "decision": "Deferred: shared wallet/wanted/cheat policy"
+      "decision": "Corrected implementation: canonical wallet, wanted policy and 34 shared cheats; native validation pending"
     },
     {
       "number": 105,
