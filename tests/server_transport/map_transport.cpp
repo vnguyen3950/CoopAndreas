@@ -19,6 +19,7 @@ Factory& GetPacketFactory();
 #include "network/packets/map.h"
 #include "network/packets/vitals.h"
 #include "network/packets/player_animation.h"
+#include "network/packets/pickups.h"
 #include "semver.h"
 #include "sender.inc"
 struct CVector2D { float x = 0, y = 0; CVector2D(float a = 0, float b = 0) : x(a), y(b) {} };
@@ -37,6 +38,8 @@ struct Client
     std::vector<Packets::Players::PlayerPlaceWaypoint> waypoints;
     std::vector<Packets::Players::PlayerAnimationState> animations;
     std::vector<Packets::Players::RespawnPlayer> respawns;
+    std::vector<Packets::Pickups::State> pickups;
+    std::vector<Packets::Pickups::Action> pickupActions;
     std::array<uint32_t,8> generations{};
     void Process()
     {
@@ -64,6 +67,8 @@ struct Client
                         else if (auto* p = dynamic_cast<Packets::Players::Vitals*>(packet.get())) generations[p->playerid] = p->generation;
                         else if (auto* p = dynamic_cast<Packets::Players::PlayerAnimationState*>(packet.get())) animations.push_back(*p);
                         else if (auto* p = dynamic_cast<Packets::Players::RespawnPlayer*>(packet.get())) respawns.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Pickups::State*>(packet.get())) pickups.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Pickups::Action*>(packet.get())) pickupActions.push_back(*p);
                     }
                 }
             }
@@ -156,12 +161,44 @@ int main(int argc, char** argv)
     animation.life.birth = 3; animation.life.sequence = 4; animation.state = {};
     expect(guest.Send(animation) && Wait([&]{return host.animations.back().life.birth == 3 && host.animations.back().life.ready;}),
         "Ready owner publication acknowledges the new post-respawn life.");
+    auto hostAnimation = animation; hostAnimation.playerid = host.id; hostAnimation.life = {0,1,1,0,0,11};
+    expect(host.Send(hostAnimation) && Wait([&]{return host.animations.back().playerid == host.id;}), "Real host publishes acknowledged life for pickup registration.");
+    const auto hostLife = host.animations.back().life;
+    PickupSync::Actor hostActor{hostLife.generation,hostLife.birth,hostLife.sequence,hostLife.model,hostLife.area};
+    PickupSync::Actor guestActor{host.generations[guest.id],3,4,0,0};
+    Packets::Pickups::Hello pickupHello; pickupHello.actor = hostActor;
+    expect(host.Send(pickupHello) && Wait([&]{return !host.pickups.empty();}), "Integrated host pickup HELLO seeds room and receives SYSTEM state.");
+    pickupHello.actor = guestActor;
+    expect(guest.Send(pickupHello) && Wait([&]{return !guest.pickups.empty();}), "Guest with exact acknowledged life receives pickup room replay.");
+    Packets::Pickups::Action pickupCreate; pickupCreate.operation = Packets::Pickups::Operation::Create;
+    pickupCreate.actor = hostActor; pickupCreate.epoch = host.pickups.back().epoch; pickupCreate.sequence = 1;
+    pickupCreate.item.creation = 1; pickupCreate.item.owner = host.id; pickupCreate.item.model = 1240; pickupCreate.item.type = 3;
+    expect(host.Send(pickupCreate) && Wait([&]{return !guest.pickups.back().reset;}), "Authenticated host registers supported exterior pickup through real handlers.");
+    const auto itemId = guest.pickups.back().row.item.id;
+    Packets::Pickups::Action claim; claim.operation = Packets::Pickups::Operation::Claim; claim.actor = guestActor;
+    claim.epoch = pickupCreate.epoch; claim.sequence = 1; claim.id = itemId;
+    expect(guest.Send(claim) && Wait([&]{return !guest.pickupActions.empty();}), "Real SYSTEM claim atomically reserves and grants the exact collector life.");
+    const auto originalGrant = guest.pickupActions.back().grant;
+    auto receipt = claim; receipt.operation = Packets::Pickups::Operation::Result; receipt.sequence = 2; receipt.grant = originalGrant;
+    receipt.outcome = PickupSync::Outcome::DeclinedBeforeApply;
+    expect(guest.Send(receipt) && Wait([&]{return guest.pickups.back().row.item.id == itemId && guest.pickups.back().row.stage == PickupSync::Stage::Removed;}),
+        "Exact pre-apply decline settles accounting without native effect or pickup reactivation.");
+    const auto actionCount = guest.pickupActions.size(); guest.Send(receipt); Wait([]{return false;},150);
+    expect(guest.pickupActions.size() == actionCount, "Duplicate terminal receipt cannot emit another grant.");
+    pickupCreate.sequence = 2; pickupCreate.item.creation = 2;
+    expect(host.Send(pickupCreate) && Wait([&]{return guest.pickups.back().row.item.id != itemId && guest.pickups.back().row.stage == PickupSync::Stage::Active;}),
+        "Terminal receipt releases collector for a distinct non-reused item identity.");
+    claim.sequence = 3; claim.id = guest.pickups.back().row.item.id;
+    expect(guest.Send(claim) && Wait([&]{return guest.pickupActions.size() > actionCount;}) && guest.pickupActions.back().grant > originalGrant,
+        "New reservation uses a distinct monotonic grant token.");
     auto oldGeneration = host.waypoints.back().generation; auto guestId = guest.id;
     enet_peer_disconnect(guest.peer,0); enet_host_flush(guest.host); Wait([&]{return !guest.connected;});
     expect(Connect(replacement,port,"fixture_replacement"), "Replacement peer authenticates.");
     expect(replacement.id == guestId && host.generations[guestId] != oldGeneration, "Reused slot gets a distinct connection generation.");
     expect(replacement.waypoints.empty(), "Reused slot does not inherit departed waypoint.");
-    expect(replacement.animations.empty(), "Reused slot does not inherit departed actor life or animation replay.");
+    bool departedLifeReplayed = false;
+    for (const auto& state : replacement.animations) if (state.playerid == guestId) departedLifeReplayed = true;
+    expect(!departedLifeReplayed, "Reused slot does not inherit departed actor life or animation replay.");
     enet_peer_disconnect(host.peer,0); enet_host_flush(host.host);
     expect(Wait([&]{return late.hostId == late.id;}), "Host departure promotes earliest remaining real peer.");
     expect(late.maps.back().epoch == epoch && late.maps.back().cells.Has(8), "Actual server migration keeps room discoveries.");

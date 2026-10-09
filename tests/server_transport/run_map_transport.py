@@ -28,6 +28,8 @@ def main():
              "shared/network/serializable_types.h", "third_party/serialize.h", "server/src/CMapSync.cpp",
              "shared/network/player_animation_sync.h", "shared/network/packets/player_animation.h",
              "server/src/CPlayerAnimationSync.cpp", "server/src/PacketHandlers/player_animation.cpp",
+             "shared/network/pickup_lifecycle.h", "shared/network/packets/pickups.h", "server/src/CPickupSync.cpp",
+             "server/src/PacketHandlers/pickups.cpp", "server/src/CNetworkPlayerManager.cpp", "server/src/PacketHandlers/scripts.cpp",
              "server/src/CNetwork.cpp", "server/src/CNetworkPlayerManager.cpp", "server/src/PacketHandlers/map.cpp",
              "server/src/PacketHandlers/players.cpp", "tests/server_transport/map_transport.cpp")
     before = {name:digest(ROOT / name) for name in names}
