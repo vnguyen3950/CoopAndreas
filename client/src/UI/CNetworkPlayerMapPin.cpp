@@ -52,14 +52,17 @@ void CNetworkPlayerMapPin::Process()
 
 		CVector2D pos = GetPlayerMarkerPosition();
 		float angle = CalculateMarkerAngle(player);
+		// The native sprite rotates directly in screen pixels; use one scale
+		// for both axes so the marker keeps its proportions at any aspect ratio.
+		const float markerSize = 5.0f * RsGlobal.maximumHeight / 360.0f;
 
 		CRadar::DrawRotatingRadarSprite(
 			&CRadar::RadarBlipSprites[RADAR_SPRITE_CENTRE],
 			pos.x,
 			pos.y,
 			angle,
-			5 * RsGlobal.maximumWidth / 640,
-			5 * RsGlobal.maximumHeight / 360,
+			markerSize,
+			markerSize,
 			player->m_pPed->IsHidden() ? CRGBA{ 50, 50, 50, 255 } : CRGBA{ 255, 255, 255, 255 }
 		);
 	}

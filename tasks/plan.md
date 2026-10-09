@@ -28,6 +28,6 @@ The two story worktrees were redirected before edits; the six proposed stories a
 
 ## Verification limits
 
-Tests must exercise production validation/codecs or actual extracted functions, with recorded native doubles identified explicitly. Positive tests, malformed/truncated payloads, sender authority, duplicate/stale messages and relevant lifecycle transitions are required. Preserve existing session, object, vehicle-authority and weapon-stat checks. Use a targeted negative/mutation check where it proves a new regression test detects the added behavior.
+Synchronization tests must exercise production validation/codecs or actual extracted functions, with recorded native doubles identified explicitly. Positive tests, malformed/truncated payloads, sender authority, duplicate/stale messages and relevant lifecycle transitions are required. Preserve existing session, object, vehicle-authority and weapon-stat checks. Use a targeted negative/mutation check where it proves a new regression test detects the added behavior. The small marker rendering correction uses native/source comparison, numeric dimensions and a client compile; its visible result remains a human check.
 
 Compiling native hooks and testing doubles do not prove x86 hook execution, ENet timing, visuals or gameplay. Those remain explicit human handoff checks. No original game files, derived game binaries or credentials enter source commits.

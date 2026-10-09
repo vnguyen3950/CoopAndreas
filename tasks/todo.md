@@ -31,7 +31,7 @@ Acceptance: each player's values remain their own; remote application does not o
 - [ ] Reproduce the aspect-ratio distortion from the actual drawing function.
 - [ ] Correct marker scale using native rendering evidence and verify affected dimensions.
 
-Acceptance: marker geometry keeps its proportions at 4:3, 16:9 and ultrawide resolutions while retaining readable size and native positioning. Verification: a focused extraction test for production drawing parameters, client compile and human visual checks.
+Acceptance: marker geometry keeps its proportions at 4:3, 16:9 and ultrawide resolutions while retaining readable size and native positioning. Verification: native/source comparison, dimension checks, client compile and human visual checks.
 
 ## Integration checkpoint
 
