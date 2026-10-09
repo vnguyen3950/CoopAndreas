@@ -79,7 +79,9 @@ public:
         row->grant=++nextGrant;row->collector=sender;row->collectorLife=life;row->stage=Stage::Reserved;row->awaitingOutcome=true;++row->item.revision;return row;
     }
     bool Complete(int sender,uint32_t expectedEpoch,uint32_t id,uint32_t grant,const Actor&life,Outcome outcome) {
-        auto*row=Find(id);if(expectedEpoch!=epoch||!row||!row->awaitingOutcome||(row->stage!=Stage::Reserved&&!(row->stage==Stage::Removed&&row->reason==Reason::Ambiguous))||row->collector!=sender||row->grant!=grant||!SameLife(life,row->collectorLife)||row->item.revision==MaxCounter||int(outcome)>2)return false;
+        // Removal stops further grants, but an already issued exact receipt
+        // must still settle its accounting, regardless of the removal reason.
+        auto*row=Find(id);if(expectedEpoch!=epoch||!row||!row->awaitingOutcome||(row->stage!=Stage::Reserved&&row->stage!=Stage::Removed)||row->collector!=sender||row->grant!=grant||!SameLife(life,row->collectorLife)||row->item.revision==MaxCounter||int(outcome)>2)return false;
         if(outcome==Outcome::Consumed){row->stage=Stage::Collected;}
         else if(outcome==Outcome::DeclinedBeforeApply){row->stage=Stage::Removed;row->reason=Reason::Cleanup;}
         else{row->stage=Stage::Removed;row->reason=Reason::Ambiguous;}

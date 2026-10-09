@@ -69,7 +69,12 @@ bool CPickupServer::Action(const Packets::Pickups::Action& packet,CNetworkPlayer
         // only for the exact reserved old life on this still-connected peer.
         if(packet.actor.generation!=sender->m_vitals.generation)return false;
         const auto*old=Room().Find(packet.id);
-        if(old&&old->stage==PickupSync::Stage::Collected&&old->collector==sender->m_iPlayerId&&old->grant==packet.grant){Send(sender,old);return true;}
+        // Exact terminal duplicates acknowledge retained state only. Removed
+        // outcomes are as terminal as collection; neither may issue a new grant.
+        if(old&&!old->awaitingOutcome&&(old->stage==PickupSync::Stage::Collected||old->stage==PickupSync::Stage::Removed)
+            &&old->collector==sender->m_iPlayerId&&old->grant==packet.grant&&PickupSync::SameLife(packet.actor,old->collectorLife)){
+            Send(sender,old);return true;
+        }
         if(!Room().Complete(sender->m_iPlayerId,packet.epoch,packet.id,packet.grant,packet.actor,packet.outcome))return false;
         Broadcast(Room().Find(packet.id));return true;
     }

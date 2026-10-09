@@ -3,7 +3,41 @@
 #include "pickup_server.inc"
 static unsigned checks=0,failures=0;
 static void expect(bool value,const char*text){++checks;if(!value){++failures;std::cout<<"FAIL: "<<text<<'\n';}}
+static unsigned Grants(){unsigned count=0;for(const auto&packet:GetPacketFactory().sent){const auto*p=dynamic_cast<const Packets::Pickups::Action*>(packet.get());
+ if(p&&p->operation==Packets::Pickups::Operation::Grant)++count;}return count;}
+static void TerminalReceiptCases(){
+ using PickupSync::Reason;using PickupSync::Outcome;using PickupSync::Stage;
+ for(auto reason:{Reason::Cleanup,Reason::Expired,Reason::OwnerLeft,Reason::CollectorLeft,Reason::Ambiguous,Reason::SceneEnded})
+ for(auto outcome:{Outcome::Consumed,Outcome::DeclinedBeforeApply,Outcome::UnknownAfterApply}){
+  Room()={};peers={};mission=false;GetPacketFactory().sent.clear();
+  PeerHandle h,g;CNetworkPlayer host,guest;host.m_pPeer=&h;host.m_bIsHost=true;guest.m_pPeer=&g;guest.m_iPlayerId=1;guest.m_vitals.generation=11;guest.life.generation=11;
+  CNetworkPlayerManager::m_pPlayers={&host,&guest};CPickupServer::Join(&host);CPickupServer::Join(&guest);CPickupServer::HostChanged(&host);
+  Packets::Pickups::Hello hello;hello.actor={11,2,7,0,0};CPickupServer::Hello(hello,&guest);
+  Packets::Pickups::Action create;create.operation=Packets::Pickups::Operation::Create;create.epoch=Room().epoch;create.sequence=1;create.actor={10,2,7,0,0};
+  create.item.creation=1;create.item.owner=0;create.item.model=346;create.item.type=4;create.item.ammo=10;
+  expect(CPickupServer::Action(create,&host),"Terminal fixture registers original item through actual host handler");
+  auto*row=Room().Find(1);Packets::Pickups::Action claim;claim.operation=Packets::Pickups::Operation::Claim;claim.epoch=Room().epoch;claim.sequence=1;claim.id=row->item.id;claim.actor={11,2,7,0,0};
+  expect(CPickupServer::Action(claim,&guest)&&Grants()==1,"Actual service issues one original grant");
+  const auto token=row->grant;Packets::Pickups::Action remove;remove.operation=Packets::Pickups::Operation::Remove;remove.epoch=Room().epoch;remove.sequence=2;remove.id=row->item.id;remove.actor=create.actor;remove.reason=reason;
+  expect(CPickupServer::Action(remove,&host)&&row->awaitingOutcome,"Actual host handler preserves held token for all terminal reasons");
+  create.sequence=3;create.item.creation=2;expect(CPickupServer::Action(create,&host),"Different pickup can exist while old grant is held");
+  auto next=claim;next.id=2;next.sequence=2;expect(!CPickupServer::Action(next,&guest),"Actual service prevents another outstanding reservation");
+  GetPacketFactory().sent.clear();CPickupServer::Hello(hello,&guest);expect(Grants()==0,"Removed held identity is never regranted by replay");
+  Packets::Pickups::Action result;result.operation=Packets::Pickups::Operation::Result;result.epoch=Room().epoch;result.sequence=3;result.id=row->item.id;result.grant=token;result.actor=claim.actor;result.outcome=outcome;
+  auto wrong=result;++wrong.grant;expect(!CPickupServer::Action(wrong,&guest),"Actual service rejects mismatched terminal token");
+  wrong=result;++wrong.actor.birth;expect(!CPickupServer::Action(wrong,&guest),"Actual service rejects mismatched terminal actor life");
+  wrong=result;++wrong.actor.generation;expect(!CPickupServer::Action(wrong,&guest),"Actual service rejects recycled connection generation");
+  guest.life.birth=3;expect(CPickupServer::Action(result,&guest)&&!row->awaitingOutcome,"Exact issued old-life receipt can settle after same-connection actor boundary");
+  expect(row->stage==(outcome==Outcome::Consumed?Stage::Collected:Stage::Removed),"Actual receipt never reactivates removed resource");
+  const auto revision=row->item.revision;expect(CPickupServer::Action(result,&guest)&&row->item.revision==revision&&Grants()==0,"Exact terminal duplicate replies state without accounting or another grant");
+  wrong=result;++wrong.actor.birth;expect(!CPickupServer::Action(wrong,&guest),"Settled duplicate still requires the original actor life");
+  next.actor.birth=3;next.sequence=4;expect(CPickupServer::Action(next,&guest)&&Grants()==1,"Terminal settlement unblocks a distinct item without regranting the old pile");
+  auto oldClaim=claim;oldClaim.actor.birth=3;oldClaim.sequence=5;expect(!CPickupServer::Action(oldClaim,&guest),"Actual service rejects any new claim on the old terminal identity");
+ }
+ Room()={};peers={};mission=false;GetPacketFactory().sent.clear();CNetworkPlayerManager::m_pPlayers.clear();
+}
 int main(){
+ TerminalReceiptCases();
  PeerHandle h,g;CNetworkPlayer host,guest;host.m_pPeer=&h;host.m_bIsHost=true;guest.m_pPeer=&g;guest.m_iPlayerId=1;guest.m_vitals.generation=11;guest.life.generation=11;
  CNetworkPlayerManager::m_pPlayers={&host,&guest};CPickupServer::Join(&host);CPickupServer::Join(&guest);CPickupServer::HostChanged(&host);
  Packets::Pickups::Hello hello;hello.actor={10,2,7,0,0};CPickupServer::Hello(hello,&host);hello.actor.generation=11;CPickupServer::Hello(hello,&guest);

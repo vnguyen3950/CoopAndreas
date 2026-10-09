@@ -9,6 +9,33 @@ static unsigned checks=0,failures=0;
 static void expect(bool value,const char*text){++checks;if(!value){++failures;std::cout<<"FAIL: "<<text<<'\n';}}
 static Actor Life(uint32_t birth=1){return {1,birth,1,0,0};}
 static Item Metadata(uint32_t token=1){Item i;i.owner=0;i.creation=token;i.type=3;i.model=1240;return i;}
+static void TerminalReceiptCases(){
+ for(auto reason:{Reason::Cleanup,Reason::Expired,Reason::OwnerLeft,Reason::CollectorLeft,Reason::Ambiguous,Reason::SceneEnded})
+ for(auto outcome:{Outcome::Consumed,Outcome::DeclinedBeforeApply,Outcome::UnknownAfterApply}){
+  Room room;room.ChangeHost(0,Life());auto*row=room.Create(0,room.epoch,Life(),Metadata());const auto id=row->item.id;
+  room.Reserve(1,room.epoch,id,Life(),{},false,false);const auto token=row->grant;
+  expect(room.Remove(0,room.epoch,id,reason)&&row->awaitingOutcome,"Every terminal removal retains exact outstanding accounting");
+  auto*next=room.Create(0,room.epoch,Life(),Metadata(2));const auto nextId=next->item.id;
+  expect(nextId!=id&&!room.Reserve(1,room.epoch,nextId,Life(),{},false,false),"Removed held grant blocks another grant until outcome");
+  expect(!room.Reserve(2,room.epoch,id,Life(),{},false,false),"Removed pile is never reopened for a different collector");
+  expect(!room.Complete(2,room.epoch,id,token,Life(),outcome),"Terminal receipt cannot change collector");
+  expect(!room.Complete(1,room.epoch,id,token+1,Life(),outcome),"Terminal receipt cannot change grant token");
+  expect(!room.Complete(1,room.epoch+1,id,token,Life(),outcome),"Terminal receipt cannot cross scene epoch");
+  expect(!room.Complete(1,room.epoch,id,token,Life(2),outcome),"Terminal receipt cannot change actor birth");
+  auto wrong=Life();++wrong.generation;expect(!room.Complete(1,room.epoch,id,token,wrong,outcome),"Terminal receipt cannot cross connection generation");
+  wrong=Life();++wrong.model;expect(!room.Complete(1,room.epoch,id,token,wrong,outcome),"Terminal receipt cannot change actor model");
+  wrong=Life();++wrong.area;expect(!room.Complete(1,room.epoch,id,token,wrong,outcome),"Terminal receipt cannot change actor area");
+  expect(row->awaitingOutcome&&row->stage==Stage::Removed,"Invalid terminal receipts leave the held grant intact");
+  expect(room.Complete(1,room.epoch,id,token,Life(),outcome)&&!row->awaitingOutcome,"Exact receipt settles every terminal removal reason");
+  expect(row->stage==(outcome==Outcome::Consumed?Stage::Collected:Stage::Removed),"Terminal outcome accounts consumed or removed without reactivation");
+  const auto revision=row->item.revision;expect(!room.Complete(1,room.epoch,id,token,Life(),outcome)&&row->item.revision==revision,"Core duplicate terminal receipt never performs a second transition");
+  expect(!room.Reserve(1,room.epoch,id,Life(),{},false,false),"Settled old pile cannot be granted again");
+  expect(room.Reserve(1,room.epoch,nextId,Life(),{},false,false)&&next->grant>token,"Settled terminal receipt releases collector for a distinct item and token");
+ }
+ Room room;room.ChangeHost(0,Life());auto*row=room.Create(0,room.epoch,Life(),Metadata());const auto id=row->item.id;
+ room.Reserve(1,room.epoch,id,Life(),{},false,false);const auto token=row->grant;room.RetireCollector(1);
+ expect(!row->awaitingOutcome&&!room.Complete(1,room.epoch,id,token,Life(),Outcome::Consumed),"Actual collector departure retires accounting rather than accepting a recycled collector receipt");
+}
 static void RegistryCases(){
  Room room;expect(room.ChangeHost(0,Life()),"Known initialized host establishes epoch");
  auto metadata=Metadata();expect(!room.Create(1,room.epoch,Life(),metadata),"Guest cannot register host resource");
@@ -51,7 +78,7 @@ template<class T>void Roundtrip(T packet){
  expect(static_cast<Packet&>(packet).GetChannel()==ePacketChannel::SYSTEM,"Pickup operations share reliable identity/lifecycle ordering");
 }
 int main(){
- RegistryCases();Packets::Pickups::Hello hello;hello.actor=Life();Roundtrip(hello);
+ RegistryCases();TerminalReceiptCases();Packets::Pickups::Hello hello;hello.actor=Life();Roundtrip(hello);
  Room room;room.ChangeHost(0,Life());auto*row=room.Create(0,room.epoch,Life(),Metadata());
  Packets::Pickups::State state;state.epoch=room.epoch;state.host=0;state.recipient=Life();Roundtrip(state);state.reset=false;state.row=*row;Roundtrip(state);
  room.Reserve(1,room.epoch,row->item.id,Life(),{},false,false);state.row=*row;Roundtrip(state);
