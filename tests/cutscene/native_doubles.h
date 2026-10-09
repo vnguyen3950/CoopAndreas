@@ -21,6 +21,9 @@ struct RecordedFactory {
 static RecordedFactory& GetPacketFactory() { static RecordedFactory factory; return factory; }
 #include "network/packet.h"
 #include "network/packets/cutscene.h"
+// Cutscene fixtures exercise non-fire queue traffic; fire ordering is covered
+// through unchanged actual fire services in their own suite.
+struct CFireSync { static void Queue(Packet&) {} };
 struct CPacketBuffer {
     std::deque<Packet*> m_packets;
     void Receive(Packet* packet);
