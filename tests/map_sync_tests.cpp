@@ -161,10 +161,38 @@ void menu_migration()
     expect(CTheZones::ExploredTerritoriesArray[4] && !CTheZones::ExploredTerritoriesArray[99],
         "Promoted menu guest adopts cached host discovery before publishing anything.");
 }
+void seed_ack()
+{
+    CNetworkPlayer host, guest; setup(host,guest); CNetworkPlayerManager::m_nMyId = 0;
+    CLocalPlayer::m_bIsHost = true; CMapSync::HostChanged(0);
+    CTheZones::ExploredTerritoriesArray[4] = 1;
+    Packets::Map::Discovery state; state.playerid = 0; state.generation = 10;
+    CMapSync::Receive(state); CMapSync::Process(); auto seed = factory.maps.back();
+    expect(CMapSyncServer::Receive(seed,&host), "Actual server accepts initial host seed.");
+    CMapSync::Receive(factory.maps.back()); CMapSync::Process();
+    expect(authorityReady, "Host adopts acknowledged initial campaign.");
+    Events::initScriptsEvent.before.Fire(); Events::processScriptsEvent.after.Fire();
+    std::fill(std::begin(CTheZones::ExploredTerritoriesArray),std::end(CTheZones::ExploredTerritoriesArray),0);
+    CTheZones::ExploredTerritoriesArray[99] = 1;
+    CMapSync::Process(); seed = factory.maps.back();
+    expect(seed.mode == Packets::Map::Mode::Seed && seed.cells.Has(99) && seedSent, "New host load waits for its own seed acknowledgement.");
+    // The actual server receives a valid old-campaign guest reveal before the
+    // pending host seed. Its SYSTEM broadcast is not acknowledgement of that seed.
+    Packets::Map::Discovery reveal; reveal.mode = Packets::Map::Mode::Reveal;
+    reveal.playerid = 1; reveal.sequence = 1; reveal.epoch = seed.epoch; reveal.cells.Add(8);
+    expect(CMapSyncServer::Receive(reveal,&guest), "Actual concurrent guest reveal broadcasts old campaign revision.");
+    CMapSync::Receive(factory.maps.back());
+    expect(seedSent && seedRequested, "Old campaign revision cannot acknowledge pending load.");
+    expect(CTheZones::ExploredTerritoriesArray[99] && !CTheZones::ExploredTerritoriesArray[4], "Old revision cannot overwrite loaded native discovery while pending.");
+    CMapSync::Process(); expect(!authorityReady, "Old revision cannot restore controlling authority before load acknowledgement.");
+    expect(CMapSyncServer::Receive(seed,&host), "Actual server subsequently accepts the new loaded campaign.");
+    CMapSync::Receive(factory.maps.back()); CMapSync::Process();
+    expect(authorityReady && CTheZones::ExploredTerritoriesArray[99] && !CTheZones::ExploredTerritoriesArray[4], "Newer campaign acknowledgement adopts loaded discovery.");
+}
 int main(int argc, char** argv)
 {
     std::string test = argc > 1 ? argv[1] : "contracts";
-    if (test == "contracts") contracts(); else if (test == "codecs") codecs(); else if (test == "server") server(); else if (test == "client") client(); else if (test == "menu-migration") menu_migration(); else return 2;
+    if (test == "contracts") contracts(); else if (test == "codecs") codecs(); else if (test == "server") server(); else if (test == "client") client(); else if (test == "menu-migration") menu_migration(); else if (test == "seed-ack") seed_ack(); else return 2;
     std::cout << test << ": " << assertions << " assertions, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

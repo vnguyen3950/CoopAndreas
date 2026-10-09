@@ -12,6 +12,7 @@ bool sentWaypoint = false, waypointPlaced = false;
 float waypointX = 0, waypointY = 0;
 int hostId = -1;
 uint32_t hostGeneration = 0, mapSequence = 0, waypointSequence = 0, lastReveal = 0;
+uint32_t pendingSeedEpoch = 0;
 bool Ready()
 {
     auto* ped = FindPlayerPed(0);
@@ -38,7 +39,7 @@ void CMapSync::Init()
         // First initialization of a promoted menu guest adopts the room. A
         // later load by an already initialized controlling host starts a campaign.
         seedRequested = !view.epoch || (CLocalPlayer::m_bIsHost && authorityReady);
-        scriptsReady = false; seedSent = false; authorityReady = false;
+        scriptsReady = false; seedSent = false; pendingSeedEpoch = 0; authorityReady = false;
     };
     Events::processScriptsEvent.after += [] { if (gGameState == 9) scriptsReady = true; };
     gameShutdownEvent.before += [] { scriptsReady = false; };
@@ -47,13 +48,14 @@ void CMapSync::Reset()
 {
     view = {}; receivedState = false; seedRequested = true; seedSent = false; authorityReady = false; hostId = -1;
     hostGeneration = mapSequence = waypointSequence = lastReveal = 0;
+    pendingSeedEpoch = 0;
     sentWaypoint = waypointPlaced = false; waypointX = waypointY = 0;
 }
 void CMapSync::HostChanged(int host)
 {
     hostId = host; hostGeneration = 0; receivedState = false; authorityReady = false;
     // A promoted guest keeps the room's discovery, rather than seeding its own save.
-    if (view.epoch) { seedRequested = false; seedSent = false; }
+    if (view.epoch) { seedRequested = false; seedSent = false; pendingSeedEpoch = 0; }
 }
 void CMapSync::Receive(const Packets::Map::Discovery& packet)
 {
@@ -68,7 +70,10 @@ void CMapSync::Receive(const Packets::Map::Discovery& packet)
     hostGeneration = packet.generation; receivedState = true;
     if (!packet.epoch) return;
     if (!view.Accept(packet.epoch, packet.revision, packet.cells)) return;
-    if (seedSent) { seedSent = false; seedRequested = false; }
+    // Old-campaign reveals can precede the server's handling of this load.
+    // Only the new campaign proves that the pending seed was accepted.
+    if (seedSent && packet.epoch > pendingSeedEpoch)
+    { seedSent = false; seedRequested = false; pendingSeedEpoch = 0; }
     if (Ready() && (!CLocalPlayer::m_bIsHost || !seedRequested)) Apply();
 }
 void CMapSync::Process()
@@ -93,7 +98,7 @@ void CMapSync::Process()
             Packets::Map::Discovery packet;
             packet.mode = Packets::Map::Mode::Seed; packet.playerid = CNetworkPlayerManager::m_nMyId;
             packet.sequence = ++mapSequence; packet.epoch = view.epoch; packet.cells = Capture();
-            seedSent = true; GetPacketFactory().Send(packet);
+            pendingSeedEpoch = packet.epoch; seedSent = true; GetPacketFactory().Send(packet);
         }
         return;
     }

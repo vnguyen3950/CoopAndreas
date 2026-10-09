@@ -62,7 +62,7 @@ def main():
     (output / "compile.log").write_text(compile_result.stdout + compile_result.stderr, encoding="utf-8")
     runs = []
     if compile_result.returncode == 0:
-        for case in ("contracts", "codecs", "server", "client", "menu-migration"):
+        for case in ("contracts", "codecs", "server", "client", "menu-migration", "seed-ack"):
             result = subprocess.run([str(output / "tests.exe"), case], cwd=output, capture_output=True, text=True)
             runs.append({"Case": case, "ExitCode": result.returncode, "Output": result.stdout + result.stderr})
         for role in ("client", "server"):
