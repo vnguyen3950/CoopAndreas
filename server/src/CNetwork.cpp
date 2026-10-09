@@ -6,6 +6,7 @@
 #include "network/packets/system.h"
 #include "serialize.h"
 #include "stdafx.h"
+#include "CGangWarSync.h"
 #include "CPlayerVitalsSync.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
@@ -125,6 +126,7 @@ void CNetwork::HandlePlayerDisconnected(ENetEvent& event)
     CCutsceneVotes::Leave(pNetworkPlayer);
     CMapSyncServer::Leave(pNetworkPlayer);
     CSessionSync::Leave(pNetworkPlayer);
+    CGangWarServer::Leave(pNetworkPlayer);
 
     CNetworkPlayerManager::Remove(pNetworkPlayer);
 
@@ -291,6 +293,7 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
 
     CNetworkPlayerManager::AssignHostToFirstPlayer();
     CSessionSync::Join(pNewNetworkPlayer);
+    CGangWarServer::Join(pNewNetworkPlayer);
     CCutsceneVotes::Join(pNewNetworkPlayer);
     // Existing hosts do not change on every join; announce that host to this
     // newcomer before its ordered map snapshot and other host-bound state.

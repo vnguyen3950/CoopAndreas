@@ -6,6 +6,7 @@
 #include "CCutsceneVotes.h"
 #include "CPlayerVitalsSync.h"
 #include "CMapSync.h"
+#include "CGangWarSync.h"
 #include <COpCodeSync.h>
 #include <CCustomMenuManager.h>
 #include <winuser.h>
@@ -84,6 +85,7 @@ void CCore::Init()
     CPlayerVitalsSync::Init();
     CMapSync::Init();
     CNetworkPedManager::Init();
+    CGangWarSync::Init();
     Events::initGameEvent.after += []
     {
         CPatch::TemporaryPatches();

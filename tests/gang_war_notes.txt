@@ -1,0 +1,109 @@
+Gang-war synchronization: source contract and human validation scope
+
+Authority and wire
+GANG_WAR_STATE and GANG_TERRITORY use reliable SYSTEM ordering. Only the
+registered current host may publish; server checks peer and slot wrapper identity
+and stamps authority epoch, revision, campaign and war generation. Publications
+have separate positive owner sequences. An old host cannot revive an old fight.
+An empty room ends its campaign; authority epochs are not reused in this server
+process. A late join receives state before the complete indexed territory array.
+All ten density bytes, actual RGBA and two radar-mode bits are synchronized.
+The 380-entry territory payload is 5432 bytes, below the real 10 KiB packet
+capacity. Discovery bitmap/count, population, dealer and race fields are untouched.
+Root owns the final packet enumeration, protocol version and combined startup.
+
+Native storage
+The Plugin SDK CZone declaration and several CTheZones pointers/counts are wrong
+for this target. This lane leaves them unchanged. GangWarsNative uses a private
+32-byte navigation-zone view with signed zone-info index at offset 0x1C, native
+navigation count at 0xBA3794 and array at 0xBA3798. The matching 17-byte CZoneInfo
+array is 0xBA1DF0, with count at 0xBA1DE8. Radar-mode bits are mask 0x60; all other
+flag bits survive application. A hashed layout and local pointer/index checks
+reject incompatible geometry. The native radar handle at 0x96AB98 is an integer,
+not the SDK CRadar pointer declaration. Zero is the native cleared sentinel.
+The 1.0 US CGame::Process CALL at 0x53C122 targets CGangWars::Update at 0x446610.
+This lane redirects that call, leaving the original SDK entry callable offline
+and by the adopted initialized host. It does not port the incomplete reversed
+Update algorithm. Disk reference executable SHA-256:
+A559AA772FD136379155EFA71F00C47AAD34BBFEAE6196B0FE1047D0645CBD26.
+
+Progression and lifecycle
+Native host AI, wave creation, counters, fail/escape tests and rewards remain
+native. AttackWaveOvercome at 0x445B30 scans bPartOfAttackWave actors and real
+dying state; this service never fabricates a kill count or a proximity victory.
+Guests skip native Update, mirror validated gang-private state and receive a
+service-owned location marker and stage guidance. Native trigger restrictions
+(six navigation zones), training-info index, attack timer, difficulty and private
+territory fraction are inherited so a promoted guest cannot retain unrelated
+local-save rules. Times are relative, with a 2000000 ms envelope; native random
+next-attack calculation is 648000..1620000 ms and negative timer transients clamp
+to zero before send. Difficulty and territory fraction are finite 0..1.
+
+Menu authentication does not seed or progress. First initialized authority adopts
+cached world before native Update. A promoted guest's first New Game/load cannot
+reseed the campaign from its unrelated save. Only a host already adopted in an
+initialized Process may deliberately establish a later loaded campaign. Migration
+cancels the active war and retains territory. Cancellation releases native wave
+actors and clears state/blips; EndGangWar(false) is deliberately avoided because
+its notified-defense path can award enemy influence and a territory-loss stat.
+Guest disconnection clears mirrored state before offline native Update resumes.
+
+Wave actor integration
+Native CWorld::Add registers the host's original wave ped before the engine sets
+bPartOfAttackWave. The scanner runs before and after original Update and pins each
+full pool-reference lifetime once through CNetworkPedManager::PinGangWarPedToHost.
+An unregistered actor without a matrix waits; the original actor is registered
+when ready. Pending confirmation is owned by the NPC service, with its reliable
+EVENT creation requestToken pin and later strict generation/owner-epoch form.
+Native flag release unpins; a recycled reference is forgotten without native
+dereference. Host departure deletes pinned actors rather than migrating native
+wave AI. The NPC worker owns token authentication, transfer guards and generic
+PED generation validation; its committed handoff is required for integration.
+
+Guest combat and pre-war attribution
+Existing authenticated guest PLAYER_BULLET_SHOT replay resolves the actual host
+wave actor and calls native DoBulletImpact with the remote CPlayerPed shooter.
+EventHandler.cpp:422-431 RegisterKill passes shooter m_nPedType to Darkel, not the
+network slot or internal PlayerInfo index. PlayerPed.cpp:125 constructs PLAYER1;
+SetupPlayerPed changes only playerId 1 to PLAYER2. Coop CREATE_PLAYER uses id+2,
+so these guest replicas remain PLAYER1. Darkel.cpp:517-518 can therefore count a
+guest native bullet kill toward provocation, but checks the HOST player zero's
+on-foot state. Native StartOffensiveGangWar uses the HOST location and zone.
+Guest provocation is not claimed impossible or independently located. No new
+attribution gate is added. Some native vehicle/explosion paths use player zero
+directly. Melee, projectile, splash, mission-specific and vehicle-credit paths
+are not individually proved by the bullet contract. Original wave AI is still
+host anchored; it has not been rewritten to distribute targets among guests.
+Migration does not reconstruct a mid-war native AI chain or transfer story
+mission execution. Rewards remain existing host-native/session behavior.
+
+Headless evidence and limits
+run_gang_war_tests.py --suite codec freezes and hashes actual contract, packet
+classes and real serializer; it tests ranges, nonfinite values, all byte-level
+truncations, sequencing, authority, generation and full arrays.
+--suite service extracts actual client/server function bodies unchanged, uses
+recorded native/transport doubles and actual SDK radar enums, and executes real
+native capture/application logic with fixed-address storage bindings substituted
+by a test view. Native Update/release/radar endpoints are recorded doubles, not
+game execution. --mutation changes only the ignored-field mask in an isolated
+copy and requires the specific preservation regression to fail. Hashes are in
+each result.json. The unique x86 SDK build uses a frozen read-only NPC overlay;
+it is a compile/link checkpoint, not a shipping or runtime artifact.
+
+Human checklist
+1. Join before spawn and with different local saves; host territory colors and
+   densities should appear after initialization without changing discovery.
+2. Trigger an offensive war as host; have guests shoot the original synchronized
+   wave actors. Verify native dying-state progression through all waves, and
+   check original host rewards/failure and visible guidance cleanup.
+3. Compare guest pre-war kills while host is on foot versus in a vehicle, and
+   while guest and host are in different zones. Expect native host-context rules.
+4. Test defensive notification/arrival, retreat/failure and owner departure;
+   migration should cancel the fight without awarding an artificial win or loss.
+5. Promote a guest still in menus/loading with an unrelated save. It must inherit
+   the room campaign before native progression and not replace territory.
+6. After adoption, intentionally load a host save; guests must adopt its new
+   campaign. Reconnect, join mid-wave and exercise reused NPC slots and delayed
+   model creation. Pinned wave AI must never transfer on a guest claim.
+No game was launched or attached. These are source/headless results; real gameplay
+remains for the user's runtime tests. No staging, installation or packaging here.
