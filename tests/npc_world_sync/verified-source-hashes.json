@@ -83,5 +83,83 @@
   "BuildLogs": {
     ".cache/npc-world/build-server-003.log": "54D908E183C5E2FE2BEB66FEF5AD694CA8C0652E8C9D566BAC1A76DB7DEDF170",
     ".cache/npc-world/build-client-004.log": "9CF2FB24553F379EDB4F6F2922DAEC5A10C28F9C715DCA6097F1691E27482F15"
+  },
+  "Corrections": {
+    "PaddingCommit": "4fa2cca03ac1d7a280c568521149ecbe28a90f9e",
+    "PassengerCommit": "d05c20dd93c71c6fc6c27803fef9378cfa7c2b96",
+    "RuntimeValidated": false,
+    "SourceHashes": {
+      "client/src/CNetworkPed.cpp": "A13DACB17EECCCCC7D89B15EBAAB235DE363DA3776A5FB1A84161A37D81C07AA",
+      "client/src/CNetworkPed.h": "095582055B3AFAE625D39B001BA8F102CDD229981BC7C40CC7E9A3A9E51FD44C",
+      "client/src/PacketHandlers/peds.cpp": "6394609AE7F7C8A05FEAD52684FDD041FC526DC91EB5168B0820BDB2E2144214",
+      "shared/network/CNetworkEntitySerializer.h": "8A6A10D5E39527A0CA9ADA10D2848F498D3D8CC1C13C4EA988F2F1DC7C1375BC",
+      "tests/npc_vehicle_parity/doubles.h": "BE3E57C02856C4A21499210B1848DAC033545FB0C047F2D399CBE4FD1AEDDD7C",
+      "tests/npc_vehicle_parity/run_tests.py": "99A5BE272654B7A01E5F34AF6A24EF2A70AEDF13A6DF177354B7BDD4805EEC90",
+      "tests/npc_world_sync/client_doubles.h": "DE083FD9B0A5C84DB930A94648847039D77A566D995DB3570B04AD5E422519C6",
+      "tests/npc_world_sync/client_tests.cpp": "C35D0048FCB23C26F2C462FA011B19FB9F6A4F13824D9923B6EAD663115CC34C",
+      "tests/npc_world_sync/passenger_counterexamples.cpp": "F9F872CF110949CFBBD67FCF67DE08AEB504A685FC7AA48F031268312671AC60",
+      "tests/npc_world_sync/run_tests.py": "55B4DD382331B87CBCC238437355E838A83F586D4E2500B8F48E0A293BC1CB30",
+      "tests/npc_world_sync/tests.cpp": "3882272BADE5BA54EC3B0D2702762FBC4ACECCAEBC114A7B80CD3C2803D3DF34"
+    },
+    "Evidence": {
+      "codec": {
+        "Path": ".cache/npc-world/corrected-codec-001/result.json",
+        "SHA256": "C2186EE1737EB9C41B6707D8663D01CC0ADE2642FC70B4C5422D0849AC4B54F1",
+        "CompileExitCode": 0,
+        "TestExitCode": 0,
+        "Output": "18339 assertions, 0 failures\n",
+        "CurrentInputsMatch": true
+      },
+      "client": {
+        "Path": ".cache/npc-world/corrected-client-001/result.json",
+        "SHA256": "3CC38454B5E7DE148E867A10B482E63BD30ED7FA706668D48E32A5FF36C5480C",
+        "CompileExitCode": 0,
+        "TestExitCode": 0,
+        "Output": "37 assertions, 0 failures\n",
+        "CurrentInputsMatch": true
+      },
+      "passenger_reproduction": {
+        "Path": ".cache/npc-world/corrected-passenger-001/result.json",
+        "SHA256": "081A074C25E843E8179B9D4079FBC2C1EBC04907ADF75E103EE2A1FC541A6675",
+        "CompileExitCode": 0,
+        "TestExitCode": 0,
+        "Output": "3 assertions, 0 failures\n",
+        "CurrentInputsMatch": true
+      },
+      "server": {
+        "Path": ".cache/npc-world/corrected-server-001/result.json",
+        "SHA256": "6B78D7E06F822553D6B240A4222CC482259A6B8620E6B25570F67CFC6BE8A4B7",
+        "CompileExitCode": 0,
+        "TestExitCode": 0,
+        "Output": "35 assertions, 0 failures\n",
+        "CurrentInputsMatch": true
+      },
+      "vehicle_parity": {
+        "Path": ".cache/npc-vehicle-parity/corrected-regression-001/result.json",
+        "SHA256": "321438F7A98243A1C19DFADD9E0DA13A1B6307143DEE9883F53BCFC592F6C9C8",
+        "CompileExitCode": 0,
+        "TestExitCode": 0,
+        "Output": "RESULT: 10368 complete packet cases, 598807 assertions, 0 failures.\nSCOPE: Real serializers and unchanged extracted handler/sender bodies with native/transport doubles; no game/audio/ENet runtime.\n",
+        "CurrentInputsMatch": true
+      }
+    },
+    "PassingAssertions": {
+      "codec": 18339,
+      "client": 37,
+      "passenger_reproduction": 3,
+      "server": 35,
+      "vehicle_parity": 598807
+    },
+    "BuildLogs": {
+      ".cache/npc-world/build-padding-server-001.log": "9A06E60A7E4D06B6AE628FBFEA1D213503AF62145821389032440564D432BFA1",
+      ".cache/npc-world/build-padding-client-001.log": "488CCB0E564746DB7C65C6A269F2B3EC2C4405993E696ACDEBD06B6BC44CD6E5",
+      ".cache/npc-world/build-passenger-client-001.log": "AB0A3751548566E93FA029F0B84EDE70CC64AB3A77F26E1DD735B36ADB8EF9A3",
+      ".cache/npc-world/build-passenger-server-001.log": "208B6B4558CDABA3F6C76C58E4B8346CEA4B2C07C7DDC163C0B952E0CA53DAEB"
+    },
+    "OriginalIndependentPassengerProbeSHA256": "212F5B77724F699C3414FB6E47B6B67E4CD618073D0E0B19950D5E3B7D5A713B",
+    "OldSourceNewRegressionFailures": {
+      "padding": 52,
+      "passenger": 2
+    }
   }
 }
