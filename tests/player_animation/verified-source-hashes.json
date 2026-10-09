@@ -1,0 +1,204 @@
+{
+  "SourceCommit": "9ef6bbb2fcc2e40ffef137fc29da5588e35f738c",
+  "BaseCommit": "c474a276eb6f232c7fa21a5a221600a4465aa054",
+  "NativeRuntimeValidated": false,
+  "OwnedSourceAndTestHashes": {
+    "client/src/CCore.cpp": "50D25BCC646B72DF128EDF1B1BD1ADB724F8EE50C78B32982EB55CF38C2AFCB7",
+    "client/src/CNetwork.cpp": "2AE8AFF6CA6B3E1E7664E11F55C417EED1C2E0BED431987E8D1DDCF7BE05D444",
+    "client/src/CPlayerAnimationSync.cpp": "DA51EAB0750DF030A351F6C9E3AFD668740059BB58DBDC1F7A2EE51B820A43F7",
+    "client/src/CPlayerAnimationSync.h": "E98EE15BBC5BC97A2C0A8AAE88D80ECF869146D56ECEF48A42AD54B5E131EECB",
+    "client/src/Hooks/PlayerHooks.cpp": "74EC42431DA1B8B1947D129838FAFC311A0F792A5AC2C05D04B5E5619E075C7B",
+    "client/src/Main.cpp": "C15FA031B609338636EE2011BD9E8AE169AF4FF5276E7F44900DF2040BDAF22A",
+    "client/src/PacketHandlers/player_animation.cpp": "C6BB1874E94727F88E3E3AA134E9433C2545010396465315BBD81519EEFE627B",
+    "client/src/PacketHandlers/players.cpp": "B1363D59CB1D860928289C9E6B4E6497D159CAC01BB4F3A847948DE5543689D9",
+    "client/src/PacketHandlers/system.cpp": "15146FA67DBA59ACD2E9DE3EE0813A060FDDFC77E03117F79C8D9C9AB84A4FC0",
+    "server/src/CNetwork.cpp": "668AF973A7BFA0B41A2BC0E944F154BB3B0B2D9E66AC0BE1CF07328C72087DC4",
+    "server/src/CNetworkPlayer.h": "97519B6014EE49FA7AA632FF1FC9E4FE6F1CFAD070510AEB092C7C1E2CF171F7",
+    "server/src/CPlayerAnimationSync.cpp": "FCF6760AB10BEE178CC1C95CBC3A567C23C4CC3C26C7FE8A279807FD9C911A95",
+    "server/src/CPlayerAnimationSync.h": "16748A06F5B13EE389EEB0D86EE7458C8E2F29643B5EBFD16745D3EB4C74A54D",
+    "server/src/PacketHandlers/player_animation.cpp": "46433E252DB5EAFACB20A740B8390E500AE8F8DD1D0618EB356D85C068AD8F75",
+    "server/src/PacketHandlers/players.cpp": "C72E0AC3CF8F0976AC1854A9388904CAE50F2B6BEE7C236446CBFDD884B87913",
+    "shared/network/packet_types.h": "599B691D3AC73305F1FC6D193D9C00E9D894A8382D04D8EB7A14B87BACC8DF43",
+    "shared/network/packets/player_animation.h": "1E8CA6A32C0776442526DBA21DA719285AE5703B04A2C9A45E6AE8098B648DB5",
+    "shared/network/packets/players.h": "F37F312A661A32F89ED2972592891A312C853A7468139E7C033C7CFF513CC989",
+    "shared/network/player_animation_sync.h": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038",
+    "tests/player_animation/README.md": "70C1E9F1D27FCFCF85687D88A8DC0D5F5AD2C2E97261F863BACEC470456EC505",
+    "tests/player_animation/codec.cpp": "176D04253B5C5FA16C81B8EFA2F38C123399CE5706EB69D37B88AA2E2C4539AC",
+    "tests/player_animation/contract.cpp": "8A77325001B1C8AEA23328879EC4950DAA92B3561A5253FF6440178874179370",
+    "tests/player_animation/doubles.h": "844CDCDED6E4CFC6B292F557FE3344EA7E371B4A780E5733BEDDA49C4DA76593",
+    "tests/player_animation/run_tests.py": "6EE329E7A6D090033CCE565D67A28217C7A09D0DAF747FAA5C836636C96490D1",
+    "tests/player_animation/service.cpp": "0683495D7A28756828A736908B3B0381E3FC495DD2379D0C2A24E1E143CCD6F4"
+  },
+  "FrozenProductionHashes": {
+    "shared/config.h": "823E8CF5AA7DA4815EFEAE85978605D6A94EE507FFF230CACF7A4BB1DE80C504",
+    "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+    "shared/network/packet_types.h": "599B691D3AC73305F1FC6D193D9C00E9D894A8382D04D8EB7A14B87BACC8DF43",
+    "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E",
+    "shared/network/player_animation_sync.h": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038",
+    "shared/network/packets/player_animation.h": "1E8CA6A32C0776442526DBA21DA719285AE5703B04A2C9A45E6AE8098B648DB5",
+    "shared/network/player_vitals.h": "AC512E289C8ED58F2026861DC9796843BAAD214F17428145681E5E2D93D908A0",
+    "shared/network/packets/players.h": "F37F312A661A32F89ED2972592891A312C853A7468139E7C033C7CFF513CC989",
+    "shared/network/serializable_types.h": "7227EA7BEA741F98D160D238575B20770832925BEDA7FEA4DB2F4E96B64FF94A",
+    "client/src/CPlayerAnimationSync.h": "E98EE15BBC5BC97A2C0A8AAE88D80ECF869146D56ECEF48A42AD54B5E131EECB",
+    "client/src/CPlayerAnimationSync.cpp": "DA51EAB0750DF030A351F6C9E3AFD668740059BB58DBDC1F7A2EE51B820A43F7",
+    "server/src/CPlayerAnimationSync.h": "16748A06F5B13EE389EEB0D86EE7458C8E2F29643B5EBFD16745D3EB4C74A54D",
+    "server/src/CPlayerAnimationSync.cpp": "FCF6760AB10BEE178CC1C95CBC3A567C23C4CC3C26C7FE8A279807FD9C911A95",
+    "client/src/CPlayerVitalsSync.cpp": "3B9F8C7F18DD2ECE43007B13B1E455BB833BE22F743FBB1209F42744615E1E76",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CPed.h": "0C6A2DFF0DF30032A3E76FC527D782B26A116465F8B81E173FCA5F45A0EAAC46",
+    "third_party/plugin-sdk/plugin_sa/game_sa/ePedState.h": "EB4A7F943A127A305261ACC7B69462816170C0EE1A84C965940A1D24DEF4A33C",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CAnimBlendAssociation.h": "FAB3F0866BD8940BEB16FCF7928E78C8E3099C9CDC726423A0B3A7B5DE97EC5B",
+    "third_party/plugin-sdk/plugin_sa/game_sa/eAnimBlendCallbackType.h": "80FD291DCC4F1FB26A71058B274E23CE19090177E7946013032F34BD781B678B",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CAnimBlendAssociation.cpp": "12151D13438456C5492A54C27E2E4E96A25BAC1B66980ADDDE3EA6449E3CD524",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CAnimBlendHierarchy.h": "87FAE9E7043FDEF9F277337E83126F421C5879F490A09ADD1E345C2C2576B5B6",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CAnimBlock.h": "367D423C103EE4C2637DA6EF059C1EF57029275F79753918934B19C28C0CF801",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CAnimManager.h": "D875FF631D45D3B0E19A69A5E65213644FE446AC8880EF85344DCEDBD118BE61",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CAnimManager.cpp": "5199FFEF042911409C59FF5F1CCC995FCA7A8DE28A3E964406882C28D8F63158",
+    "client/src/Hooks/PlayerHooks.cpp": "74EC42431DA1B8B1947D129838FAFC311A0F792A5AC2C05D04B5E5619E075C7B",
+    "client/src/CCore.cpp": "50D25BCC646B72DF128EDF1B1BD1ADB724F8EE50C78B32982EB55CF38C2AFCB7",
+    "client/src/Main.cpp": "C15FA031B609338636EE2011BD9E8AE169AF4FF5276E7F44900DF2040BDAF22A",
+    "client/src/CNetwork.cpp": "2AE8AFF6CA6B3E1E7664E11F55C417EED1C2E0BED431987E8D1DDCF7BE05D444",
+    "client/src/PacketHandlers/system.cpp": "15146FA67DBA59ACD2E9DE3EE0813A060FDDFC77E03117F79C8D9C9AB84A4FC0",
+    "client/src/PacketHandlers/players.cpp": "B1363D59CB1D860928289C9E6B4E6497D159CAC01BB4F3A847948DE5543689D9",
+    "server/src/PacketHandlers/players.cpp": "C72E0AC3CF8F0976AC1854A9388904CAE50F2B6BEE7C236446CBFDD884B87913",
+    "server/src/CNetwork.cpp": "668AF973A7BFA0B41A2BC0E944F154BB3B0B2D9E66AC0BE1CF07328C72087DC4"
+  },
+  "FrozenSupportHashes": {
+    "codec.cpp": "176D04253B5C5FA16C81B8EFA2F38C123399CE5706EB69D37B88AA2E2C4539AC",
+    "contract.cpp": "8A77325001B1C8AEA23328879EC4950DAA92B3561A5253FF6440178874179370",
+    "doubles.h": "844CDCDED6E4CFC6B292F557FE3344EA7E371B4A780E5733BEDDA49C4DA76593",
+    "README.md": "70C1E9F1D27FCFCF85687D88A8DC0D5F5AD2C2E97261F863BACEC470456EC505",
+    "run_tests.py": "6EE329E7A6D090033CCE565D67A28217C7A09D0DAF747FAA5C836636C96490D1",
+    "service.cpp": "0683495D7A28756828A736908B3B0381E3FC495DD2379D0C2A24E1E143CCD6F4"
+  },
+  "Tests": {
+    "final-service": {
+      "Evidence": ".cache/animation-tests/final-service/result.json",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "Output": "82 actual service assertions, 0 failures\n",
+      "InputsStable": true,
+      "SupportStable": true,
+      "ExtractionHashes": {
+        "client.inc": "118050DBB7DE4315B002A97B1E796172CBFCA1401F2E0BB7DCD189727BFEF1DD",
+        "native_enums.inc": "52D5CD372A342D61B09157F2BB867A93A4A5811547FFA8A4F8B7E67809AF5F43",
+        "respawn.inc": "1A8A56490D0902D3727E98F54B8327FF7517FFFE0D104798498D012340EC684B",
+        "server.inc": "D86202C90E97F8689D7C920040BA4581E4B578A3675A17D049CBA86F1BFEF0EF",
+        "vitals.inc": "60DED599E6039B30B6E90ABC5555C5BE0DF0CE7CCD27B82C77AD8D6D88B5D153"
+      },
+      "OppositeRoles": []
+    },
+    "final-codec": {
+      "Evidence": ".cache/animation-tests/final-codec/result.json",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "Output": "4243 actual codec assertions, 0 failures\n",
+      "InputsStable": true,
+      "SupportStable": true,
+      "ExtractionHashes": {
+        "client.inc": "118050DBB7DE4315B002A97B1E796172CBFCA1401F2E0BB7DCD189727BFEF1DD",
+        "native_enums.inc": "52D5CD372A342D61B09157F2BB867A93A4A5811547FFA8A4F8B7E67809AF5F43",
+        "respawn.inc": "1A8A56490D0902D3727E98F54B8327FF7517FFFE0D104798498D012340EC684B",
+        "server.inc": "D86202C90E97F8689D7C920040BA4581E4B578A3675A17D049CBA86F1BFEF0EF",
+        "vitals.inc": "60DED599E6039B30B6E90ABC5555C5BE0DF0CE7CCD27B82C77AD8D6D88B5D153"
+      },
+      "OppositeRoles": [
+        {
+          "Role": "client.exe",
+          "ExitCode": 0,
+          "Output": "21 opposite-role assertions, 0 failures\n"
+        },
+        {
+          "Role": "tests.exe",
+          "ExitCode": 0,
+          "Output": "19 opposite-role assertions, 0 failures\n"
+        }
+      ]
+    },
+    "final-contract": {
+      "Evidence": ".cache/animation-tests/final-contract/result.json",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "Output": "100017 contract assertions passed\n",
+      "InputsStable": true,
+      "SupportStable": true,
+      "ExtractionHashes": {
+        "client.inc": "118050DBB7DE4315B002A97B1E796172CBFCA1401F2E0BB7DCD189727BFEF1DD",
+        "native_enums.inc": "52D5CD372A342D61B09157F2BB867A93A4A5811547FFA8A4F8B7E67809AF5F43",
+        "respawn.inc": "1A8A56490D0902D3727E98F54B8327FF7517FFFE0D104798498D012340EC684B",
+        "server.inc": "D86202C90E97F8689D7C920040BA4581E4B578A3675A17D049CBA86F1BFEF0EF",
+        "vitals.inc": "60DED599E6039B30B6E90ABC5555C5BE0DF0CE7CCD27B82C77AD8D6D88B5D153"
+      },
+      "OppositeRoles": []
+    },
+    "final-mutation": {
+      "Evidence": ".cache/animation-tests/final-mutation/result.json",
+      "CompileExitCode": 0,
+      "TestExitCode": 1,
+      "Output": "FAIL: Prior birth cannot overwrite current\nFAIL: Authenticated read-only server seam\nFAIL: Fresh replay timestamp preserves original phase/sequence\n82 actual service assertions, 3 failures\n",
+      "InputsStable": true,
+      "SupportStable": true,
+      "ExtractionHashes": {
+        "client.inc": "118050DBB7DE4315B002A97B1E796172CBFCA1401F2E0BB7DCD189727BFEF1DD",
+        "native_enums.inc": "52D5CD372A342D61B09157F2BB867A93A4A5811547FFA8A4F8B7E67809AF5F43",
+        "respawn.inc": "1A8A56490D0902D3727E98F54B8327FF7517FFFE0D104798498D012340EC684B",
+        "server.inc": "D86202C90E97F8689D7C920040BA4581E4B578A3675A17D049CBA86F1BFEF0EF",
+        "vitals.inc": "60DED599E6039B30B6E90ABC5555C5BE0DF0CE7CCD27B82C77AD8D6D88B5D153"
+      },
+      "OppositeRoles": []
+    }
+  },
+  "Builds": {
+    "Client": {
+      "Log": ".cache/animation-contract/build-client-final.log",
+      "SHA256": "E8DDF6A6946A15D5FB569D9374B91E747C5192486A9AC5F8A662B7B46FE1FD6C",
+      "Architecture": "x86",
+      "Mode": "release",
+      "GTA_SA_DIR": "unset",
+      "Passed": true
+    },
+    "Server": {
+      "Log": ".cache/animation-contract/build-server-008.log",
+      "SHA256": "F8FC0807B588BCDA0B2FBE832B03488EC47121C5ACC3B0F93D914A1F4F641BE3",
+      "Architecture": "x86",
+      "Mode": "release",
+      "GTA_SA_DIR": "unset",
+      "Passed": true,
+      "UnchangedDependenciesSinceBuild": [
+        "server/src/CPlayerAnimationSync.cpp",
+        "server/src/CPlayerAnimationSync.h",
+        "shared/network/player_animation_sync.h",
+        "shared/network/packets/player_animation.h",
+        "shared/network/packets/players.h",
+        "shared/network/packet_types.h"
+      ]
+    }
+  },
+  "CorrectedFindings": [
+    {
+      "Kind": "Production",
+      "RedEvidence": ".cache/animation-tests/service-005/result.json",
+      "FailureCount": 2,
+      "Fix": "Preserve nonzero retired source instance through subsequent stop frames; a script-reinitialized actor cannot restore that interrupted instance.",
+      "GreenEvidence": ".cache/animation-tests/service-006/result.json"
+    },
+    {
+      "Kind": "TestFixture",
+      "RedEvidence": ".cache/animation-tests/codec-002/result.json",
+      "FailureCount": 1,
+      "Fix": "SenderPlayerId is direction-dependent; use separate actual COOP_CLIENT and COOP_SERVER codec executables, not same-role Respawn roundtrip.",
+      "GreenEvidence": ".cache/animation-tests/codec-003/result.json"
+    },
+    {
+      "Kind": "ExpectedMutation",
+      "Evidence": ".cache/animation-tests/final-mutation/result.json",
+      "FailureCount": 3,
+      "Change": "Remove production Cache stale-birth comparison only in frozen test input; real source unchanged."
+    }
+  ],
+  "NativeLimits": [
+    "Only observed PLAYIDLES group 49 IDs 261-264 and default IDLE_CHAT 12; no arbitrary tasks or unobserved history.",
+    "Recorded doubles and actual SDK x86 build do not prove native address execution, ABI, renderer blending or game behavior.",
+    "Actor model/area are authenticated owner-reported; pickup must provide its own finite pose and recheck actual collector eligibility.",
+    "Root owns final next-batch enum/protocol. Isolated config stays 0.5.0-alpha; no compatibility with the frozen 0.5 package is claimed."
+  ]
+}
