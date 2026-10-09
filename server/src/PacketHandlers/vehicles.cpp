@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "network/packet_handler.h"
 #include "network/packets/vehicles.h"
+#include "network/vehicle_authority.h"
 
 PACKET_HANDLER(
     ePacketType::VEHICLE_SPAWN, Packets::Vehicles::VehicleSpawn* pVehicleSpawn, CNetworkPlayer* pNetworkPlayer)
@@ -74,9 +75,10 @@ PACKET_HANDLER(ePacketType::VEHICLE_DRIVER_UPDATE, Packets::Vehicles::VehicleDri
         return;
     if (auto pNetworkVehicle = CNetworkVehicleManager::GetVehicle(pVehicleDriverUpdate->vehicleid))
     {
-        // SYNC is unreliable and may precede the reliable entry event. Allow the
-        // assigned syncer or the recorded driver, not an arbitrary client claim.
-        if (pNetworkVehicle->m_pSyncer != pNetworkPlayer && pNetworkVehicle->m_pPlayers[0] != pNetworkPlayer)
+        // A recorded driver takes precedence over the previous syncer during entry.
+        // The syncer fallback is allowed only while the driver slot is empty.
+        if (!VehicleAuthority::CanUpdateDriver(pNetworkPlayer, pNetworkVehicle->m_pSyncer,
+                pNetworkVehicle->m_pPlayers[0]))
         {
             logger::warn("%s tried to update someone else's vehicle (driver)", pNetworkPlayer->GetName().c_str());
             return;
