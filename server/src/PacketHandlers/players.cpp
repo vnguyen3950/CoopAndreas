@@ -1,6 +1,7 @@
 #include "network/packets/players.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CPlayerAnimationSync.h"
 #include "CFireSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
@@ -49,7 +50,7 @@ PACKET_HANDLER(ePacketType::PLAYER_PLACE_WAYPOINT, Packets::Players::PlayerPlace
 PACKET_HANDLER(ePacketType::RESPAWN_PLAYER, Packets::Players::RespawnPlayer* pRespawnPlayer, CNetworkPlayer* pNetworkPlayer)
 {
     pRespawnPlayer->playerid = pNetworkPlayer->m_iPlayerId;
-    GetPacketFactory().SendToAll(*pRespawnPlayer, pNetworkPlayer);
+    CPlayerAnimationServer::Respawn(*pRespawnPlayer, pNetworkPlayer);
 }
 
 PACKET_HANDLER(ePacketType::PLAYER_BULLET_SHOT, Packets::Players::PlayerBulletShot* pPlayerBulletShot, CNetworkPlayer* pNetworkPlayer)

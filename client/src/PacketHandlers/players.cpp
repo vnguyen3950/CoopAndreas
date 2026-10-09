@@ -1,6 +1,7 @@
 #include "network/packets/players.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CPlayerAnimationSync.h"
 #include <CAimSync.h>
 #include <CEntryExitTransitionSync.h>
 #include <CProjectileInfo.h>
@@ -128,13 +129,7 @@ PACKET_HANDLER(ePacketType::PLAYER_PLACE_WAYPOINT, Packets::Players::PlayerPlace
 
 PACKET_HANDLER(ePacketType::RESPAWN_PLAYER, Packets::Players::RespawnPlayer* pRespawnPlayer)
 {
-    CNetworkPlayer* pNetworkPlayer = CNetworkPlayerManager::GetPlayer(pRespawnPlayer->playerid);
-    if (pNetworkPlayer == nullptr)
-    {
-        return;
-    }
-
-    pNetworkPlayer->Respawn();
+    CPlayerAnimationSync::ReceiveRespawn(*pRespawnPlayer);
 }
 
 PACKET_HANDLER(ePacketType::PLAYER_BULLET_SHOT, Packets::Players::PlayerBulletShot* pPlayerBulletShot)

@@ -1,4 +1,5 @@
 #pragma once
+#include "network/packets/player_animation.h"
 
 #include "CPad.h"
 #include "CVector.h"
@@ -398,15 +399,13 @@ public:
 class RespawnPlayer : public Packet
 {
     DEFINE_PACKET_TYPE(RespawnPlayer, ePacketType::RESPAWN_PLAYER, ePacketChannel::EVENT);
-
 public:
     SenderPlayerId playerid{};
-
-    template <typename Stream>
-    bool Serialize(Stream& stream)
+    PlayerAnimation::Life life;
+    template <typename Stream> bool Serialize(Stream& stream)
     {
         serialize_object(stream, playerid);
-        return true;
+        return SerializeActorLife(stream, life);
     }
 };
 

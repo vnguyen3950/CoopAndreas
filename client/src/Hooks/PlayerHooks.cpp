@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CPlayerAnimationSync.h"
 #include "CNetworkObjectManager.h"
 #include "PlayerHooks.h"
 #include "CPlayerVitalsSync.h"
@@ -192,7 +193,7 @@ void CReferences__RemoveReferencesToPlayer_Hook()
     if (CNetwork::m_bAuthenticated)
     {
         Packets::Players::RespawnPlayer respawnPlayer{};
-        GetPacketFactory().Send(respawnPlayer);
+        if (CPlayerAnimationSync::PrepareRespawn(respawnPlayer)) GetPacketFactory().Send(respawnPlayer);
     }
 }
 

@@ -3,6 +3,7 @@
 #include "network/packet_types.h"
 #include "network/packets/system.h"
 #include "stdafx.h"
+#include "CPlayerAnimationSync.h"
 #include "CFireSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
@@ -15,6 +16,8 @@ PACKET_HANDLER(ePacketType::PLAYER_CONNECTED, Packets::System::PlayerConnected* 
 {
     if (!CNetwork::m_bAuthenticated) return;
     // Remove before CREATE_PLAYER can replace the native PlayerInfo binding.
+    if (auto* old = CNetworkPlayerManager::GetPlayer(pPlayerConnected->payload.playerid))
+        CPlayerAnimationSync::ForgetPlayer(old->m_iPlayerId, old->m_vitals.generation);
     CNetworkPlayerManager::RemoveById(pPlayerConnected->payload.playerid);
     CNetworkPlayer* pNetworkPlayer =
         new CNetworkPlayer(pPlayerConnected->payload.playerid, CVector(2246.506f, -1259.552f, 23.9531f));
@@ -63,6 +66,7 @@ PACKET_HANDLER(ePacketType::PLAYER_DISCONNECTED, Packets::System::PlayerDisconne
     if (player != nullptr)
     {
         CChat::AddMessage("[Player] " + std::string(player->GetName()) + " disconnected");
+        CPlayerAnimationSync::ForgetPlayer(player->m_iPlayerId, player->m_vitals.generation);
         CNetworkPlayerManager::Remove(player);
         delete player;
     }

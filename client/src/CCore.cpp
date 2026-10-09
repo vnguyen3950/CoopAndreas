@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CPlayerAnimationSync.h"
 #include "CFireSync.h"
 #include "CCrashLog.h"
 #include "Commands/CCustomCommandRegistrar.h"
@@ -84,6 +85,7 @@ void CCore::Init()
     CSessionSync::Init();
     CCutsceneVotes::Init();
     CPlayerVitalsSync::Init();
+    CPlayerAnimationSync::Init();
     CMapSync::Init();
     CNetworkPedManager::Init();
     CGangWarSync::Init();

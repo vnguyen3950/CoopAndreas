@@ -6,6 +6,7 @@
 #include "network/packets/system.h"
 #include "serialize.h"
 #include "stdafx.h"
+#include "CPlayerAnimationSync.h"
 #include "CGangWarSync.h"
 #include "CFireSync.h"
 #include "CPlayerVitalsSync.h"
@@ -215,6 +216,7 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
         strcpy_s(oldPlayerConnected.payload.name, pNetworkPlayer->m_Name);
         GetPacketFactory().Send(oldPlayerConnected, pNewNetworkPlayer);
         CPlayerVitalsServer::Replay(pNetworkPlayer, pNewNetworkPlayer);
+        CPlayerAnimationServer::Replay(pNetworkPlayer, pNewNetworkPlayer);
     }
 
     for (auto i : CNetworkPlayerManager::m_pPlayers)

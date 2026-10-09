@@ -8,6 +8,7 @@
 #include <network/packets/players.h>
 #include <CPedClothesDesc.h>
 #include "network/player_vitals.h"
+#include "network/player_animation_sync.h"
 class CNetworkPed;
 class CNetworkPlayer
 {
@@ -25,6 +26,7 @@ public:
     bool m_bCorrectVersion = false;
     float m_afStats[14]{};
     PlayerVitals::Cache m_vitals;
+    PlayerAnimation::Cache m_actorLife;
     Packets::Players::PlayerPlaceWaypoint m_waypointState{};
     uint32_t m_mapSequence = 0;
     CPedClothesDesc m_pPedClothesDesc{};
