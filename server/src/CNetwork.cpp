@@ -7,6 +7,7 @@
 #include "serialize.h"
 #include "stdafx.h"
 #include "CGangWarSync.h"
+#include "CFireSync.h"
 #include "CPlayerVitalsSync.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
@@ -125,6 +126,7 @@ void CNetwork::HandlePlayerDisconnected(ENetEvent& event)
     CNetworkObjectManager::RemoveOwner(pNetworkPlayer);
     CCutsceneVotes::Leave(pNetworkPlayer);
     CMapSyncServer::Leave(pNetworkPlayer);
+    CFireSync::Leave(pNetworkPlayer);
     CSessionSync::Leave(pNetworkPlayer);
     CGangWarServer::Leave(pNetworkPlayer);
 
@@ -304,6 +306,7 @@ void CNetwork::HandlePlayerConnected(ENetPeer* pENetPeer, Packets::System::Playe
         GetPacketFactory().Send(assignment, pNewNetworkPlayer);
     }
     CMapSyncServer::Replay(pNewNetworkPlayer);
+    CFireSync::Join(pNewNetworkPlayer);
 }
 
 void CNetwork::SendPacketNoAuth_ENet(ENetPeer* pENetPeer, const uint8_t* data, int dataSize,

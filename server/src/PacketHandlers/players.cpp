@@ -1,6 +1,7 @@
 #include "network/packets/players.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CFireSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
 #include "CNetworkObjectManager.h"
@@ -10,6 +11,7 @@ PACKET_HANDLER(
     ePacketType::PLAYER_ONFOOT_UPDATE, Packets::Players::OnFootUpdate* pOnFootUpdate, CNetworkPlayer* pNetworkPlayer)
 {
     CCutsceneVotes::GameplayReady(pNetworkPlayer);
+    CFireSync::Pose(pNetworkPlayer,pOnFootUpdate->vecPos);
     pOnFootUpdate->playerid.value = pNetworkPlayer->m_iPlayerId;
     GetPacketFactory().SendToAll(*pOnFootUpdate, pNetworkPlayer);
 }

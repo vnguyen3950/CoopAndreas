@@ -2,6 +2,7 @@
 #include "CPacketBuffer.h"
 #include "enet/enet.h"
 #include "stdafx.h"
+#include "CFireSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
 #include "COpCodeSync.h"
@@ -142,6 +143,7 @@ void CNetwork::Disconnect()
     GetPacketBuffer().Clear();
     CCutsceneVotes::Reset();
     CMapSync::Reset();
+    CFireSync::Reset();
     COpCodeSync::ms_bLoadingCutscene = false;
     CNetworkPlayerManager::RequestReset();
     CNetworkPedManager::RequestReset();

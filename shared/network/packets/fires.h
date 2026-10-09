@@ -32,10 +32,11 @@ private: template<class Stream> bool Serialize(Stream& stream) {
 } };
 class Reset : public Packet {
     DEFINE_PACKET_TYPE(Reset,ePacketType::FIRE_RESET,ePacketChannel::SYSTEM);
-public: uint32_t epoch = 0, connection = 0; int host = -1;
+public: uint32_t epoch = 0, connection = 0, gameGeneration = 0; int host = -1;
 private: template<class Stream> bool Serialize(Stream& stream) {
-    if (Stream::IsWriting && (!epoch || epoch > FireSync::MaxCounter || !connection || connection > FireSync::MaxCounter || host < -1 || host > 7)) return false;
+    if (Stream::IsWriting && (!epoch || epoch > FireSync::MaxCounter || !connection || connection > FireSync::MaxCounter || !gameGeneration || gameGeneration > FireSync::MaxCounter || host < -1 || host > 7)) return false;
     serialize_int(stream,epoch,1,FireSync::MaxCounter); serialize_int(stream,connection,1,FireSync::MaxCounter);
+    serialize_int(stream,gameGeneration,1,FireSync::MaxCounter);
     serialize_int(stream,host,-1,7); return true;
 } };
 class Update : public Packet {

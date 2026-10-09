@@ -3,6 +3,7 @@
 #include "CPacketBuffer.h"
 #include "CServerTime.h"
 #include "stdafx.h"
+#include "CFireSync.h"
 #include "CCutsceneMgr.h"
 #include "UI/CDXFont.h"
 
@@ -103,6 +104,7 @@ public:
             CPlayerVitalsSync::Process();
             CMapSync::Process();
             CGangWarSync::Process();
+            CFireSync::Process();
             CNetworkAnimQueue::Process();
             CEntryExitTransitionSync::Process();
             CDiscordRPCMgr::Update();

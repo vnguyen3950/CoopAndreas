@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "CGangWarSync.h"
+#include "CFireSync.h"
 #include "CSessionSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
@@ -88,6 +89,7 @@ void CNetworkPlayerManager::AssignHostToFirstPlayer()
     playerAssignHost.playerid = player->m_iPlayerId;
     GetPacketFactory().SendToAll(playerAssignHost);
     CCutsceneVotes::HostChanged(player);
+    CFireSync::HostChanged(player);
     CSessionSync::HostChanged(player);
     CMapSyncServer::HostChanged();
     CGangWarServer::HostChanged(player);

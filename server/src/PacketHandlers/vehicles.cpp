@@ -1,5 +1,6 @@
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CFireSync.h"
 #include "CCutsceneVotes.h"
 #include "network/packet_handler.h"
 #include "network/packets/vehicles.h"
@@ -26,6 +27,7 @@ PACKET_HANDLER(
     vehicle->m_nCreatedBy = pVehicleSpawn->createdBy;
 
     CNetworkVehicleManager::Add(vehicle);
+    CFireSync::VehicleChanged(vehicle);
 }
 
 PACKET_HANDLER(
@@ -37,6 +39,7 @@ PACKET_HANDLER(
         {
             GetPacketFactory().SendToAll(*pVehicleRemove, pNetworkPlayer);
 
+            CFireSync::VehicleChanged(vehicle,true);
             CNetworkVehicleManager::Remove(vehicle);
         }
         else
@@ -91,6 +94,8 @@ PACKET_HANDLER(ePacketType::VEHICLE_DRIVER_UPDATE, Packets::Vehicles::VehicleDri
         pNetworkVehicle->m_bUsedByPed = false;
         pNetworkVehicle->ReassignSyncer(pNetworkPlayer);
 
+        CFireSync::Pose(pNetworkPlayer,pVehicleDriverUpdate->pos);
+        CFireSync::VehicleChanged(pNetworkVehicle);
         pVehicleDriverUpdate->playerid = pNetworkPlayer->m_iPlayerId;
         GetPacketFactory().SendToAll(*pVehicleDriverUpdate, pNetworkPlayer);
     }
@@ -189,6 +194,8 @@ PACKET_HANDLER(ePacketType::VEHICLE_PASSENGER_UPDATE,
     if (auto pNetworkVehicle = CNetworkVehicleManager::GetVehicle(pVehiclePassengerUpdate->vehicleid))
     {
         CCutsceneVotes::GameplayReady(pNetworkPlayer);
+        CFireSync::Pose(pNetworkPlayer,pNetworkVehicle->m_vecPosition);
+        CFireSync::VehicleChanged(pNetworkVehicle);
         pVehiclePassengerUpdate->playerid = pNetworkPlayer->m_iPlayerId;
         GetPacketFactory().SendToAll(*pVehiclePassengerUpdate, pNetworkPlayer);
 

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CFireSync.h"
 #include "CNetworkVehicle.h"
 
 CNetworkVehicle::CNetworkVehicle(int vehicleid, int modelid, CVector pos, float rotation, unsigned char color1, unsigned char color2, unsigned char createdBy)
@@ -88,6 +89,7 @@ bool CNetworkVehicle::CreateVehicle(int vehicleid, int modelid, CVector pos, flo
 
 CNetworkVehicle::~CNetworkVehicle()
 {
+    CFireSync::VehicleRemoved(m_nVehicleId);
     if (m_bSyncing)
     {
         Packets::Vehicles::VehicleRemove vehicleRemovePacket{};

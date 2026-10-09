@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CFireSync.h"
 #include "CCrashLog.h"
 #include "Commands/CCustomCommandRegistrar.h"
 #include "CDiscordRPC.h"
@@ -86,6 +87,7 @@ void CCore::Init()
     CMapSync::Init();
     CNetworkPedManager::Init();
     CGangWarSync::Init();
+    CFireSync::Init();
     Events::initGameEvent.after += []
     {
         CPatch::TemporaryPatches();

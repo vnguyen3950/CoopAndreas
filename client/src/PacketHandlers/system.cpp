@@ -3,6 +3,7 @@
 #include "network/packet_types.h"
 #include "network/packets/system.h"
 #include "stdafx.h"
+#include "CFireSync.h"
 #include "CCutsceneVotes.h"
 #include "CMapSync.h"
 #include "COpCodeSync.h"
@@ -71,6 +72,7 @@ PACKET_HANDLER(ePacketType::PLAYER_HANDSHAKE, Packets::System::PlayerHandshake* 
 {
     CCutsceneVotes::Reset();
     CMapSync::Reset();
+    CFireSync::Reset();
     CNetworkPlayerManager::Reset();
     CNetworkPedManager::Clear();
     CNetworkPlayerManager::m_nMyId = pPlayerHandshake->yourid;
@@ -101,6 +103,7 @@ PACKET_HANDLER(ePacketType::PLAYER_ASSIGN_HOST, Packets::System::PlayerAssignHos
 {
     CCutsceneVotes::HostChanged(pPlayerAssignHost->playerid);
     CMapSync::HostChanged(pPlayerAssignHost->playerid);
+    CFireSync::HostChanged(pPlayerAssignHost->playerid);
     if (pPlayerAssignHost->playerid == CNetworkPlayerManager::m_nMyId)
     {
         CLocalPlayer::m_bIsHost = true;

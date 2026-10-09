@@ -1,6 +1,7 @@
 #include "network/packets/vehicles.h"
 #include "network/packet_types.h"
 #include "stdafx.h"
+#include "CFireSync.h"
 #include <CCarEnterExit.h>
 #include <CTaskSimpleCarSetPedOut.h>
 
@@ -25,6 +26,7 @@ PACKET_HANDLER(ePacketType::VEHICLE_REMOVE, Packets::Vehicles::VehicleRemove* pV
     CNetworkVehicle* pNetworkVehicle = CNetworkVehicleManager::GetVehicle(pVehicleRemove->vehicleid);
     if (pNetworkVehicle)
     {
+        CFireSync::VehicleRemoved(pVehicleRemove->vehicleid);
         CNetworkVehicleManager::Remove(pNetworkVehicle);
         delete pNetworkVehicle;
     }
