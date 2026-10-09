@@ -3,9 +3,11 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <cstddef>
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <new>
 #include <string>
 #include "config.h"
 struct Factory { template<class T> void RegisterPacket(T* p) { delete p; } };
@@ -45,6 +47,26 @@ int main(){
   Wire plain;serialize::WriteStream baseline(plain.data(),sizeof(plain.words));b.Serialize(baseline);expect(baseline.GetBitsProcessed()==bits,"Non-NPC zero-generation bit length stays unchanged");
  }
  for(uint32_t invalid:{0u,NPCSync::MaxCounter+1}){CNetworkEntitySerializer bad;bad.entityType=NETWORK_ENTITY_TYPE_PED;bad.entityGeneration=invalid;Wire w;serialize::WriteStream s(w.data(),sizeof(w.words));expect(!bad.Serialize(s),"Invalid NPC generation fails writer before integer assertions");}
+ // Actual enum storage is one byte followed by ABI padding. The padding is
+ // not part of the wire type and must neither leak into following fields nor
+ // be overwritten by reading the enum through an incompatible int reference.
+ for(int type=NETWORK_ENTITY_TYPE_PLAYER;type<=NETWORK_ENTITY_TYPE_NOTINPOOLS;++type)
+  for(uint8_t poison:{uint8_t(0),uint8_t(1),uint8_t(0x55),uint8_t(0x7f),uint8_t(0xff)}){
+   using Entity=CNetworkEntitySerializer;
+   alignas(Entity)std::array<uint8_t,sizeof(Entity)>storage{};
+   auto*input=new(storage.data())Entity;input->entityType=eNetworkEntityType(type);input->entityId=1;input->entityGeneration=type==NETWORK_ENTITY_TYPE_PED?32:0;
+   const auto begin=offsetof(Entity,entityType)+sizeof(input->entityType),end=offsetof(Entity,entityId);
+   for(size_t i=begin;i<end;++i)storage[i]=poison;
+   Wire w;serialize::WriteStream write(w.data(),sizeof(w.words));expect(input->Serialize(write),"Poisoned-padding actual entity operand writes");write.Flush();w.bytes=write.GetBytesProcessed();
+   alignas(Entity)std::array<uint8_t,sizeof(Entity)>outputStorage{};auto*output=new(outputStorage.data())Entity;
+   for(size_t i=begin;i<end;++i)outputStorage[i]=uint8_t(0xa5);
+   serialize::ReadStream rs(w.data(),w.bytes);bool accepted=output->Serialize(rs);
+   const bool hasId=type==NETWORK_ENTITY_TYPE_PLAYER||type==NETWORK_ENTITY_TYPE_VEHICLE||type==NETWORK_ENTITY_TYPE_PED||type==NETWORK_ENTITY_TYPE_OBJECT;
+   expect(accepted&&output->entityType==input->entityType&&output->entityId==(hasId?1:0)&&output->entityGeneration==input->entityGeneration,"Poisoned enum padding cannot corrupt following ID/generation operands");
+   bool untouched=true;for(size_t i=begin;i<end;++i)untouched&=outputStorage[i]==uint8_t(0xa5);
+   expect(untouched,"Read-side enum assignment touches only the enum storage");
+   input->~Entity();output->~Entity();
+  }
  // Forge the unused integer encodings in actual wire data, rather than asking
  // the writer to produce out-of-range primitives.
  for(int field=0;field<2;++field){auto bad=e;int start=field==0?3:11;int width=field==0?8:31;for(int bit=0;bit<width;++bit)bad.data()[(start+bit)/8]|=uint8_t(1u<<((start+bit)%8));CNetworkEntitySerializer value;serialize::ReadStream s(bad.data(),bad.bytes);expect(!value.Serialize(s),"Malformed NPC slot/generation encodings rejected on read");}

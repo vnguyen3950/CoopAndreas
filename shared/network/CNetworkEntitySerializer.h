@@ -33,7 +33,9 @@ public:
 	{
 		if (entityType != NETWORK_ENTITY_TYPE_PED) entityGeneration = 0;
 		if (!Stream::IsReading && !Valid()) return false;
-		serialize_int(stream, (int&)entityType, NETWORK_ENTITY_TYPE_PLAYER, NETWORK_ENTITY_TYPE_NOTINPOOLS);
+		int wireType = static_cast<int>(entityType);
+		serialize_int(stream, wireType, NETWORK_ENTITY_TYPE_PLAYER, NETWORK_ENTITY_TYPE_NOTINPOOLS);
+		if (Stream::IsReading) entityType = static_cast<eNetworkEntityType>(wireType);
 
 		if (entityType != NETWORK_ENTITY_TYPE_PED) entityGeneration = 0;
 		int maxValue = 0;
