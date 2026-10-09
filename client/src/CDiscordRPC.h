@@ -15,4 +15,7 @@ public:
 	static void Init();
 	static void Destroy();
 	static void SetDetailsAndState(std::string details, std::string state);
+
+private:
+	inline static bool ms_bInitialized = false;
 };

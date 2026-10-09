@@ -74,7 +74,6 @@ void CCore::Init()
     CHook::Init();
     CCustomCommandRegistrar::Register();
     CDXFont::Init();
-    CDiscordRPC::Init();
     COpCodeSync::Init();
     Events::initGameEvent.after += []
     {
@@ -82,7 +81,13 @@ void CCore::Init()
         // init CNetworking async
         CreateThread(NULL, NULL, CNetwork::InitAsync, NULL, NULL, NULL);
     };
-    Events::initRwEvent += [] { CPatch::PatchFramerate(); };
+    Events::initRwEvent += []
+    {
+        CPatch::PatchFramerate();
+        // Discord RPC's global mutexes are not ready during this plugin's construction.
+        CDiscordRPC::Init();
+    };
+    Events::shutdownRwEvent.before += [] { CDiscordRPC::Destroy(); };
 
     /*Events::initScriptsEvent.after += []
     {
@@ -91,7 +96,6 @@ void CCore::Init()
     gameShutdownEvent.before += []
     {
         // disconnect from server
-        CDiscordRPC::Destroy();
         CNetwork::Disconnect();
     };
     semver_parse(COOPANDREAS_VERSION, &CCore::Version);

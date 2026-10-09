@@ -3,6 +3,9 @@
 
 void CDiscordRPC::Init()
 {
+	if (ms_bInitialized)
+		return;
+
 	DiscordEventHandlers handlers;
 
 	memset(&handlers, 0, sizeof(handlers));
@@ -16,11 +19,16 @@ void CDiscordRPC::Init()
 
 	Discord_Initialize("1324128258672951317", &handlers, 1, NULL);
 	Discord_UpdatePresence(&presence);
+	ms_bInitialized = true;
 }
 
 void CDiscordRPC::Destroy()
 {
+	if (!ms_bInitialized)
+		return;
+
 	Discord_Shutdown();
+	ms_bInitialized = false;
 }
 
 void CDiscordRPC::SetDetailsAndState(std::string details, std::string state)
