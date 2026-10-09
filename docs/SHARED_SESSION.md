@@ -1,6 +1,6 @@
 # Shared wallet, wanted level and cheats
 
-This development replaces the balance/star/cheat mirroring proposed in [upstream PR #106](https://github.com/Tornamic/CoopAndreas/pull/106) with a server-owned session ledger. Clients and server must use protocol **0.3.3-alpha** together. Native multiplayer behavior still requires the human checks below.
+This development replaces the balance/star/cheat mirroring proposed in [upstream PR #106](https://github.com/Tornamic/CoopAndreas/pull/106) with a server-owned session ledger. The current combined build requires protocol **0.4.0-alpha** on clients and server. Native multiplayer behavior still requires the human checks below.
 
 ## Session policy
 

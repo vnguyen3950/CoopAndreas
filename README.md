@@ -2,6 +2,8 @@
 
 This development fork adds mission participation and synchronization fixes. Its adapted menu contains **26 story mission candidates**; multiplayer mission playtesting is still pending. See [development status and build instructions](docs/DEVELOPMENT.md) and the [testing checklist](docs/TESTING.md). Upstream project: [Tornamic/CoopAndreas](https://github.com/Tornamic/CoopAndreas).
 
+The non-mission development batch prepares NPC vehicle-state parity, native cutscene skip voting, per-player max-health/breath bars, reconnect cleanup and proportional player map pins. See [current tasks](tasks/todo.md) and [manual checks](docs/NON_MISSION_SYNC.md). The broad TODO list below retains upstream history; a source-prepared feature does not imply completed multiplayer playtesting.
+
 [![Made in Ukraine](https://img.shields.io/badge/made_in-ukraine-ffd700.svg?labelColor=0057b7)](https://stand-with-ukraine.pp.ua)
 
 Videos, pictures, news, suggestions, and communication can be found here:
