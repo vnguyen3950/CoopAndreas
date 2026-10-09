@@ -30,6 +30,7 @@
 #include <CKeySync.h>
 #include <CCompatibilityChecker.h>
 #include <CWeatherSync.h>
+#include "CSessionSync.h"
 #include <network/packets/scripts.h>
 #include <CNetworkEntityBlip.h>
 
@@ -89,6 +90,7 @@ public:
         };
         Events::gameProcessEvent += []
         {
+            CSessionSync::Process();
             CNetworkAnimQueue::Process();
             CEntryExitTransitionSync::Process();
             CDiscordRPCMgr::Update();

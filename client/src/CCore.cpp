@@ -2,6 +2,7 @@
 #include "CCrashLog.h"
 #include "Commands/CCustomCommandRegistrar.h"
 #include "CDiscordRPC.h"
+#include "CSessionSync.h"
 #include <COpCodeSync.h>
 #include <CCustomMenuManager.h>
 #include <winuser.h>
@@ -75,6 +76,7 @@ void CCore::Init()
     CCustomCommandRegistrar::Register();
     CDXFont::Init();
     COpCodeSync::Init();
+    CSessionSync::Init();
     Events::initGameEvent.after += []
     {
         CPatch::TemporaryPatches();

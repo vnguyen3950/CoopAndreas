@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "CSessionSync.h"
 
 std::vector<CNetworkPlayer*> CNetworkPlayerManager::m_pPlayers;
 
@@ -83,4 +84,5 @@ void CNetworkPlayerManager::AssignHostToFirstPlayer()
     Packets::System::PlayerAssignHost playerAssignHost{};
     playerAssignHost.playerid = player->m_iPlayerId;
     GetPacketFactory().SendToAll(playerAssignHost);
+    CSessionSync::HostChanged(player);
 }

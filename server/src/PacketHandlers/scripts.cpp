@@ -2,6 +2,7 @@
 #include "network/packet_types.h"
 #include "stdafx.h"
 #include "CNetworkObjectManager.h"
+#include "network/session_sync.h"
 
 PACKET_HANDLER(ePacketType::ON_MISSION_FLAG_SYNC, Packets::Scripts::OnMissionFlagSync* pOnMissionFlagSync,
     CNetworkPlayer* pNetworkPlayer)
@@ -91,6 +92,7 @@ PACKET_HANDLER(ePacketType::OPCODE_SYNC, Packets::Scripts::OpCodeSync* pOpCodeSy
     uint16_t opcode = 0;
     if (pOpCodeSync->size < 4) return;
     std::memcpy(&opcode, pOpCodeSync->buffer, sizeof opcode);
+    if (SessionSync::SkipRewardReplay(opcode, true)) return;
     if (ObjectSync::IsObjectOpcode(opcode))
     {
         if (!CNetworkObjectManager::RemapOpcode(pOpCodeSync->buffer, pOpCodeSync->size, pNetworkPlayer)) return;

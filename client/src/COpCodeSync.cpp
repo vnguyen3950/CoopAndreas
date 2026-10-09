@@ -39,6 +39,7 @@
 #include <CTaskSequenceSync.h>
 #include <CNetworkAnimQueue.h>
 #include "CNetworkObjectManager.h"
+#include "CSessionSync.h"
 
 static_assert(sizeof(OpcodeSyncHeader) == 4 && sizeof(OpcodeParameter) == 4, "Object opcode wire layout changed");
 
@@ -422,6 +423,10 @@ void BuildAndSendOpcode()
         break;
     }
 
+    if (activeOpcodeScope && CSessionSync::ConsumeOpcode(uint16_t(lastOpCodeProcessed),
+        reinterpret_cast<const int*>(COpCodeSync::scriptParamsBuffer), scriptParamCount))
+    { scriptParamCount = 0; textParamCount = 0; return; }
+
     int idx = 0;
     if (!COpCodeSync::IsOpcodeSyncable(lastOpCodeProcessed, &idx))
         return;
@@ -478,6 +483,8 @@ void COpCodeSync::HandlePacket(const uint8_t* buffer, int bufferSize)
     OpcodeSyncHeader header;
     memcpy(&header, current, sizeof(header));
     current += sizeof(header);
+    // Canonical wallet deltas replace guest ADD_SCORE replay.
+    if (SessionSync::SkipRewardReplay(header.opcode, CNetwork::m_bAuthenticated)) return;
 
     if (bufferSize < sizeof(header) + header.intParamCount * sizeof(int))
     {
@@ -869,7 +876,8 @@ void __declspec(naked) CRunningScript__CollectParameters_Hook_GetSyncingParams()
     }
 
     if (activeOpcodeScope && lastProcessedScript
-        && (COpCodeSync::IsOpcodeSyncable(lastOpCodeProcessed) || CTaskSequenceSync::IsNeededToCollectParametes((eScriptCommands)lastOpCodeProcessed)))
+        && (COpCodeSync::IsOpcodeSyncable(lastOpCodeProcessed) || CSessionSync::NeedsOpcodeCapture(uint16_t(lastOpCodeProcessed))
+            || CTaskSequenceSync::IsNeededToCollectParametes((eScriptCommands)lastOpCodeProcessed)))
     {
         CollectParamsProperly();
 
