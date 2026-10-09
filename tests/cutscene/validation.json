@@ -1,0 +1,97 @@
+{
+  "ProductionHashes": {
+    "shared/network/cutscene_votes.h": "4f38508d7bc9b1c2217aca00a8d18c6af7323df690f9bf8e4cc8385993a6e4f3",
+    "shared/network/packets/cutscene.h": "483bd671a3ea475245147c8f2555ea1d1621fe5d7fc23262e30975dc19481848",
+    "shared/network/packet.h": "d793d33984fcaf8c5756414f82765c10552ab0ffccf652590c57c21e59fde750",
+    "shared/network/packet_types.h": "431825f1728c759e514b0a3f0e36b4c3abc9fd5c00528bf6739926adbff70702",
+    "third_party/serialize.h": "54d66abaeefd4cd5385d8a7b717be8a1440dd32ffa7840856a0f09663eb3084e",
+    "shared/network/session_sync.h": "751bd6a1da8e2a74257edd516bb95b8c51ed8321f22e7f414e8e67ae2659f08b",
+    "shared/network/object_sync.h": "3ac949b15bc4f3dad1b31aa9fefd7b21df0562579282b693d9dec3a8e249bbaa",
+    "client/src/CCutsceneVotes.h": "9d3c5b83234b9fc6ceea72924f5e522ccc88e06ee7e074a75def09d0e5b2a013",
+    "client/src/CCutsceneVotes.cpp": "56b6892ba1e46c6203a7eb263068e751ac9faff158d9494bb4a4346143543531",
+    "client/src/Main.cpp": "da923d5762c94fe52d43d83ecf641c888e8a1aa477ec23f7f782c661f4f7ba77",
+    "client/src/COpCodeSync.cpp": "7f1bda2627e742afefa1f5c269fcbc5f36ae13ed466d813188a175e91fc479ee",
+    "client/src/CNetwork.cpp": "928e09b5e17a3260f86d612043f808917cee66276ff469f85c0d32cd43e28675",
+    "client/src/CCore.cpp": "0143df63011053bbb59194a75ceeac9fc2a0e1be0d696de78a41cce027f4a9f6",
+    "client/src/CPacketBuffer.cpp": "e2551af6d5469b71d513b778b4028765f67d602a33f62b42a992fc1abd20c4f3",
+    "client/src/CPacketBuffer.h": "b5d56cf208bb75336a71d030c3827f7ba3ca5bf6a4433c5a25df671df013cf07",
+    "client/src/PacketHandlers/cutscene.cpp": "3e74bd432851804495216d9acc314b174e025b3ff3b4fee5237450985c95937e",
+    "client/src/PacketHandlers/scripts.cpp": "c80fbc73fd74ed03edd5eadbdaa059299276354ec8fef28dd9821bd9ed84cfdb",
+    "client/src/PacketHandlers/system.cpp": "0f7a9178e9adf0339282e786e3caa05a481c9934c20ddcba9b4999c40e674365",
+    "server/src/CCutsceneVotes.h": "cb792acc48a099e5e11c9ac155cd244c5980b4ab02c20a510b4ae8cbbd349113",
+    "server/src/CCutsceneVotes.cpp": "ca4c0dccef1c3a4f93f203fe448c2829566e4f5f0af6909b32b3cc3e64a62316",
+    "server/src/CNetwork.cpp": "580b4996106a6e6ddffa51d6c0c5710dd3fd2539081e754566159211ea3e1e5f",
+    "server/src/CNetworkPlayerManager.cpp": "507d726ccc8c0290af7a1704ab2dbc5456d82add023f85af9d0b913e9634366d",
+    "server/src/PacketHandlers/cutscene.cpp": "f3720dada296a6f222d4c1d4f7eef1061d6353506ad573e7f1ad74de54415504",
+    "server/src/PacketHandlers/scripts.cpp": "9570284c7a3a93aeea675fac73b8849e8098631c7bfa714ab8a8e2af5b10dd0c",
+    "server/src/PacketHandlers/players.cpp": "0a66a01b05eac9235abb99f68e03199c0d9cf8d87cc999c3d9ff59dccf620bb0",
+    "server/src/PacketHandlers/vehicles.cpp": "c0b57e9883697d004452fc3afd7768922940ca46987add338f032c33d0581e47"
+  },
+  "SupportHashes": {
+    "native_doubles.h": "86071c71da752a92ae4b867a5aa209d0dd0128c3c762a001514ca2e55134ce31",
+    "cutscene_votes_tests.cpp": "b7e67cc5cd5d639d9294778fb3b34990d1589617de05ff53f4637f4954b4e692",
+    "cutscene_packet_tests.cpp": "885b352fca4d394cc1106d0749b3563519285ea5ff460117ed9b0bb452299269",
+    "cutscene_client_tests.cpp": "a375256397f1d205c6f0fd0e56bebdaaa38ee88b48b4ba50e9cbba9acd4e09d5",
+    "cutscene_server_tests.cpp": "8d1b51baacfcfc56038dd000c24291b35af3fbb069c9a5be898cf94ac1f54d35",
+    "cutscene_migration_tests.cpp": "a4be3a232cbcb201b5702f84643dd4b71e0bc5737c7c660474156d85a59ac854",
+    "cutscene_relay_tests.cpp": "acfe8fffaf2f0e3871cb76593bc1b13f343a2e198c362d6fc9080913edb032a2"
+  },
+  "ExtractionHashes": {
+    "client": "2bd8b819b02ad82cbd944f83cf27d3ad0db9d85e45af39313a9267ea7342e934",
+    "server": "b7e496378133d5d49e413dcc9637cff33ebbad9ceb6a388f9682fd220bdb06d5",
+    "deferred_start": "558af6adb5474b78e44dcbd8518097dbc8beb4803842f04e2e3990ae9e482e03",
+    "timestamp_receive": "43fdfa68993f785479c04c1ea8a777a242dd94be10ac4333d3c7839964fba425",
+    "opcode_relay": "265fd91831336c1d95801f0b7cb3430ba0ca68282cedbbe7285ba791b741ea23"
+  },
+  "InputsStable": true,
+  "GTA_SA_DIR_Cleared": true,
+  "RuntimeValidated": false,
+  "Pass": true,
+  "HeadlessCompiler": "MSVC, C++17, /W4 /WX, x64 test executables",
+  "Tests": [
+    {
+      "Test": "cutscene_votes_tests",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "Output": "60 assertions, 0 failures"
+    },
+    {
+      "Test": "cutscene_packet_tests",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "Output": "12206 assertions, 0 failures"
+    },
+    {
+      "Test": "cutscene_client_tests",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "Output": "22 assertions, 0 failures"
+    },
+    {
+      "Test": "cutscene_server_tests",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "Output": "27 assertions, 0 failures"
+    },
+    {
+      "Test": "cutscene_migration_tests",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "Output": "15 assertions, 0 failures"
+    },
+    {
+      "Test": "cutscene_relay_tests",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "Output": "13 assertions, 0 failures"
+    }
+  ],
+  "Assertions": 12343,
+  "ProductionBuilds": {
+    "client": "MSVC x86 release passed",
+    "server": "MSVC x86 release passed",
+    "Output": ".cache/cutscene-xmake-001/output",
+    "GTA_SA_DIR_Cleared": true
+  },
+  "NativeExecutableSHA256": "a559aa772fd136379155efa71f00c47aad34bbfeae6196b0fe1047d0645cbd26"
+}
