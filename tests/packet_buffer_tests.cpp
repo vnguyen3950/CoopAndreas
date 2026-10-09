@@ -50,6 +50,7 @@ static server_time_t g_serverTime = 100;
 struct CCutsceneVotes { static void Queue(Packet&) {} };
 // This suite's non-fire packets do not need the separately tested fire ordering.
 struct CFireSync { static void Queue(Packet&) {} };
+struct CTrailerSync { static void Queue(Packet&) {} }; // Dedicated trailer suite exercises its queue policy.
 #include "extracted_packet_buffer.inc"
 
 static void expect(bool value, const char* description) {

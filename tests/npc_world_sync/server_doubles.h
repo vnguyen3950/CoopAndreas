@@ -51,6 +51,7 @@ struct CCutsceneVotes {static void Queue(Packet&) {}};
 // Fire queue behavior is covered by its actual-service suite; NPC replay uses
 // the unchanged buffer body with a non-fire packet here.
 struct CFireSync {static void Queue(Packet&) {}};
+struct CTrailerSync {static void Queue(Packet&) {} static void NpcDriver(CNetworkVehicle*,CNetworkPed*) {}};
 struct BufferHandler {void ProcessPacket(Packet*){}};
 BufferHandler&GetBufferHandler(){static BufferHandler h;return h;}
 struct CPacketBuffer {std::deque<Packet*>m_packets;void Receive(Packet*);~CPacketBuffer(){for(auto*p:m_packets)delete p;}};

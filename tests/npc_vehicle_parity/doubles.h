@@ -122,3 +122,6 @@ struct CNetworkVehicleManager
     static inline CNetworkVehicle* vehicle = nullptr;
     static CNetworkVehicle* GetVehicle(int id) { return vehicle && vehicle->m_nVehicleId == id ? vehicle : nullptr; }
 };
+// Trailer authority is covered by its actual-service suite; parity retains its
+// unchanged NPC driver logic with this explicit integration collaborator.
+struct CTrailerSync { static void NpcDriver(CNetworkVehicle*,CNetworkPed*) {} };

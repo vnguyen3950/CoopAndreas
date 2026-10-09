@@ -93,6 +93,7 @@ public:
     int m_nPedRef=-1,m_iPlayerId=0;
     char m_Name[Config::MAX_NICKNAME_LENGTH+1]{};
     bool m_bHasBeenConnectedBeforeMe=false;
+    struct { uint32_t generation=1; } m_vitals;
     CPedClothesDesc m_pPedClothesDesc;
     struct { CVector vecPos; } m_onFootSnapshotInterpolated;
     CNetworkPlayer()=default;
@@ -119,6 +120,9 @@ struct CCutsceneVotes { static void Reset(){} };
 // permits the unchanged handshake body to run in the registry-only fixture.
 struct CMapSync { static void Reset(){} };
 struct CFireSync { static void Reset(){} };
+struct CTrailerSync { static void Reset(){} };
+struct CPickupSync { static void Reset(){} };
+struct CPlayerAnimationSync { static void ForgetPlayer(int,uint32_t){} };
 // NPC teardown is verified by its own actual manager/handler suite.
 struct CNetworkPedManager { static void Clear(){} };
 namespace logger { template<class... T>void info(T...){} }
