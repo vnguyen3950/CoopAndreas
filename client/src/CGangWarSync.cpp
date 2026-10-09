@@ -144,7 +144,7 @@ void Guidance()
     if(moved||guidanceOffense!=state.war.offense||guidanceDefense!=state.war.defense)
     {
         guidanceOffense=state.war.offense;guidanceDefense=state.war.defense;
-        CChat::AddMessage("{cecedb}[Gang war] Support the host against the marked gang wave. Native host progression owns the result.");
+        CChat::AddMessage("{cecedb}[Gang war] Join the host at the marked area and defeat the gang wave.");
     }
 }
 }
