@@ -89,19 +89,21 @@ template<class Predicate> bool Wait(Predicate predicate, int milliseconds = 2000
     while (std::chrono::steady_clock::now() < until);
     return false;
 }
-bool Connect(Client& client, uint16_t port, const char* name)
+bool Connect(Client& client, uint16_t port, const char* name, const char* version = COOPANDREAS_VERSION)
 {
     client.host = enet_host_create(nullptr,1,4,0,0); if (!client.host) return false;
     clients.push_back(&client); ENetAddress address; enet_address_set_host(&address,"127.0.0.1"); address.port = port;
     client.peer = enet_host_connect(client.host,&address,4,0); if (!client.peer || !Wait([&]{return client.connected;},4000)) return false;
     Packets::System::PlayerConnected hello; hello.payload = {}; strcpy_s(hello.payload.name,name);
-    hello.payload.version = semver_parse(COOPANDREAS_VERSION,nullptr);
+    hello.payload.version = semver_parse(version,nullptr);
     return client.Send(hello) && Wait([&]{return client.id >= 0 && !client.maps.empty();},4000);
 }
 int main(int argc, char** argv)
 {
     if (argc != 2 || enet_initialize() != 0) return 2;
-    Client host, guest, late, replacement, fresh; const auto port = uint16_t(std::stoi(argv[1]));
+    Client older, host, guest, late, replacement, fresh; const auto port = uint16_t(std::stoi(argv[1]));
+    expect(!Connect(older,port,"fixture_older","0.5.0-alpha") && older.id < 0 && !older.connected,
+        "Production handshake rejects previous protocol before registering an actor or room host.");
     expect(Connect(host,port,"fixture_host"), "First real peer authenticates and receives initial map state.");
     if (host.id < 0 || host.maps.empty()) return 1;
     expect(host.hostId == host.id && host.maps.back().epoch == 0, "First peer is announced as host before unseeded state.");
