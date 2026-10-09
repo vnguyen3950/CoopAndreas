@@ -169,7 +169,9 @@ void WantedChange(SessionSync::Reason reason, int level)
     SessionSync::Operation op;
     op.kind = reason == SessionSync::Reason::Natural ? SessionSync::Kind::WantedRaise : SessionSync::Kind::WantedLower;
     op.reason = reason; op.level = uint8_t(std::clamp(level, 0, 6));
-    if (StageOrSubmit(op)) g_lastWanted = level;
+    // Bribe operations carry reason metadata; cache the actual native result
+    // so a receipt cannot mistake the remaining stars for a fresh crime.
+    if (StageOrSubmit(op)) g_lastWanted = int(FindPlayerWanted(0)->m_nWantedLevel);
 }
 void ObserveLocal()
 {

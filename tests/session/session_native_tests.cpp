@@ -287,6 +287,26 @@ static void debt_budget()
     expect(s.state.money == 30 && g_client.pending.empty() && CWorld::Players[0].m_nMoney == 30,
         "Acknowledgements retain both repayment deltas exactly once.");
 }
+static void bribe_receipt()
+{
+    auto s = room(100,3); boot(s,1);
+    expect(PickupHook(MODEL_BRIBE,0) && localWanted.m_nWantedLevel == 2,
+        "Actual pickup adapter lowers the native level by one.");
+    auto ops = unique_operations();
+    expect(ops.size() == 1 && ops[0].kind == Kind::WantedLower && ops[0].reason == Reason::Bribe,
+        "Pickup emits one attributed bribe operation.");
+    if (ops.size() != 1) throw std::runtime_error("Bribe fixture requires one operation.");
+    expect(s.Apply(1,ops[0]).status == Status::Accepted && s.state.wanted == 2,
+        "Guest bribe lowers canonical pursuit once.");
+    auto host = remote(s,0,1,0); host.kind = Kind::WantedLower; host.reason = Reason::Bribe;
+    expect(s.Apply(0,host).status == Status::Accepted && s.state.wanted == 1,
+        "Concurrent host bribe lowers pursuit again before receipt delivery.");
+    receipt(s,1);
+    expect(unique_operations().size() == 1 && g_client.pending.empty(),
+        "Receipt must not interpret bribe reason metadata as a new native wanted raise.");
+    expect(localWanted.m_nWantedLevel == 1 && g_lastWanted == 1,
+        "Concurrent bribes converge without restoring an obsolete wanted level.");
+}
 static void migration()
 {
     auto s = room(); boot(s,1); CWorld::Players[0].m_nMoney += 30; CSessionSync::Process();
@@ -316,6 +336,7 @@ int main(int argc, char** argv)
         else if (name == "arrest_fee") punishment_fee(600,true,true);
         else if (name == "same_frame_fee") punishment_fee(100,false,false);
         else if (name == "debt_budget") debt_budget();
+        else if (name == "bribe_receipt") bribe_receipt();
         else return 2;
     } catch (const std::exception& error) { ++failures; std::cout << "FIXTURE STOP: " << error.what() << '\n'; }
     std::cout << name << ": " << checks << " assertions, " << failures << " failures\n";

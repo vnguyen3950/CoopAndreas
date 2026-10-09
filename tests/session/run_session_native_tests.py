@@ -15,7 +15,7 @@ CASES = (
     "menu_seed", "guest_reset", "seed_receipt", "receipt_capture", "receipt_side_effects",
     "mission_reward", "cash_feedback", "deferred_action", "rapid_toggle", "flags_reset",
     "death_preservation", "same_frame_resurrection", "native_wanted", "migration",
-    "hospital_fee", "arrest_fee", "same_frame_fee", "debt_budget",
+    "hospital_fee", "arrest_fee", "same_frame_fee", "debt_budget", "bribe_receipt",
 )
 
 
