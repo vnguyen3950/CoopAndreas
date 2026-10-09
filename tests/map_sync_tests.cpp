@@ -62,6 +62,16 @@ void codecs()
     expect(!static_cast<Packet&>(bad).SerializeMeasure(measure), "Invalid unbound state cannot serialize.");
     bad.generation = 1; bad.cells.bits.back() = 240;
     expect(!static_cast<Packet&>(bad).SerializeMeasure(measure), "Reserved bits cannot serialize.");
+    Packets::Map::Discovery valid; valid.generation = 1; valid.epoch = 1; valid.revision = 1;
+    std::array<uint32_t,64> words{}; auto* bytes = reinterpret_cast<uint8_t*>(words.data());
+    serialize::WriteStream writer(bytes,sizeof(words)); expect(static_cast<Packet&>(valid).SerializeWrite(writer), "Valid state for malformed full-length tests writes."); writer.Flush();
+    const auto original = words; const int length = writer.GetBytesProcessed();
+    auto reject = [&] { Packets::Map::Discovery p; serialize::ReadStream r(bytes,length); return !static_cast<Packet&>(p).SerializeRead(r); };
+    bytes[0] |= 3; expect(reject(), "Unused mode code rejected on real read."); words = original;
+    // 2 mode bits + 3 owner bits + four 31-bit counters = bitmap offset 129.
+    const int reserved = 129 + 99 + 1;
+    bytes[reserved / 8] |= uint8_t(1u << (reserved % 8));
+    expect(reject(), "Reserved discovery bit rejected on real full-length read.");
 }
 void server()
 {
@@ -121,6 +131,13 @@ void client()
     host.m_vitals.generation = 12; waypoint.sequence = 2; waypoint.place = false; CMapSync::ReceiveWaypoint(waypoint);
     expect(host.m_waypointState.place, "Old connection cannot remove new actor waypoint.");
     waypoint.generation = 12; CMapSync::ReceiveWaypoint(waypoint); expect(!host.m_waypointState.place, "Correct connection can remove waypoint.");
+    // Restore the current map authority after the independent waypoint reuse case.
+    host.m_vitals.generation = 10;
+    state.epoch = 2; state.revision = 1; state.cells = {}; state.cells.Add(15);
+    CMapSync::Receive(state); expect(CTheZones::ExploredTerritoriesArray[15] && !CTheZones::ExploredTerritoriesArray[4], "New campaign replaces discovery instead of merging old campaign.");
+    state.epoch = 1; state.revision = 99; state.cells.Add(4); CMapSync::Receive(state);
+    expect(!CTheZones::ExploredTerritoriesArray[4], "Delayed old campaign cannot restore old discovery.");
+    state.epoch = 2; state.revision = 1; state.cells = {}; state.cells.Add(15);
     CMapSync::HostChanged(1); CLocalPlayer::m_bIsHost = true; state.playerid = 1; state.generation = 11;
     CMapSync::Receive(state); count = factory.maps.size(); testTick += 6000; CMapSync::Process();
     expect(factory.maps.size() == count || factory.maps.back().mode != Packets::Map::Mode::Seed, "Promoted guest preserves campaign rather than reseeding.");
