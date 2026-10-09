@@ -67,6 +67,12 @@ static void client_tests()
     w=active();w.defense=3;expect(!w.Valid(),"Invalid native defensive stage is rejected.");
     w=active();w.info=380;expect(!w.Valid(),"Zone-info index is bounded.");
     w=active();w.fightRemaining=MAX_DURATION+1;expect(!w.Valid(),"Remote timer cannot overflow native presentation window.");
+    w=active();w.specificCount=7;expect(!w.Valid(),"Trigger list cannot exceed native six-entry array.");
+    w=active();w.specificCount=1;w.specificZones[0]=380;expect(!w.Valid(),"Trigger zone is bounded.");
+    w=active();w.training=true;expect(!w.Valid(),"Training requires a real zone-info index.");
+    w=active();w.nextAttack=std::numeric_limits<float>::infinity();expect(!w.Valid(),"Next-attack timer must be finite.");
+    w=active();w.difficulty=1.01f;expect(!w.Valid(),"Difficulty cannot corrupt native wave size envelope.");
+    w=active();w.territoryPercent=-1;expect(!w.Valid(),"Owner territory fraction cannot be negative.");
     auto badWorld=native_world();badWorld.zones[0].radar=4;expect(!badWorld.Valid(),"Radar mode cannot overwrite unrelated flag bits.");
 }
 struct Wire{std::array<uint32_t,2560> words{};int bytes=0;uint8_t* data(){return reinterpret_cast<uint8_t*>(words.data());}};
@@ -95,13 +101,19 @@ template<class T>static T roundtrip(T p)
 static void packet_tests()
 {
     Packets::Gangs::State hello;roundtrip(hello);Packets::Gangs::Territory request;roundtrip(request);
-    Room room;room.SetHost(0,1);room.PublishWorld(0,room.state.epoch,0,1,false,native_world());room.PublishWar(0,room.state.epoch,1,1,active());
+    Room room;room.SetHost(0,1);room.PublishWorld(0,room.state.epoch,0,1,false,native_world());auto detailed=active();
+    detailed.specificCount=6;detailed.specificZones={0,1,2,377,378,379};detailed.training=true;detailed.trainingInfo=379;
+    detailed.ferocity=5;detailed.nextAttack=float(MAX_DURATION);detailed.difficulty=1;detailed.territoryPercent=.25f;detailed.closeby=true;
+    room.PublishWar(0,room.state.epoch,1,1,detailed);
     Packets::Gangs::State state;state.kind=Kind::Snapshot;state.authority=room.state;
     auto copy=roundtrip(state);expect(copy.authority.war==state.authority.war&&copy.authority.warGeneration==state.authority.warGeneration,"War native state and generation round trip.");
     auto encodedState=encode(state);
     for(float invalid:{std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity()}){
         auto malformed=encodedState;uint32_t bits=0;std::memcpy(&bits,&invalid,4);patch(malformed,208,32,bits);
         Packets::Gangs::State rejected;expect(!decode(malformed,rejected),"Raw nonfinite coordinate is rejected by actual reader.");}
+    for(int offset:{373,405,437}){
+        auto malformed=encodedState;patch(malformed,offset,32,0x7FC00000);
+        Packets::Gangs::State rejected;expect(!decode(malformed,rejected),"Raw nonfinite timer/difficulty/territory fraction rejected by actual reader.");}
     auto malformed=encodedState;patch(malformed,131,3,7);Packets::Gangs::State rejected;
     expect(!decode(malformed,rejected),"Unused offensive-stage bit code is rejected by actual reader.");
     malformed=encodedState;patch(malformed,2,31,MAX_COUNTER);

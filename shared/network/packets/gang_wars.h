@@ -13,6 +13,11 @@ template<class Stream> bool War(Stream& stream, GangWarSync::War& value)
     serialize_int(stream,value.gang1,-1,GangWarSync::GANGS-1);serialize_int(stream,value.gang2,-1,GangWarSync::GANGS-1);
     serialize_int(stream,value.fightRemaining,0,GangWarSync::MAX_DURATION);serialize_int(stream,value.stageElapsed,0,GangWarSync::MAX_DURATION);
     serialize_float(stream,value.x);serialize_float(stream,value.y);serialize_float(stream,value.z);
+    serialize_int(stream,value.specificCount,0,6);
+    for(int i=0;i<value.specificCount;++i){serialize_int(stream,value.specificZones[i],0,GangWarSync::MAX_ZONES-1);}
+    serialize_int(stream,value.trainingInfo,-1,GangWarSync::MAX_ZONES-1);serialize_int(stream,value.ferocity,0,5);
+    serialize_float(stream,value.nextAttack);serialize_float(stream,value.difficulty);serialize_float(stream,value.territoryPercent);
+    serialize_bool(stream,value.closeby);
     return value.Valid();
 }
 class State : public Packet

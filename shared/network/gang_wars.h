@@ -41,6 +41,11 @@ struct War
     int zone = -1, info = -1, gang1 = -1, gang2 = -1;
     uint32_t fightRemaining = 0, stageElapsed = 0;
     float x = 0, y = 0, z = 0;
+    uint8_t specificCount = 0;
+    std::array<int,6> specificZones{};
+    int trainingInfo = -1, ferocity = 0;
+    float nextAttack = 0, difficulty = 0, territoryPercent = 0;
+    bool closeby = false;
     bool Active() const { return offense != 0 || defense != 0; }
     bool Valid() const
     {
@@ -48,7 +53,13 @@ struct War
             || gang1 < -1 || gang1 >= GANGS || gang2 < -1 || gang2 >= GANGS
             || fightRemaining > MAX_DURATION || stageElapsed > MAX_DURATION
             || !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(z)
-            || x < -6000 || x > 6000 || y < -6000 || y > 6000 || z < -1000 || z > 2000) return false;
+            || x < -6000 || x > 6000 || y < -6000 || y > 6000 || z < -1000 || z > 2000
+            || specificCount > 6 || trainingInfo < -1 || trainingInfo >= MAX_ZONES || ferocity < 0 || ferocity > 5
+            || !std::isfinite(nextAttack) || nextAttack < 0 || nextAttack > MAX_DURATION
+            || !std::isfinite(difficulty) || difficulty < 0 || difficulty > 1
+            || !std::isfinite(territoryPercent) || territoryPercent < 0 || territoryPercent > 1) return false;
+        for(int i=0;i<specificCount;++i)if(specificZones[i]<0||specificZones[i]>=MAX_ZONES)return false;
+        if(training&&trainingInfo<0)return false;
         return !Active() || (enabled && zone >= 0 && info >= 0 && gang1 >= 0);
     }
     bool operator==(const War& b) const
@@ -56,7 +67,9 @@ struct War
         return offense==b.offense && defense==b.defense && enabled==b.enabled && training==b.training
             && allowMission==b.allowMission && onMission==b.onMission && zone==b.zone && info==b.info
             && gang1==b.gang1 && gang2==b.gang2 && fightRemaining==b.fightRemaining && stageElapsed==b.stageElapsed
-            && x==b.x && y==b.y && z==b.z;
+            && x==b.x && y==b.y && z==b.z && specificCount==b.specificCount && specificZones==b.specificZones
+            && trainingInfo==b.trainingInfo && ferocity==b.ferocity && nextAttack==b.nextAttack
+            && difficulty==b.difficulty && territoryPercent==b.territoryPercent && closeby==b.closeby;
     }
 };
 struct Authority
@@ -87,8 +100,8 @@ public:
         lastWorld = lastWar = 0;
         // Native wave AI cannot be reconstructed by a promoted guest. Keep the
         // campaign/territory, invalidate the old fight without awarding a win.
-        const bool enabled = state.war.enabled;
-        state.war = {}; state.war.enabled = enabled;
+        state.war.offense=state.war.defense=0;state.war.zone=state.war.info=state.war.gang1=state.war.gang2=-1;
+        state.war.fightRemaining=state.war.stageElapsed=0;state.war.closeby=false;
         return true;
     }
     bool Owner(int sender, uint32_t epoch) const { return sender >= 0 && sender == state.host && epoch == state.epoch; }
