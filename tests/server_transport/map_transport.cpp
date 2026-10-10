@@ -23,6 +23,10 @@ Factory& GetPacketFactory();
 #include "network/packets/session.h"
 #include "semver.h"
 #include "sender.inc"
+#include "network/npc_sync.h"
+struct CVector { float x = 0, y = 0, z = 0; CVector(float a = 0, float b = 0, float c = 0) : x(a), y(b), z(c) {} };
+#define ARRAY_SIZE(value) (sizeof(value) / sizeof((value)[0]))
+#include "peds.inc"
 struct CVector2D { float x = 0, y = 0; CVector2D(float a = 0, float b = 0) : x(a), y(b) {} };
 #include "waypoint.inc"
 #include "respawn.inc"
@@ -42,6 +46,10 @@ struct Client
     std::vector<Packets::Pickups::State> pickups;
     std::vector<Packets::Pickups::Action> pickupActions;
     std::vector<Packets::Session::Update> sessions;
+    std::vector<Packets::Peds::PedSpawn> pedSpawns;
+    std::vector<Packets::Peds::PedConfirm> pedConfirms;
+    std::vector<Packets::Peds::PedDeath> pedDeaths;
+    std::vector<Packets::Peds::PedRemove> pedRemovals;
     std::array<uint32_t,8> generations{};
     void Process()
     {
@@ -72,6 +80,10 @@ struct Client
                         else if (auto* p = dynamic_cast<Packets::Pickups::State*>(packet.get())) pickups.push_back(*p);
                         else if (auto* p = dynamic_cast<Packets::Pickups::Action*>(packet.get())) pickupActions.push_back(*p);
                         else if (auto* p = dynamic_cast<Packets::Session::Update*>(packet.get())) sessions.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Peds::PedSpawn*>(packet.get())) pedSpawns.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Peds::PedConfirm*>(packet.get())) pedConfirms.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Peds::PedDeath*>(packet.get())) pedDeaths.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Peds::PedRemove*>(packet.get())) pedRemovals.push_back(*p);
                     }
                 }
             }
@@ -109,7 +121,7 @@ bool Connect(Client& client, uint16_t port, const char* name, const char* versio
 int main(int argc, char** argv)
 {
     if (argc != 2 || enet_initialize() != 0) return 2;
-    Client older, host, guest, late, replacement, fresh; const auto port = uint16_t(std::stoi(argv[1]));
+    Client older, host, guest, late, corpseObserver, replacement, fresh; const auto port = uint16_t(std::stoi(argv[1]));
     expect(!Connect(older,port,"fixture_older","0.6.0-alpha") && older.id < 0 && !older.connected,
         "Production handshake rejects previous protocol before registering an actor or room host.");
     expect(Connect(host,port,"fixture_host"), "First real peer authenticates and receives initial map state.");
@@ -169,6 +181,35 @@ int main(int argc, char** argv)
     const auto hostLife = host.animations.back().life;
     PickupSync::Actor hostActor{hostLife.generation,hostLife.birth,hostLife.sequence,hostLife.model,hostLife.area};
     PickupSync::Actor guestActor{host.generations[guest.id],3,4,0,0};
+    Packets::Peds::PedSpawn cop; cop.tempid = 1; cop.requestToken = 1;
+    cop.modelId = MODEL_LAPD1; cop.pedType = PED_TYPE_COP; cop.createdBy = RANDOM_CHAR;
+    expect(guest.Send(cop) && Wait([&]{return !guest.pedConfirms.empty() && !host.pedSpawns.empty();}),
+        "Actual guest cop registration receives a server lifetime and matching host spawn.");
+    if (guest.pedConfirms.empty()) return 1;
+    const auto confirmedCop = guest.pedConfirms.back();
+    expect(confirmedCop.ownerid == guest.id && confirmedCop.stamp.Lifetime()
+        && host.pedSpawns.back().modelId == MODEL_LAPD1 && host.pedSpawns.back().stamp.SameOwner(confirmedCop.stamp),
+        "City-cop model and authenticated owner identity survive the real wire codec.");
+    Packets::Peds::PedDeath death; death.pedid = confirmedCop.pedid; death.stamp = confirmedCop.stamp;
+    death.stamp.sequence = 1; death.serverTime = 0x7fffffff;
+    const auto deathsBefore = late.pedDeaths.size();
+    expect(host.Send(death), "Foreign death seal is a well-formed packet.");
+    Wait([]{return false;},150);
+    expect(late.pedDeaths.size() == deathsBefore, "Room host cannot seal another peer's cop death.");
+    expect(guest.Send(death) && Wait([&]{return host.pedDeaths.size() > 0 && late.pedDeaths.size() > deathsBefore;}),
+        "Authenticated NPC owner death reaches every observing peer through real EVENT transport.");
+    expect(host.pedDeaths.back().stamp.SameOwner(confirmedCop.stamp)
+        && host.pedDeaths.back().stamp.sequence == 1 && host.pedDeaths.back().serverTime != 0x7fffffff,
+        "Server preserves the immutable death seal and replaces the client framing timestamp.");
+    const auto deathCount = host.pedDeaths.size();
+    guest.Send(death); Wait([]{return false;},150);
+    expect(host.pedDeaths.size() == deathCount, "Duplicate death seal cannot publish another corpse lifecycle.");
+    expect(Connect(corpseObserver,port,"fixture_corpse_observer")
+        && Wait([&]{return !corpseObserver.pedDeaths.empty() && !corpseObserver.pedSpawns.empty();}),
+        "A real late join receives both registered cop identity and retained death seal.");
+    expect(corpseObserver.pedDeaths.back().stamp.SameOwner(confirmedCop.stamp)
+        && corpseObserver.pedDeaths.back().stamp.sequence == death.stamp.sequence,
+        "Late join corpse replay retains the original owner death identity.");
     Packets::Pickups::Hello pickupHello; pickupHello.actor = hostActor;
     expect(host.Send(pickupHello) && Wait([&]{return !host.pickups.empty();}), "Integrated host pickup HELLO seeds room and receives SYSTEM state.");
     pickupHello.actor = guestActor;
@@ -206,6 +247,8 @@ int main(int argc, char** argv)
     expect(guest.sessions.back().state.wanted==0&&guest.sessions.back().state.acknowledged==1,
         "Repeated resurrection receipt cannot restore old wanted or advance the sequence twice.");
     auto oldGeneration = host.waypoints.back().generation; auto guestId = guest.id;
+    enet_peer_disconnect(corpseObserver.peer,0); enet_host_flush(corpseObserver.host);
+    expect(Wait([&]{return !corpseObserver.connected;}), "Corpse replay observer departs before migration checks.");
     enet_peer_disconnect(guest.peer,0); enet_host_flush(guest.host); Wait([&]{return !guest.connected;});
     expect(Connect(replacement,port,"fixture_replacement"), "Replacement peer authenticates.");
     expect(replacement.id == guestId && host.generations[guestId] != oldGeneration, "Reused slot gets a distinct connection generation.");

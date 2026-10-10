@@ -32,12 +32,31 @@ def main():
              "server/src/PacketHandlers/pickups.cpp", "server/src/CNetworkPlayerManager.cpp", "server/src/PacketHandlers/scripts.cpp",
              "shared/network/session_sync.h", "shared/network/packets/session.h", "server/src/CSessionSync.cpp",
              "server/src/CNetwork.cpp", "server/src/CNetworkPlayerManager.cpp", "server/src/PacketHandlers/map.cpp",
-             "server/src/PacketHandlers/players.cpp", "tests/server_transport/map_transport.cpp")
+             "server/src/PacketHandlers/players.cpp", "tests/server_transport/map_transport.cpp",
+             "shared/network/npc_sync.h", "shared/network/packets/peds.h",
+             "server/src/CNetworkPedManager.cpp", "server/src/PacketHandlers/peds.cpp",
+             "third_party/plugin-sdk/plugin_sa/game_sa/eModelID.h",
+             "third_party/plugin-sdk/plugin_sa/game_sa/ePedType.h")
     before = {name:digest(ROOT / name) for name in names}
     for name in names:
         target = output / "source" / name; target.parent.mkdir(parents=True,exist_ok=True); shutil.copyfile(ROOT / name,target)
     shutil.copytree(ROOT / "third_party/enet",output / "source/third_party/enet")
     (output / "sender.inc").write_text(extract_class((output / "source/shared/network/serializable_types.h").read_text(),"struct SenderPlayerId"))
+    # Compile the unchanged production lifecycle codecs with SDK enums and the
+    # real compressed-position serializer. The vector only supplies its fields.
+    serializable = (output / "source/shared/network/serializable_types.h").read_text()
+    sdk = output / "source/third_party/plugin-sdk/plugin_sa/game_sa"
+    peds = (output / "source/shared/network/packets/peds.h").read_text()
+    (output / "peds.inc").write_text("\n".join([
+        extract_class((sdk / "eModelID.h").read_text(), "enum eModelID"),
+        "#define PLUGIN_API",
+        extract_class((sdk / "ePedType.h").read_text(), "enum PLUGIN_API ePedType"),
+        extract_class((sdk / "ePedType.h").read_text(), "enum eCharCreatedBy"),
+        extract_class(serializable, "struct WorldPositionCompressed"),
+        "namespace Packets::Peds {",
+        *(extract_class(peds, "class " + name) for name in ("PedSpawn", "PedConfirm", "PedDeath", "PedRemove")),
+        "}",
+    ]))
     waypoint = extract_class((output / "source/shared/network/packets/players.h").read_text(),"class PlayerPlaceWaypoint")
     (output / "waypoint.inc").write_text("namespace Packets::Players {\n" + waypoint + "\n}\n")
     respawn = extract_class((output / "source/shared/network/packets/players.h").read_text(),"class RespawnPlayer")
