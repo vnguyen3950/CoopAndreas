@@ -3,7 +3,7 @@
 #include <cstdint>
 
 // Gameplay synchronization packets require matching clients/server; the handshake rejects older builds.
-#define COOPANDREAS_VERSION "0.7.1-alpha"
+#define COOPANDREAS_VERSION "0.8.0-alpha"
 struct Config
 {
     static constexpr uint16_t DEFAULT_PORT = 6767;
