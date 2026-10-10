@@ -109,8 +109,9 @@ void CPickupServer::ProcessPending(){
         const double dx=double(pos.x)-drop.x,dy=double(pos.y)-drop.y,dz=double(pos.z)-drop.z;
         // Original CreateSomeMoney cumulatively scatters seven native wads.
         // Do not recenter them or reconstruct their values. Admit only bounded
-        // exterior ground drops; long vertical falls remain outside this slice.
-        const bool near=item.type==8?dx*dx+dy*dy<=225.0&&std::abs(dz)<=10.0:dx*dx+dy*dy+dz*dz<=25.0;
+        // exterior ground drops. Ground projection may legitimately change Z;
+        // finite world bounds remain enforced, without an invented Z-distance limit.
+        const bool near=item.type==8?dx*dx+dy*dy<=225.0:dx*dx+dy*dy+dz*dz<=25.0;
         if(mission||packet.mission||life.area!=0||ped->m_deathArea!=0
             ||ped->m_deathProducerGeneration!=entry.producerGeneration||!PickupSync::SameSeal(ped->m_deathStamp,entry.death)
             ||!NativeDeathItem(ped,item)||!NPCSync::Position(pos)||!near){output.pending=false;output.expired=true;continue;}

@@ -70,6 +70,7 @@ static void GeneralDeathCases(){
         for(int i=0;i<20;++i){auto&p=requests[i];p.operation=Packets::Pickups::Operation::Create;p.epoch=Room().epoch;p.sequence=i+1;
             p.actor={producer->m_vitals.generation,2,7,0,0};p.item.owner=producer->m_iPlayerId;p.item.creation=i+1;
             p.item.cop={3,{9,2,6},uint32_t(i+1),producer->m_vitals.generation,uint8_t(i+1)};
+            if(i>=13)p.item.position={float(i-12)*1.5f,float(i-12)*1.5f,-50.0f};
             p.item.model=i<13?346:1212;p.item.type=i<13?4:8;p.item.ammo=i<13?15:uint32_t(i+7);
             expect(CPickupServer::Action(p,producer)&&!Room().Find(1),"Each SYSTEM output waits before reliable sealed death proof");
         }
@@ -93,7 +94,7 @@ static void GeneralDeathCases(){
         GetPacketFactory().sent.clear();GetPacketFactory().recipients.clear();hello.actor={12,2,7,0,0};CPickupServer::Hello(hello,&other);
         expect(GetPacketFactory().sent.size()==21&&dynamic_cast<Packets::Pickups::State*>(GetPacketFactory().sent[0].get())->reset,"Late-join replay begins with exact recipient reset then all twenty active outputs");
         // Native result is collector-specific. Server has no money reward path.
-        Packets::Pickups::Action claim;claim.operation=Packets::Pickups::Operation::Claim;claim.epoch=Room().epoch;claim.sequence=2;claim.id=14;claim.actor={12,2,7,0,0};
+        Packets::Pickups::Action claim;claim.operation=Packets::Pickups::Operation::Claim;claim.epoch=Room().epoch;claim.sequence=2;claim.id=14;claim.position=requests[13].item.position;claim.actor={12,2,7,0,0};
         expect(CPickupServer::Action(claim,&other),"Other player can claim the original producer's money wad");
         auto*row=Room().Find(14);Packets::Pickups::Action result;result.operation=Packets::Pickups::Operation::Result;result.epoch=Room().epoch;result.sequence=3;result.id=14;result.grant=row->grant;result.actor=claim.actor;result.outcome=PickupSync::Outcome::Consumed;
         expect(CPickupServer::Action(result,&other)&&row->stage==PickupSync::Stage::Collected,"Exact native owner-life receipt retires one cash wad without a second wallet reward");
