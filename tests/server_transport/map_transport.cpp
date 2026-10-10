@@ -107,7 +107,7 @@ int main(int argc, char** argv)
 {
     if (argc != 2 || enet_initialize() != 0) return 2;
     Client older, host, guest, late, replacement, fresh; const auto port = uint16_t(std::stoi(argv[1]));
-    expect(!Connect(older,port,"fixture_older","0.5.0-alpha") && older.id < 0 && !older.connected,
+    expect(!Connect(older,port,"fixture_older","0.6.0-alpha") && older.id < 0 && !older.connected,
         "Production handshake rejects previous protocol before registering an actor or room host.");
     expect(Connect(host,port,"fixture_host"), "First real peer authenticates and receives initial map state.");
     if (host.id < 0 || host.maps.empty()) return 1;
