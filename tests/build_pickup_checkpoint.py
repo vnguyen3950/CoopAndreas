@@ -3,7 +3,7 @@ import hashlib,json,os,re,subprocess,struct
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 BASE=ROOT.parent.parent
-OUT=ROOT/'.cache/npc-drops/x86-final-002'
+OUT=ROOT/'.cache/npc-drops/x86-final-003'
 XMAKE=BASE/'tools/xmake/xmake/xmake.exe'
 def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest().upper()
 def main():

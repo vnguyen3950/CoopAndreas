@@ -26,7 +26,7 @@ struct CWeapon{eWeaponType m_eWeaponType=WEAPON_UNARMED;uint32_t m_nTotalAmmo=0,
 struct CPlayerData{uint32_t m_nLastHSMissileLOSTime=0;};
 class CPed;inline std::function<void(CPed*)>recordedWeaponDrops;inline unsigned nativeWeaponDropCalls=0;
 inline std::function<void(CPed*)>recordedMoneyDrops;inline unsigned nativeMoneyDropCalls=0;
-class CPed{public:int m_nPedType=PED_TYPE_CIVMALE,m_nModelIndex=280,m_nAreaCode=0,poolRef=20,m_nCreatedBy=1;bool poolValid=true;
+class CPed{public:int m_nPedType=PED_TYPE_CIVMALE,m_nModelIndex=280,m_nAreaCode=0,poolRef=20,m_nCreatedBy=1;struct{bool bDeathPickupsPersist=false;}m_nPedFlags;bool poolValid=true;
     void RecordedMoneyDrops(){++nativeMoneyDropCalls;if(recordedMoneyDrops)recordedMoneyDrops(this);}
     void RecordedWeaponDrops(){++nativeWeaponDropCalls;if(recordedWeaponDrops)recordedWeaponDrops(this);}};
 class CPlayerPed:public CPed{public:float m_fHealth=50,m_fArmour=0;bool alive=true,wants=true;unsigned missionChecks=0;bool CanPlayerStartMission(){++missionChecks;return CLocalPlayerHostForGate;}

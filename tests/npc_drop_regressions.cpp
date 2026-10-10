@@ -32,5 +32,10 @@ int main(){
     CTheScripts::ScriptSpace[1]=0;CPickups::aPickUps[0].m_nAmmo=10;
     expect(MergeHook({},WEAPON_PISTOL,4,16,false)&&CPickups::aPickUps[0].m_nAmmo==26,"Unsupported native quantity is not reconstructed or suppressed");
 #endif
+    CPickupSync::EndCopDrops();capturedDeaths={};capturedKinds={};
+    cop.m_nPedFlags.bDeathPickupsPersist=true;CPickups::aPickUps[0].m_nAmmo=10;
+    expect(CPickupSync::BeginCopDrops(&cop),"Original persistent death can enter native owner routine");
+    expect(MergeHook({},WEAPON_PISTOL,4,5,false)&&CPickups::aPickUps[0].m_nAmmo==15,"Persistent weapon branch retains original native merge rather than forcing unsupported type22 generation");
+    CPickupSync::EndCopDrops();
     std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;
 }
