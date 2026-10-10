@@ -22,4 +22,5 @@ public:
     static void EnableNative();
     static bool BeginCopDrops(CPed* ped);
     static void EndCopDrops();
+    static bool SeparateDeathWeapon(int model,uint8_t type,uint32_t ammo);
 };

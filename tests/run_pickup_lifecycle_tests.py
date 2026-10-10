@@ -42,11 +42,11 @@ def main():
         text=(out/'source/client/src/PickupNativeOutcome.h').read_text(encoding='utf-8-sig');text=re.sub(r'^#include <[^\n]*\n?','',text,flags=re.M);(out/'pickup_native_outcome.inc').write_text(text,encoding='utf-8')
         native=(out/'source/client/src/CPickupSyncNative.cpp').read_text(encoding='utf-8-sig')
         hookParts=[]
-        for signature in ('int __cdecl GenerateHook','void __fastcall WeaponDropsHook'):
+        for signature in ('int __cdecl GenerateHook','void __fastcall WeaponDropsHook','bool __cdecl MergeHook'):
             match=re.search(re.escape(signature)+r'\([^{}]+\)\{.*?\n\}',native,flags=re.S)
             if not match:raise ValueError('Native hook changed: '+signature)
             hookParts.append(match[0])
-        (out/'pickup_native_hooks.inc').write_text('using GenerateFn=int(__cdecl*)(CVector,uint32_t,uint8_t,uint32_t,uint32_t,bool,char*);\nusing WeaponDropsFn=void(__thiscall*)(CPed*);\nvoid*generateOriginal=nullptr;void*weaponDropsOriginal=nullptr;\n'+'\n'.join(hookParts),encoding='utf-8')
+        (out/'pickup_native_hooks.inc').write_text('#define PICKUP_MERGE_HOOK 1\nusing MergeFn=bool(__cdecl*)(CVector,eWeaponType,uint8_t,uint32_t,bool);\nvoid*mergeOriginal=nullptr;\nusing GenerateFn=int(__cdecl*)(CVector,uint32_t,uint8_t,uint32_t,uint32_t,bool,char*);\nusing WeaponDropsFn=void(__thiscall*)(CPed*);\nvoid*generateOriginal=nullptr;void*weaponDropsOriginal=nullptr;\n'+'\n'.join(hookParts),encoding='utf-8')
         if args.mutation:
             path=out/'pickup_native_outcome.inc';text=path.read_text();needle='||pickup->m_nAmmo!=item.ammo';assert text.count(needle)==1;path.write_text(text.replace(needle,''),encoding='utf-8')
         nativePath=Path(r'C:\Users\Vu\work\gta-coop\gta-reversed\source\game_sa\Pickups.cpp');reference=nativePath.read_text(encoding='utf-8-sig')

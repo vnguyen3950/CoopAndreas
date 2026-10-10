@@ -115,6 +115,10 @@ bool CPickupSync::BeginCopDrops(CPed*ped){
     return copContext.origin.ped>=0&&copContext.origin.ped<255&&copContext.origin.death.State();
 }
 void CPickupSync::EndCopDrops(){copContext={};}
+bool CPickupSync::SeparateDeathWeapon(int model,uint8_t type,uint32_t ammo){
+    return copContext.active&&copContext.origin.death.State()&&copContext.origin.producerGeneration&&!Mission()&&copContext.area==0&&type==4
+        &&PickupSync::StockCopWeapon(copContext.model,model)&&ammo>0&&ammo<=PickupSync::StockCopAmmoLimit(model);
+}
 void CPickupSync::EnableNative(){nativeEnabled=true;}
 void CPickupSync::Reset(){ClearMappings();view={};hasGrant=false;receipt={};lastHello=lastClaim=0;expectedHost=-1;}
 void CPickupSync::HostChanged(int host){expectedHost=host;lastHello=0;}
