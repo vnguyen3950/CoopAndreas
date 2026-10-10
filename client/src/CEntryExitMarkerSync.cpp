@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "CEntryExitMarkerSync.h"
 #include "CEntryExitManager.h"
+#include "runtime_diagnostics.h"
 
 void CEntryExitMarkerSync::Send()
 {
@@ -29,6 +30,8 @@ void CEntryExitMarkerSync::Send()
 
 void CEntryExitMarkerSync::Receive(const Packets::Scripts::EnExSync& packet)
 {
+    RuntimeDiagnostics::Write("entry", "\"event\":\"received-enex\",\"disabled\":%d,\"burglary\":%d,\"count\":%d",
+        int(packet.bDisabled), int(packet.bBurglary), packet.count);
 #ifdef PACKET_DEBUG_MESSAGES
     CChat::AddMessage("CEntryExitMarkerSync::Receive %d %d %d", CEntryExitManager::ms_bDisabled,
         CEntryExitManager::ms_bBurglaryHousesEnabled, packet.count);

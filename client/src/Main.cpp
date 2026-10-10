@@ -7,6 +7,7 @@
 #include "CFireSync.h"
 #include "CTrailerSync.h"
 #include "CPickupSync.h"
+#include "CEntryExitDiagnostics.h"
 #include "CCutsceneMgr.h"
 #include "UI/CDXFont.h"
 
@@ -113,6 +114,7 @@ public:
             CPickupSync::Process();
             CNetworkAnimQueue::Process();
             CEntryExitTransitionSync::Process();
+            CEntryExitDiagnostics::Process();
             CDiscordRPCMgr::Update();
             CDebugVehicleSpawner::Process();
 
