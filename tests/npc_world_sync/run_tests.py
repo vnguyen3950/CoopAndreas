@@ -22,7 +22,7 @@ def block(text,pattern):
   if not depth:return text[m.start():end+2]
  raise ValueError('Unbalanced extraction')
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client','passenger','police','deathserver'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');p.add_argument('--mutate-death-producer',action='store_true');a=p.parse_args();out=a.output.resolve()
+ p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client','passenger','police','deathserver'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');p.add_argument('--mutate-death-producer',action='store_true');p.add_argument('--null-cop',action='store_true');a=p.parse_args();out=a.output.resolve()
  if out.exists() or ROOT/'.cache' not in out.parents:p.error('Fresh worktree .cache directory required')
  inputs=INPUTS+(SERVER_INPUTS if a.suite in ('server','deathserver') else CLIENT_INPUTS if a.suite in ('client','passenger','police') else [])
  out.mkdir(parents=True);before={n:sha(ROOT/n) for n in inputs}
@@ -90,9 +90,9 @@ def main():
  (out/'compile.log').write_text(c.stdout+c.stderr)
  result={'ProductionHashes':before,'ExtractedHash':sha(out/'extracted_packet.h'),'TestHash':sha(out/'tests.cpp'),'CompileExitCode':c.returncode,'RuntimeValidated':False}
  if not c.returncode:
-  t=subprocess.run([str(out/'tests.exe')],cwd=out,env=processEnv,capture_output=True,text=True);result.update(TestExitCode=t.returncode,Output=t.stdout+t.stderr);(out/'test.log').write_text(result['Output'])
+  t=subprocess.run([str(out/'tests.exe')]+(['--null-only'] if a.null_cop else []),cwd=out,env=processEnv,capture_output=True,text=True);result.update(TestExitCode=t.returncode,Output=t.stdout+t.stderr);(out/'test.log').write_text(result['Output'])
  else:print(c.stdout+c.stderr)
- result['DeathProducerMutation']=a.mutate_death_producer;result['Suite']=a.suite;result['Mutation']=a.mutate_generation;result['ReplayTimeMutation']=a.mutate_replay_time
+ result['NullCopAllocation']=a.null_cop;result['DeathProducerMutation']=a.mutate_death_producer;result['Suite']=a.suite;result['Mutation']=a.mutate_generation;result['ReplayTimeMutation']=a.mutate_replay_time
  result['InputsStable']=before=={n:sha(ROOT/n) for n in inputs}
  result['FrozenInputsMatch']=before=={n:sha(out/'source'/n) for n in inputs}
  result['SupportHashes']=support_before;result['SupportStable']=support_before=={n:sha(HERE/n) for n in support}

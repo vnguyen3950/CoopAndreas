@@ -1,11 +1,26 @@
 #include "client_doubles.h"
+extern "C" __declspec(dllimport) unsigned int __stdcall SetErrorMode(unsigned int);
 #include "cop_control.inc"
 using namespace Packets::Peds;
-int main()
+int main(int argc,char**)
 {
     ModelInfo model; for(auto& ptr:CModelInfo::ms_modelInfoPtrs)ptr=&model;
     CPed local(PED_TYPE_PLAYER1);CWorld::Players[0].m_pPed=&local;CPools::GetPedRef(&local);
     CNetworkPedManager::Init();gGameState=9;Events::processScriptsEvent.after.Fire();
+    SetErrorMode(0x1|0x2);
+    if (argc > 1) {
+        PedSpawn failure;failure.pedid=1;failure.ownerid=1;failure.stamp={99,1,0};failure.pedType=PED_TYPE_COP;failure.modelId=MODEL_SFPD1;
+        nativeCopCityModel=MODEL_LAPD1;copAllocationFails=true;
+        const auto creates=nativeCreates;const auto writes=copModelWrites;
+        receive(failure);
+        expect(!CNetworkPedManager::GetPed(1)&&Deferred().size()==1,"Allocation-null retains exact pending birth without native wrapper");
+        expect(nativeCreates==creates&&copModelWrites==writes,"Null allocation invokes neither native cop constructor nor skin restoration");
+        copAllocationFails=false;tick+=300;CNetworkPedManager::ProcessPendingNative();
+        auto* recovered=CNetworkPedManager::GetPed(1);
+        expect(recovered&&recovered->m_generation==99&&recovered->m_pPed->m_nModelIndex==MODEL_SFPD1,"Retry restores exact requested cop skin and birth");
+        expect(Deferred().empty(),"Successful retry consumes only the matching pending creation");
+        CNetworkPedManager::Clear();std::cout<<checks<<" cop allocation assertions, "<<failures<<" failures\n";return failures?1:0;
+    }
     uint32_t birth=100;
     for(int city:{MODEL_LAPD1,MODEL_SFPD1,MODEL_LVPD1})
     {

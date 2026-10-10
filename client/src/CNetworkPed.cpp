@@ -43,6 +43,7 @@ CNetworkPed::CNetworkPed(int pedid, int modelId, ePedType pedType, CVector pos, 
     if (pedType == PED_TYPE_COP)
     {
         m_pPed = new CCopPed(copType);
+        if (!m_pPed) return;
         if (m_pPed->m_nModelIndex != requestedModel) m_pPed->SetModelIndex(requestedModel);
     }
     else if (pedType == PED_TYPE_MEDIC || pedType == PED_TYPE_FIREMAN)

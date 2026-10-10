@@ -30,6 +30,7 @@ static int nativeCreates=0,nativeDeletes=0,modelRequests=0,warps=0;
 static bool poolFull=false,modelsAvailable=true;
 static bool passengerWarpSucceeds=true;
 static int nativeCopCityModel=MODEL_LAPD1;
+static bool copAllocationFails=false;static int copModelWrites=0;
 struct CEntity {virtual ~CEntity()=default;};class CPed;class CVehicle;
 struct CTaskSimpleUseGun {CVector m_vecTarget{};CTaskSimpleUseGun(CEntity*,CVector,int,int,bool){}void MakeAbortable(CPed*,int,void*){}};
 constexpr int TASK_SECONDARY_ATTACK=0,ABORT_PRIORITY_URGENT=0;
@@ -54,10 +55,10 @@ public:
     CPed(int type=PED_TYPE_CIVMALE,int model=MODEL_MALE01):m_nPedType(type),m_nModelIndex(model){++nativeCreates;}
     ~CPed();bool IsPlayer(){return m_nPedType<4;}bool IsVTableValid(){return true;}
     CVector&GetPosition(){return matrix.pos;}void SetPosn(CVector p){matrix.pos=p;}void SetOrientation(float,float,float){}void SetCharCreatedBy(int c){m_nCreatedBy=c;}
-    void SetModelIndex(int model){m_nModelIndex=model;}void SetPedState(ePedState state){m_ePedState=state;}void SetMoveState(eMoveState){}void SetMoveAnim(){}
+    void SetModelIndex(int model){++copModelWrites;m_nModelIndex=model;}void SetPedState(ePedState state){m_ePedState=state;}void SetMoveState(eMoveState){}void SetMoveAnim(){}
     void Remove(){}Weapon&GetWeapon(){return m_aWeapons[m_nActiveWeaponSlot];}
 };
-class CCopPed:public CPed {public:static eModelID GetPedModelForCopType(eCopType);CCopPed(eCopType type);};
+class CCopPed:public CPed {public:static void*operator new(size_t n)noexcept{return copAllocationFails?nullptr:std::malloc(n);}static void operator delete(void*p){std::free(p);}static eModelID GetPedModelForCopType(eCopType);CCopPed(eCopType type);};
 class CEmergencyPed:public CPed {public:CEmergencyPed(ePedType type,int model):CPed(type,model){}};
 class CCivilianPed:public CPed {public:CCivilianPed(ePedType type,int model):CPed(type,model){}};
 struct Pool {std::map<int,CPed*>refs;int next=100;unsigned GetNoOfFreeSpaces(){return poolFull?0:255;}bool IsObjectValid(CPed*p){for(auto r:refs)if(r.second==p)return true;return false;}};
