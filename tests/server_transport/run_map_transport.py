@@ -30,6 +30,7 @@ def main():
              "server/src/CPlayerAnimationSync.cpp", "server/src/PacketHandlers/player_animation.cpp",
              "shared/network/pickup_lifecycle.h", "shared/network/packets/pickups.h", "server/src/CPickupSync.cpp",
              "server/src/PacketHandlers/pickups.cpp", "server/src/CNetworkPlayerManager.cpp", "server/src/PacketHandlers/scripts.cpp",
+             "shared/network/session_sync.h", "shared/network/packets/session.h", "server/src/CSessionSync.cpp",
              "server/src/CNetwork.cpp", "server/src/CNetworkPlayerManager.cpp", "server/src/PacketHandlers/map.cpp",
              "server/src/PacketHandlers/players.cpp", "tests/server_transport/map_transport.cpp")
     before = {name:digest(ROOT / name) for name in names}

@@ -20,6 +20,7 @@ Factory& GetPacketFactory();
 #include "network/packets/vitals.h"
 #include "network/packets/player_animation.h"
 #include "network/packets/pickups.h"
+#include "network/packets/session.h"
 #include "semver.h"
 #include "sender.inc"
 struct CVector2D { float x = 0, y = 0; CVector2D(float a = 0, float b = 0) : x(a), y(b) {} };
@@ -40,6 +41,7 @@ struct Client
     std::vector<Packets::Players::RespawnPlayer> respawns;
     std::vector<Packets::Pickups::State> pickups;
     std::vector<Packets::Pickups::Action> pickupActions;
+    std::vector<Packets::Session::Update> sessions;
     std::array<uint32_t,8> generations{};
     void Process()
     {
@@ -69,6 +71,7 @@ struct Client
                         else if (auto* p = dynamic_cast<Packets::Players::RespawnPlayer*>(packet.get())) respawns.push_back(*p);
                         else if (auto* p = dynamic_cast<Packets::Pickups::State*>(packet.get())) pickups.push_back(*p);
                         else if (auto* p = dynamic_cast<Packets::Pickups::Action*>(packet.get())) pickupActions.push_back(*p);
+                        else if (auto* p = dynamic_cast<Packets::Session::Update*>(packet.get())) sessions.push_back(*p);
                     }
                 }
             }
@@ -191,6 +194,17 @@ int main(int argc, char** argv)
     claim.sequence = 3; claim.id = guest.pickups.back().row.item.id;
     expect(guest.Send(claim) && Wait([&]{return guest.pickupActions.size() > actionCount;}) && guest.pickupActions.back().grant > originalGrant,
         "New reservation uses a distinct monotonic grant token.");
+    expect(Wait([&]{return !host.sessions.empty() && !guest.sessions.empty();}),"Integrated session identities are delivered to real peers.");
+    Packets::Session::Seed sessionSeed;sessionSeed.state=host.sessions.back().state;sessionSeed.state.money=100;sessionSeed.state.wanted=4;
+    expect(host.Send(sessionSeed)&&Wait([&]{return guest.sessions.back().state.ready&&guest.sessions.back().state.wanted==4;}),
+        "Authenticated host seeds shared wanted for resurrection transport check.");
+    Packets::Session::Transaction resetWanted;resetWanted.op.epoch=guest.sessions.back().state.epoch;resetWanted.op.incarnation=guest.sessions.back().state.incarnation;
+    resetWanted.op.sequence=1;resetWanted.op.kind=SessionSync::Kind::WantedLower;resetWanted.op.reason=SessionSync::Reason::Resurrection;resetWanted.op.level=0;
+    expect(guest.Send(resetWanted)&&Wait([&]{return host.sessions.back().state.wanted==0&&guest.sessions.back().state.acknowledged==1;}),
+        "Real authenticated guest resurrection clears canonical wanted and receives exact receipt.");
+    guest.Send(resetWanted);Wait([]{return false;},150);
+    expect(guest.sessions.back().state.wanted==0&&guest.sessions.back().state.acknowledged==1,
+        "Repeated resurrection receipt cannot restore old wanted or advance the sequence twice.");
     auto oldGeneration = host.waypoints.back().generation; auto guestId = guest.id;
     enet_peer_disconnect(guest.peer,0); enet_host_flush(guest.host); Wait([&]{return !guest.connected;});
     expect(Connect(replacement,port,"fixture_replacement"), "Replacement peer authenticates.");
