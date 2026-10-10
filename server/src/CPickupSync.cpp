@@ -9,7 +9,7 @@
 namespace {
 enum class TraceStage {Hello,Create,Queued,ProofWait,ProofReject,Publish,Send,Claim,Result,Count};
 void Trace(TraceStage stage,const char*reason,uint32_t generation=0,uint32_t sequence=0,uint32_t id=0,int code=0){
-    static constexpr const char*reasons[]={"row","reset","origin-rejected","manifest","expired-or-lifetime","death-seal","producer-life","scope-or-metadata","watching","action"};
+    static constexpr const char*reasons[]={"row","reset","origin-rejected","manifest","expired-or-lifetime","death-seal","producer-life","scope-or-metadata","watching","action","hello-received","hello-not-ready"};
     static std::array<std::array<uint8_t,sizeof(reasons)/sizeof(reasons[0])>,size_t(TraceStage::Count)> counts{};
     static unsigned emitted=0;size_t reasonIndex=0;
     for(;reasonIndex<sizeof(reasons)/sizeof(reasons[0]);++reasonIndex)if(std::strcmp(reason,reasons[reasonIndex])==0)break;
@@ -160,8 +160,11 @@ void CPickupServer::Mission(CNetworkPlayer* player,bool active){
     PickupSync::Actor life;if(Life(player,life)){Room().ChangeHost(-1,{});Room().ChangeHost(player->m_iPlayerId,life);Broadcast();}
 }
 void CPickupServer::Hello(const Packets::Pickups::Hello& packet,CNetworkPlayer* sender){
+    Trace(TraceStage::Hello,"hello-received",packet.actor.generation,packet.actor.sequence);
     ProcessPending();
-    PickupSync::Actor life;if(!packet.Valid()||!Life(sender,life)||!PickupSync::CurrentActor(packet.actor,life))return;
+    PickupSync::Actor life;if(!packet.Valid()||!Life(sender,life)||!PickupSync::CurrentActor(packet.actor,life)){
+        Trace(TraceStage::Hello,"hello-not-ready",packet.actor.generation,packet.actor.sequence);return;
+    }
     peers[sender->m_iPlayerId].watching=true;Trace(TraceStage::Hello,"watching",life.generation,life.sequence,Room().epoch,sender->m_iPlayerId);
     if(sender->m_bIsHost&&CNetworkPlayerManager::GetHost()==sender){
         if(!PickupSync::SameLife(Room().ownerLife,life)||Room().host!=sender->m_iPlayerId){Room().ChangeHost(sender->m_iPlayerId,life);Broadcast();}
