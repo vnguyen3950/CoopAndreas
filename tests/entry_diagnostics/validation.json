@@ -1,0 +1,213 @@
+{
+  "READY": true,
+  "Passed": true,
+  "SourceCommit": "e4ddfaec1a2d2f7a0a9c2fb30997d38a2f0d6922",
+  "TestSourceCommit": "5fc2a0e2752cc2d007d9a16e8bd1d661805f9333",
+  "Version": "0.8.1-alpha",
+  "Scope": "Test-only actual Process/Receive extraction and real common Win32 sink. No native game dispatch or gameplay validation.",
+  "Count": 146,
+  "CheckCount": 146,
+  "CaseCount": 17,
+  "SavedJSONLinesParsed": 1442,
+  "ProductionHashes": {
+    "client/src/CEntryExitDiagnostics.cpp": "57FC57064E83D621F59CB7EC0AEFF896D451AC78FA557EC19B662FAD42FDA889",
+    "client/src/CEntryExitDiagnostics.h": "E1747746A216AC0F7DA3CEA824B47D211ECD3983302162A3F5BEA864ED134E49",
+    "client/src/CEntryExitMarkerSync.cpp": "68EF64BAD11D4AC0196E75973F1813E0F9DC27DF98669E4C8558933EA4ED9A6D",
+    "shared/runtime_diagnostics.h": "C3F37D43BFA52CB2DEDE03FCAC533FD7FA923318E216E489EDE4D9E0EE098CEF",
+    "shared/config.h": "DB452CBC04AA62882C68CBF876AB431CD9EB7B2A896011B35A6B4C1F69CFE0AB",
+    "shared/network/packets/scripts.h": "4E2F113A46D7FE7DC69836B5E777771571452AA948BE79CA1D9E0582E162D5A9",
+    "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+    "client/src/CPacketBuffer.h": "A58F32016B8B69F61055AF629BC538B52062465001793FAC321AE4EC8019E723",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CEntryExit.h": "C763CCF97CFDF4849B52A875D149F658A60A862085E8899C1F2F186ACE953D47",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CPad.h": "D24031906598F0CF9291347A7459A4BA5E08F80F324B20E60356F988039BC92C",
+    "client/src/Debug/CImGui.cpp": "2D6808C40109060EE6CAB3A9D9D4C7D07D434AFB8DD220A55F11F871208883F4"
+  },
+  "GitBlobHashes": {
+    "client/src/CEntryExitDiagnostics.cpp": "00AB451814DCBBBD1B967182DED0DB4BF09BC166FD2BADDD25A11E0E0F094CFF",
+    "client/src/CEntryExitDiagnostics.h": "B101D5D2856E0D6CD36DBE24C2B15CFA5E70205702E7DCAAD95CDC1E9FD11065",
+    "client/src/CEntryExitMarkerSync.cpp": "5BD789346FFAB9B90438BEB8E618A8BCB08DE4C7BD6E95E93577912EC0AF9894",
+    "shared/runtime_diagnostics.h": "A3B1BC6121D53C3277700FC229328B432344973EA1FD6E546F6230FBBDFF2AEB",
+    "shared/config.h": "7940BB9F99A15D3B01FEE524BEECFCFDC49CF0EB10B70B4011515559C12DB989",
+    "shared/network/packets/scripts.h": "76A985E7E7CB3D3F55C80D6814B838898AFD40EE9E4218F3CDEAF055655B557C",
+    "shared/network/packet.h": "0F26ED5EEB330C73B5E233BD212E8F5BF61BE4172F702F593401DFCF60BEBBE4",
+    "client/src/CPacketBuffer.h": "04C163805D727C87DB5BDB0F18CAD888321DACB9CBA48B535E36963BA50DDD1E",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CEntryExit.h": "124FA7C153AF09051B621F007F2970DD1AA760C0E33650F6BC05A1C9EC4C398B",
+    "third_party/plugin-sdk/plugin_sa/game_sa/CPad.h": "6FA5231B008B0A6A7DF4A1E3052CFA9BFE40998D544852E7594871A9CBB8E105",
+    "client/src/Debug/CImGui.cpp": "12C29BA6E272F843600C057BB3A32C0CA0995CA580144B06974AA7FFC34BDE2E"
+  },
+  "SupportHashes": {
+    "run_tests.py": "47A065148E69219259B22E7C07BB2686E24C5FBBF531EC0EC599F740ABD1A598",
+    "fixture.cpp": "272F745BC31C9F632F849BA44115E2C227762541C9E592565B6BDB01AFFAB432",
+    "native_doubles.h": "180FC6B6A619F4FB46BE87C22B54EC288CEF3ACD5CA342FE88763E0934BBCE9F"
+  },
+  "RawGitDiskHashNote": "Git blob LF and disk CRLF hashes remain separate; no normalized bytes substituted.",
+  "CurrentInputsStable": true,
+  "NativeResources": {
+    "C:\\Users\\Vu\\work\\gta-coop\\game-lab\\gta_sa.exe": "A559AA772FD136379155EFA71F00C47AAD34BBFEAE6196B0FE1047D0645CBD26",
+    "C:\\Users\\Vu\\work\\gta-coop\\gta-reversed\\source\\game_sa\\PlayerInfo.cpp": "3EF64E92FA054E18B8CAED8E69A498F8751E1AF6AC90A0D7C05EBBB83DB2F2E9"
+  },
+  "NativeResourcesStable": true,
+  "BinaryInputs": [
+    {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\entry-diagnostic-tests\\.cache\\entry-diagnostics-final-001\\fixture.exe",
+      "Bytes": 260608,
+      "SHA256": "041074E4066E8008E1CE0E05BC3370E8FD0FDD331F2326187AEA0A1500FD6C5F"
+    }
+  ],
+  "NormalRun": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\entry-diagnostic-tests\\.cache\\entry-diagnostics-final-001\\result.json",
+    "Bytes": 10447,
+    "SHA256": "55930334757D9629D460B3050867871E41C152EBAF69C03F11D890A59A60AE7B"
+  },
+  "CompileLog": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\entry-diagnostic-tests\\.cache\\entry-diagnostics-final-001\\compile.log",
+    "Bytes": 363,
+    "SHA256": "BECC3EA50E10EF9DFC9C4B78044BC07346E1A096732830623E943356A3645EFC"
+  },
+  "NativeProof": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\entry-diagnostic-tests\\.cache\\entry-diagnostics-final-001\\native-proof.json",
+    "Bytes": 527,
+    "SHA256": "FDBF6C644B4CF6A1CDADB8FC3747DBCA91CCD3B68BA3D865477C8A353BEF3D58"
+  },
+  "ExtractionHashes": {
+    "functions.inc": "A2B042C38385E90915925EDDC0B162E6B9D473889731D7F3DF06193EEB14E0B5",
+    "native_fields.inc": "9228918BCED39173DB48E87AF6BFB799C33FB9F5285C7E1D2793101D63DC6E25",
+    "packet_fields.inc": "5D29D864F880A114935F0F34F7F61B8B475CF6A0AF23679A491D062E428749AD"
+  },
+  "Cases": [
+    {
+      "Case": "state",
+      "Count": 24,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "sampling",
+      "Count": 10,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "wrap",
+      "Count": 10,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "unready",
+      "Count": 9,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "guards",
+      "Count": 11,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "receive",
+      "Count": 8,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "flags",
+      "Count": 30,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "cap",
+      "Count": 3,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "module-fail",
+      "Count": 5,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "module-truncated",
+      "Count": 5,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "module-noslash",
+      "Count": 5,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "module-long",
+      "Count": 5,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "directory-fail",
+      "Count": 5,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "file-fail",
+      "Count": 5,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "write-fail",
+      "Count": 5,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "partial-write",
+      "Count": 4,
+      "Failures": 0,
+      "Passed": true
+    },
+    {
+      "Case": "reject-fields",
+      "Count": 2,
+      "Failures": 0,
+      "Passed": true
+    }
+  ],
+  "Mutation": {
+    "Name": "safe mask 0x20 replaced with 0x10 only in frozen extraction",
+    "ExpectedFailures": 2,
+    "CaughtFailures": 2,
+    "Result": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\entry-diagnostic-tests\\.cache\\entry-diagnostics-mutant-001\\result.json",
+      "Bytes": 10574,
+      "SHA256": "38E7C30B266F87EC01ADCD6620B52BDA0BC800A6129A422CE0B330A5B2B18B11"
+    },
+    "ProductionChanged": false
+  },
+  "SetupFailure": {
+    "Result": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\entry-diagnostic-tests\\.cache\\entry-diagnostics-001\\result.json",
+      "Bytes": 2100,
+      "SHA256": "5085B7B75FE69F3E2B07B3108A6DD69D0EB5F2CA346B9FFEE974F7D67F9FAE21"
+    },
+    "Classification": "Harness EntryPool double lacked inherited initializer-list assignment. Compile failed before execution; not a production failure.",
+    "Preserved": true
+  },
+  "OriginalIndependentEvidence": "Prior 14 static sink checks and 11 native Update/TransitionStarted checks remain separate and are not counted again.",
+  "Limitations": [
+    "Actor/pool/eligibility methods are recorded native doubles; no real native tasks, actor pool or game calls were executed.",
+    "Receive retains original incoming host assignments; this test does not introduce readiness replay or change permission/gate behavior.",
+    "Partial writes intentionally may leave incomplete diagnostics and are not claimed valid JSON; durability and hard real-time latency remain unproved.",
+    "This is an isolated x86 harness compile, not a merged client/SDK build. Root owns merged validation/package."
+  ],
+  "ProductionChanged": false,
+  "GTA_SA_DIR_Cleared": true,
+  "SharedBuild": false,
+  "GameLaunched": false,
+  "ProcessAttached": false
+}
