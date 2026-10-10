@@ -30,7 +30,7 @@ struct CVector { float x=0,y=0,z=0; CVector()=default;CVector(float a,float b,fl
 #include "extracted_packet.h"
 struct ENetPeer {int state=5;};constexpr int ENET_PEER_STATE_CONNECTED=5;
 class CNetworkPed;
-class CNetworkPlayer {public:ENetPeer* m_pPeer=nullptr;int m_iPlayerId=0;bool m_bIsHost=false;std::vector<CNetworkPed*> m_vPedClaims;std::string GetName(){return "recorded";}};
+class CNetworkPlayer {public:ENetPeer* m_pPeer=nullptr;int m_iPlayerId=0;bool m_bIsHost=false;struct{uint32_t generation=10;}m_vitals;std::vector<CNetworkPed*> m_vPedClaims;std::string GetName(){return "recorded";}};
 struct CNetworkPlayerManager {static inline std::vector<CNetworkPlayer*>m_pPlayers;static CNetworkPlayer*GetPlayer(ENetPeer* p){for(auto* player:m_pPlayers)if(player->m_pPeer==p)return player;return nullptr;}};
 struct CNetworkVehicle {int m_nVehicleId=0;bool m_bUsedByPed=false;CVector m_vecPosition{},m_vecRotation{};CNetworkPlayer*m_pPlayers[8]{};};
 struct CTrailerSync {static void Queue(Packet&) {} static void NpcDriver(CNetworkVehicle*,CNetworkPed*) {}};

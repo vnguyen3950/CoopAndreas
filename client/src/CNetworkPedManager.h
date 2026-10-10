@@ -5,6 +5,7 @@
 class CNetworkPedManager
 {
 public:
+    static bool GetOwnerDeathIdentity(CPed* ped, int& pedId, NPCSync::Stamp& sealedDeath);
 	static std::vector<CNetworkPed*> m_pPeds;
 	static CNetworkPed* m_apTempPeds[255];
 

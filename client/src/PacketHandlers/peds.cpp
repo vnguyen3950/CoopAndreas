@@ -114,6 +114,11 @@ PACKET_HANDLER(ePacketType::PED_ONFOOT, Packets::Peds::PedOnFoot* pPedOnFoot)
         return;
     }
 
+    if (pNetworkPed->m_replicaDeath) {
+        pPed->SetPosn(pPedOnFoot->pos); pPed->m_nAreaCode = pPedOnFoot->area;
+        pNetworkPed->ApplyReplicaHealth(0); return; // Keep the existing death task intact.
+    }
+
     CVehicle* pVehicle = pPed->m_pVehicle;
     if (pVehicle && pPed->m_nPedFlags.bInVehicle && pVehicle->IsVTableValid())
     {
@@ -133,11 +138,14 @@ PACKET_HANDLER(ePacketType::PED_ONFOOT, Packets::Peds::PedOnFoot* pPedOnFoot)
     pNetworkPed->m_fAimingRotation = pPed->m_fAimingRotation = pPedOnFoot->aimingRotation.m_angle;
     pNetworkPed->m_fLookDirection = pPed->m_fLookDirection = pPedOnFoot->lookDirection.m_angle;
 
-    pNetworkPed->m_fHealth = pPed->m_fHealth = pPedOnFoot->healthSnapshot.iHealth;
+    pNetworkPed->ApplyReplicaHealth(pPedOnFoot->healthSnapshot.iHealth);
     pPed->m_fArmour = pPedOnFoot->healthSnapshot.iArmour;
 
     pNetworkPed->m_vecVelocity = pPedOnFoot->velocity;
-    pNetworkPed->m_nMoveState = pPedOnFoot->moveState;
+    pNetworkPed->m_nMoveState = pNetworkPed->m_replicaDeath ? PEDMOVE_STILL : pPedOnFoot->moveState;
+    if (!pNetworkPed->m_replicaDeath) {
+        pPed->SetMoveState(pPedOnFoot->moveState); pPed->SetMoveAnim();
+    }
 
     if (CUtil::IsDucked(pPed) != pPedOnFoot->bDucked)
     {
@@ -146,7 +154,7 @@ PACKET_HANDLER(ePacketType::PED_ONFOOT, Packets::Peds::PedOnFoot* pPedOnFoot)
     }
 
     // TODO reimplement ped aim sync
-    if (pPedOnFoot->bAiming)
+    if (pPedOnFoot->bAiming && !pNetworkPed->m_replicaDeath)
     {
         CTaskSimpleUseGun* useGun = pPed->m_pIntelligence->GetTaskUseGun();
         if (!useGun)
@@ -207,7 +215,7 @@ PACKET_HANDLER(ePacketType::PED_DRIVER_UPDATE, Packets::Peds::PedDriverUpdate* p
         !pNetworkPed->AcceptState(pPedDriverUpdate->stamp))
         return;
 
-    if (pPed->m_pVehicle != pVehicle || !pPed->m_nPedFlags.bInVehicle)
+    if (!pNetworkPed->m_replicaDeath && (pPed->m_pVehicle != pVehicle || !pPed->m_nPedFlags.bInVehicle))
     {
         pNetworkPed->WarpIntoVehicleDriver(pVehicle);
     }
@@ -222,7 +230,7 @@ PACKET_HANDLER(ePacketType::PED_DRIVER_UPDATE, Packets::Peds::PedDriverUpdate* p
 
     pNetworkPed->ApplyWeaponSnapshot(pPedDriverUpdate->pedWeapon);
 
-    pNetworkPed->m_fHealth = pPed->m_fHealth = pPedDriverUpdate->pedHealth.iHealth;
+    pNetworkPed->ApplyReplicaHealth(pPedDriverUpdate->pedHealth.iHealth);
     pPed->m_fArmour = pPedDriverUpdate->pedHealth.iArmour;
 
     pVehicle->m_nPrimaryColor = pPedDriverUpdate->color1;
@@ -289,6 +297,11 @@ PACKET_HANDLER(ePacketType::PED_PASSENGER_UPDATE, Packets::Peds::PedPassengerSyn
         (pNetworkVehicle->m_pVehicle->m_apPassengers[pPedPassengerSync->seatid] &&
          pNetworkVehicle->m_pVehicle->m_apPassengers[pPedPassengerSync->seatid] != pNetworkPed->m_pPed) ||
         !pNetworkPed->CanAcceptState(pPedPassengerSync->stamp)) return;
+    if (pNetworkPed->m_replicaDeath) {
+        if (pNetworkPed->AcceptState(pPedPassengerSync->stamp)) pNetworkPed->ApplyReplicaHealth(0);
+        return;
+    }
+
     if (!pNetworkPed->m_pPed->m_nPedFlags.bInVehicle ||
         pNetworkPed->m_pPed->m_pVehicle != pNetworkVehicle->m_pVehicle ||
         pNetworkVehicle->m_pVehicle->m_apPassengers[pPedPassengerSync->seatid] != pNetworkPed->m_pPed)
@@ -309,7 +322,7 @@ PACKET_HANDLER(ePacketType::PED_PASSENGER_UPDATE, Packets::Peds::PedPassengerSyn
 
     pNetworkPed->ApplyWeaponSnapshot(pPedPassengerSync->weaponSnapshot);
 
-    pNetworkPed->m_fHealth = pNetworkPed->m_pPed->m_fHealth = pPedPassengerSync->healthSnapshot.iHealth;
+    pNetworkPed->ApplyReplicaHealth(pPedPassengerSync->healthSnapshot.iHealth);
     pNetworkPed->m_pPed->m_fArmour = pPedPassengerSync->healthSnapshot.iArmour;
 }
 
@@ -317,7 +330,7 @@ PACKET_HANDLER(ePacketType::PED_SHOT_SYNC, Packets::Peds::PedShotSync* pPedShotS
 {
     CNetworkPed* pNetworkPed = CNetworkPedManager::GetPed(pPedShotSync->pedid);
 
-    if (pNetworkPed && pNetworkPed->HasValidPed() && !pNetworkPed->m_bSyncing &&
+    if (pNetworkPed && pNetworkPed->HasValidPed() && !pNetworkPed->m_bSyncing && !pNetworkPed->m_replicaDeath && !pNetworkPed->m_deathStamp.State() &&
         pPedShotSync->Valid() && pPedShotSync->stamp.SameOwner(pNetworkPed->GetStamp()))
     {
         if (pNetworkPed->m_pPed->GetWeapon().m_eWeaponType != pPedShotSync->weaponType)
@@ -385,4 +398,18 @@ PACKET_HANDLER(ePacketType::PED_PIN, Packets::Peds::PedPin* packet)
     if (CNetworkPedManager::Defer(*packet, packet->pedid, packet->stamp, !CNetworkPedManager::GetPed(packet->pedid))) return;
     if (auto* ped = CNetworkPedManager::GetPed(packet->pedid))
         if (packet->stamp.SameOwner(ped->GetStamp())) { ped->m_bPinned = packet->pinned; ped->m_bClaimOnRelease = false; }
+}
+
+PACKET_HANDLER(ePacketType::PED_DEATH, Packets::Peds::PedDeath* packet)
+{
+    auto* ped = CNetworkPedManager::GetPed(packet->pedid);
+    if (!packet->Valid() || CNetworkPedManager::Defer(*packet, packet->pedid, packet->stamp, !ped)) return;
+    if (!ped || packet->stamp.generation != ped->m_generation) return;
+    if (packet->stamp.epoch > ped->m_ownerEpoch) { CNetworkPedManager::Defer(*packet, packet->pedid, packet->stamp, true); return; }
+    if (ped->m_deathStamp.State()) return;
+    ped->m_deathStamp = packet->stamp;
+    ped->m_stateSequence = (std::max)(ped->m_stateSequence, packet->stamp.sequence);
+    if (!ped->HasValidPed()) return;
+    ped->m_pPed->SetPosn(packet->position); ped->m_pPed->m_nAreaCode = packet->area;
+    ped->ApplyReplicaHealth(0);
 }

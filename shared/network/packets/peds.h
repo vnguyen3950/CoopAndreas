@@ -10,6 +10,25 @@
 
 namespace Packets::Peds
 {
+class PedDeath : public Packet
+{
+    DEFINE_PACKET_TYPE(PedDeath, ePacketType::PED_DEATH, ePacketChannel::EVENT);
+public:
+    int pedid = 0;
+    NPCSync::Stamp stamp{};
+    CVector position{};
+    uint8_t area = 0;
+    bool Valid() const { return pedid >= 0 && pedid < Config::MAX_SERVER_PEDS && stamp.State() && NPCSync::Position(position); }
+    template<class Stream> bool Serialize(Stream& stream)
+    {
+        if (Stream::IsWriting && !Valid()) return false;
+        serialize_int(stream, pedid, 0, Config::MAX_SERVER_PEDS - 1);
+        serialize_object(stream, stamp);
+        serialize_float(stream, position.x); serialize_float(stream, position.y); serialize_float(stream, position.z);
+        serialize_uint8(stream, area);
+        return Valid();
+    }
+};
 class PedSpawn : public Packet
 {
     DEFINE_PACKET_TYPE(PedSpawn, ePacketType::PED_SPAWN, ePacketChannel::EVENT);

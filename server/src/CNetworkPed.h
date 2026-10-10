@@ -23,6 +23,11 @@ public:
     char m_szSpecialModelName[8]{};
     uint32_t m_generation = 0, m_ownerEpoch = 1, m_stateSequence = 0, m_requestToken = 0;
     bool m_bPinned = false;
+    NPCSync::Stamp m_deathStamp{};
+    uint32_t m_deathProducerGeneration = 0;
+    CNetworkPlayer* m_deathProducer = nullptr;
+    CVector m_deathPosition{};
+    uint8_t m_deathArea = 0;
     Packets::Peds::PedReplay m_lastState{};
     bool m_hasState = false;
     NPCSync::Stamp GetStamp() const { return {m_generation, m_ownerEpoch, m_stateSequence}; }

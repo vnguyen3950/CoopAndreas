@@ -2,6 +2,21 @@
 #include "PedHooks.h"
 #include "CNetworkPed.h"
 #include <CPedGroups.h>
+#include <CCopPed.h>
+
+void PedHooks::ProcessCopControl(CCopPed* ped)
+{
+    auto* networkPed = CNetwork::m_bAuthenticated ? CNetworkPedManager::GetPed(ped) : nullptr;
+    if (networkPed && networkPed->HasValidPed() && networkPed->GetStamp().Lifetime() && !networkPed->m_bSyncing)
+    {
+        // Keep native physics/task processing, without this replica reacting to
+        // the observer's wanted state through CCopPed's local control overlay.
+        plugin::CallMethod<0x5E8CD0>(ped);
+        return;
+    }
+    plugin::CallMethod<0x5DE160>(ped);
+}
+static void __fastcall CopControl_Hook(CCopPed* ped, void*) { PedHooks::ProcessCopControl(ped); }
 
 static void __cdecl CPopulation__Update_Hook(bool generate)
 {
@@ -143,6 +158,15 @@ int16_t __fastcall CAEPedSpeechAudioEntity__AddSayEvent_Hook(CAEPedSpeechAudioEn
 
 void PedHooks::InjectHooks()
 {
+    // Supported executable disk identity; verify all relevant native boundaries
+    // before changing the one cop vtable slot. This is not runtime validation.
+    const uint8_t copPrefix[] = {0x83,0xEC,0x48,0x56};
+    const uint8_t basePrefix[] = {0x83,0xEC,0x14,0x53};
+    if (*reinterpret_cast<uintptr_t*>(0x86C148) == 0x5DE160
+        && !std::memcmp(reinterpret_cast<const void*>(0x5DE160), copPrefix, sizeof copPrefix)
+        && !std::memcmp(reinterpret_cast<const void*>(0x5E8CD0), basePrefix, sizeof basePrefix))
+        patch::SetPointer(0x86C148, CopControl_Hook);
+    else logger::warn("Cop replica control hook disabled: native identity mismatch");
     // ped hooks
     patch::RedirectCall(0x53C030, CPopulation__Update_Hook);
     patch::RedirectCall(0x53C054, CPopulation__Update_Hook);

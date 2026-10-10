@@ -65,6 +65,11 @@ void CNetworkPedManager::ClearClaims(CNetworkPed* ped)
 }
 void CNetworkPedManager::Replay(CNetworkPed* ped, CNetworkPlayer* recipient)
 {
+    if (ped && ped->m_deathStamp.State() && Authenticated(recipient)) {
+        Packets::Peds::PedDeath death; death.pedid = ped->m_nPedId; death.stamp = ped->m_deathStamp;
+        death.position = ped->m_deathPosition; death.area = ped->m_deathArea; death.serverTime = g_serverTime;
+        GetPacketFactory().Send(death, recipient);
+    }
     if (ped && ped->m_hasState && Authenticated(recipient)) {
         auto packet = ped->m_lastState; packet.serverTime = g_serverTime;
         GetPacketFactory().Send(packet, recipient);
@@ -110,4 +115,13 @@ void CNetworkPedManager::RemoveAllHostedAndNotify(CNetworkPlayer* player)
         if (!successor || !AssignOwner(ped, successor)) DeleteAndNotify(ped, player);
     }
     player->m_vPedClaims.clear(); requestHighWater.erase(player);
+}
+
+bool CNetworkPedManager::GetDeathProducer(CNetworkPlayer* sender, int pedId, const NPCSync::Stamp& sealedDeath)
+{
+    if (!Authenticated(sender) || !sealedDeath.State()) return false;
+    auto* ped = GetPed(pedId);
+    return ped && ped->m_generation == sealedDeath.generation && ped->m_deathStamp.State()
+        && ped->m_deathStamp.SameOwner(sealedDeath) && ped->m_deathStamp.sequence == sealedDeath.sequence
+        && ped->m_deathProducer == sender && sender->m_vitals.generation == ped->m_deathProducerGeneration;
 }

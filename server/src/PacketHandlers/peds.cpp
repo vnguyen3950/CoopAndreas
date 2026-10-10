@@ -88,6 +88,7 @@ PACKET_HANDLER(ePacketType::PED_ONFOOT, Packets::Peds::PedOnFoot* pPedOnFoot, CN
         }
 
         if (!pPed->AcceptState(pPedOnFoot->stamp)) return;
+        if (pPed->m_deathStamp.State()) pPedOnFoot->healthSnapshot.iHealth = 0;
         pPed->m_lastState.mode = 1; pPed->m_lastState.onFoot = *pPedOnFoot; pPed->m_hasState = true;
         pPed->m_vecPos = pPedOnFoot->pos;
         GetPacketFactory().SendToAll(*pPedOnFoot, pNetworkPlayer);
@@ -120,6 +121,7 @@ PACKET_HANDLER(
         return;
 
     if (!pNetworkPed->AcceptState(pPedDriverUpdate->stamp)) return;
+    if (pNetworkPed->m_deathStamp.State()) pPedDriverUpdate->pedHealth.iHealth = 0;
     pNetworkPed->m_lastState.mode = 2; pNetworkPed->m_lastState.driver = *pPedDriverUpdate; pNetworkPed->m_hasState = true;
     pNetworkPed->m_vecPos = pPedDriverUpdate->pos;
     pNetworkVehicle->m_bUsedByPed = true;
@@ -150,6 +152,7 @@ PACKET_HANDLER(ePacketType::PED_PASSENGER_UPDATE, Packets::Peds::PedPassengerSyn
     if (!vehicle || (pPedPassengerSync->seatid + 1 < ARRAY_SIZE(vehicle->m_pPlayers) &&
         vehicle->m_pPlayers[pPedPassengerSync->seatid + 1]) || !pNetworkPed->AcceptState(pPedPassengerSync->stamp)) return;
     pNetworkPed->m_vecPos = vehicle->m_vecPosition;
+    if (pNetworkPed->m_deathStamp.State()) pPedPassengerSync->healthSnapshot.iHealth = 0;
     pNetworkPed->m_lastState.mode = 3; pNetworkPed->m_lastState.passenger = *pPedPassengerSync; pNetworkPed->m_hasState = true;
     GetPacketFactory().SendToAll(*pPedPassengerSync, pNetworkPlayer);
 }
@@ -158,7 +161,7 @@ PACKET_HANDLER(ePacketType::PED_SHOT_SYNC, Packets::Peds::PedShotSync* pPedShotS
 {
     if (!CNetworkPedManager::Authenticated(pNetworkPlayer) || !pPedShotSync->Valid()) return;
     CNetworkPed* pNetworkPed = CNetworkPedManager::GetPed(pPedShotSync->pedid);
-    if (pNetworkPed == nullptr)
+    if (pNetworkPed == nullptr || pNetworkPed->m_deathStamp.State())
     {
         return;
     }
@@ -241,4 +244,30 @@ PACKET_HANDLER(ePacketType::PED_PIN, Packets::Peds::PedPin* packet, CNetworkPlay
     if (!CNetworkPedManager::AssignOwner(ped, sender)) return;
     ped->m_bPinned = packet->pinned; CNetworkPedManager::ClearClaims(ped);
     packet->stamp = ped->GetStamp(); packet->requestToken = 0; packet->serverTime = g_serverTime; GetPacketFactory().SendToAll(*packet);
+}
+
+PACKET_HANDLER(ePacketType::PED_DEATH, Packets::Peds::PedDeath* packet, CNetworkPlayer* sender)
+{
+    if (!CNetworkPedManager::Authenticated(sender) || !packet->Valid()) return;
+    auto* ped = CNetworkPedManager::GetPed(packet->pedid);
+    if (!ped || ped->m_generation != packet->stamp.generation) return;
+    if (ped->m_deathStamp.State()) {
+        // Exact original producer replay is inert; no new task, token or loot.
+        return;
+    }
+    if (ped->m_pSyncer != sender || !packet->stamp.SameOwner(ped->GetStamp())
+        || !sender->m_vitals.generation) return;
+    // SYNC can outrun EVENT. A later state sequence cannot suppress an otherwise
+    // exact current-owner death seal, nor can the seal lower that high-water.
+    ped->m_stateSequence = (std::max)(ped->m_stateSequence, packet->stamp.sequence);
+    ped->m_deathStamp = packet->stamp; ped->m_deathProducer = sender;
+    ped->m_deathProducerGeneration = sender->m_vitals.generation;
+    ped->m_deathPosition = packet->position; ped->m_vecPos = packet->position; ped->m_deathArea = packet->area;
+    if (ped->m_hasState) {
+        if (ped->m_lastState.mode == 1) ped->m_lastState.onFoot.healthSnapshot.iHealth = 0;
+        else if (ped->m_lastState.mode == 2) ped->m_lastState.driver.pedHealth.iHealth = 0;
+        else if (ped->m_lastState.mode == 3) ped->m_lastState.passenger.healthSnapshot.iHealth = 0;
+    }
+    packet->serverTime = g_serverTime;
+    GetPacketFactory().SendToAll(*packet, sender);
 }

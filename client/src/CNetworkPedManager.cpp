@@ -118,6 +118,8 @@ void CNetworkPedManager::Update()
             continue;
 
         CPed* pPed = pNetworkPed->m_pPed;
+        if (pPed && pPed->m_fHealth <= 0) { int deadId; NPCSync::Stamp death; GetOwnerDeathIdentity(pPed, deadId, death); }
+
         if (!pPed)
             continue;
 
@@ -422,7 +424,7 @@ bool CNetworkPedManager::Defer(Packet& packet, int id, const NPCSync::Stamp& sta
         return old.id == id && (old.stamp.generation < stamp.generation ||
             (old.stamp.generation == stamp.generation && (type == ePacketType::PED_REMOVE || old.packet->GetType() == type)));
     }), queue.end());
-    // At most one of five reliable lifecycle/replay types per slot. Dormant
+    // At most one of six reliable lifecycle/replay types per slot. Dormant
     // menu/model/pool identities have no auth-time expiry and cannot grow unbounded.
     if (type != ePacketType::PED_REMOVE || GetPed(id)) queue.push_back({id, stamp, std::unique_ptr<Packet>(packet.Clone())});
     return true;
@@ -439,4 +441,22 @@ void CNetworkPedManager::ProcessPendingNative()
         auto next = std::move(Deferred().front()); Deferred().erase(Deferred().begin());
         GetPacketHandler().ProcessPacket(next.packet.get());
     }
+}
+
+bool CNetworkPedManager::GetOwnerDeathIdentity(CPed* native, int& pedId, NPCSync::Stamp& sealedDeath)
+{
+    if (!CNetwork::m_bAuthenticated || !native || !NativeReady()) return false;
+    auto* ped = GetPed(native);
+    if (!ped || !ped->HasValidPed() || !ped->m_bSyncing || ped->m_replicaDeath || native->m_fHealth > 0
+        || !std::isfinite(native->m_fHealth) || !ped->GetStamp().Lifetime()) return false;
+    if (!ped->m_deathStamp.State()) {
+        Packets::Peds::PedDeath packet;
+        packet.pedid = ped->m_nPedId; packet.position = native->GetPosition(); packet.area = native->m_nAreaCode;
+        if (!NPCSync::Position(packet.position) || !ped->NextState(packet.stamp)) return false;
+        ped->m_deathStamp = packet.stamp;
+        GetPacketFactory().Send(packet);
+    }
+    // An owner transfer cannot inherit the original native producer allowance.
+    if (!ped->m_deathStamp.SameOwner(ped->GetStamp())) return false;
+    pedId = ped->m_nPedId; sealedDeath = ped->m_deathStamp; return true;
 }

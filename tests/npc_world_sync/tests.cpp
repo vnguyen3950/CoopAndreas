@@ -72,5 +72,9 @@ int main(){
  for(int field=0;field<2;++field){auto bad=e;int start=field==0?3:11;int width=field==0?8:31;for(int bit=0;bit<width;++bit)bad.data()[(start+bit)/8]|=uint8_t(1u<<((start+bit)%8));CNetworkEntitySerializer value;serialize::ReadStream s(bad.data(),bad.bytes);expect(!value.Serialize(s),"Malformed NPC slot/generation encodings rejected on read");}
  PedPin pendingPin;pendingPin.requestToken=42;pendingPin.pinned=true;roundtrip(pendingPin);
  for(uint32_t seed=1;seed<=5000;++seed){Wire bad;uint32_t value=seed;for(auto&word:bad.words){value=value*1664525u+1013904223u;word=value;}bad.bytes=1+int(seed%128);PedOnFoot p;bool accepted=decode(bad,p);expect(!accepted||p.Valid(),"Malformed actual NPC envelope never yields invalid replay state");}
+
+ for(int id=0;id<255;id++){PedDeath d;d.pedid=id;d.stamp={uint32_t(id+1),3,17};d.position={10,20,3};d.area=18;roundtrip(d);expect(static_cast<Packet&>(d).GetChannel()==ePacketChannel::EVENT,"Death seal uses reliable ordered EVENT");}
+ PedDeath invalidDeath;invalidDeath.stamp={1,1,0};Wire deathWire;serialize::WriteStream deadWrite(deathWire.data(),sizeof(deathWire.words));expect(!static_cast<Packet&>(invalidDeath).SerializeWrite(deadWrite),"Death seal cannot use unknown state sequence");
+ invalidDeath.stamp.sequence=1;invalidDeath.position.x=std::numeric_limits<float>::quiet_NaN();serialize::WriteStream nanDeath(deathWire.data(),sizeof(deathWire.words));expect(!static_cast<Packet&>(invalidDeath).SerializeWrite(nanDeath),"Nonfinite death position rejected before relay");
  std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;
 }

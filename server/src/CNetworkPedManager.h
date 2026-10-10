@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "network/npc_sync.h"
 
 class CNetworkPlayer;
 class CNetworkPed;
@@ -8,6 +9,7 @@ class CNetworkPed;
 class CNetworkPedManager
 {
 public:
+    static bool GetDeathProducer(CNetworkPlayer* sender, int pedId, const NPCSync::Stamp& sealedDeath);
     static std::vector<CNetworkPed*> m_pPeds;
     static void Add(CNetworkPed* ped);
     static void Remove(CNetworkPed* ped);

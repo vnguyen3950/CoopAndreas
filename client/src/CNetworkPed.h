@@ -28,6 +28,9 @@ public:
 	uint32_t m_generation = 0, m_ownerEpoch = 0, m_stateSequence = 0, m_requestToken = 0;
 	int m_ownerId = -1;
 	bool m_bPinned = false, m_bAllowReplay = false;
+	NPCSync::Stamp m_deathStamp{};
+	bool m_replicaDeath = false;
+	void ApplyReplicaHealth(float health);
 	inline static uint32_t m_lastRequestToken = 0;
 	static bool WasRequested(uint32_t token) { return token > 0 && token <= m_lastRequestToken; }
 	NPCSync::Stamp GetStamp() const { return {m_generation, m_ownerEpoch, m_stateSequence}; }

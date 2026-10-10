@@ -29,11 +29,14 @@ namespace logger {template<class...T>void warn(const char*,T...) {}}
 static int nativeCreates=0,nativeDeletes=0,modelRequests=0,warps=0;
 static bool poolFull=false,modelsAvailable=true;
 static bool passengerWarpSucceeds=true;
+static int nativeCopCityModel=MODEL_LAPD1;
 struct CEntity {virtual ~CEntity()=default;};class CPed;class CVehicle;
 struct CTaskSimpleUseGun {CVector m_vecTarget{};CTaskSimpleUseGun(CEntity*,CVector,int,int,bool){}void MakeAbortable(CPed*,int,void*){}};
 constexpr int TASK_SECONDARY_ATTACK=0,ABORT_PRIORITY_URGENT=0;
-struct TaskManager {CTaskSimpleUseGun*gun=nullptr;void SetTaskSecondary(CTaskSimpleUseGun* task,int){gun=task;}};
-struct Intelligence {TaskManager m_TaskMgr;float m_fDmRadius=0;int m_nDmNumPedsToScan=0;void SetPedDecisionMakerType(int){}void SetSeeingRange(float){}void SetHearingRange(float){}CTaskSimpleUseGun*GetTaskUseGun(){return m_TaskMgr.gun;}};
+struct CTaskComplexDie {template<class...T>CTaskComplexDie(T...){}};
+static int deathTasks=0;constexpr int TASK_PRIMARY_EVENT_RESPONSE_NONTEMP=2;
+struct TaskManager {CTaskSimpleUseGun*gun=nullptr;void SetTask(CTaskComplexDie*,int,bool){++deathTasks;}void SetTaskSecondary(CTaskSimpleUseGun* task,int){gun=task;}};
+struct Intelligence {void ClearTasks(bool,bool){}TaskManager m_TaskMgr;float m_fDmRadius=0;int m_nDmNumPedsToScan=0;void SetPedDecisionMakerType(int){}void SetSeeingRange(float){}void SetHearingRange(float){}CTaskSimpleUseGun*GetTaskUseGun(){return m_TaskMgr.gun;}};
 struct Matrix {CVector pos{},right{},up{};};
 struct Weapon {eWeaponType m_eWeaponType=WEAPON_UNARMED;eWeaponState m_nState=WEAPONSTATE_READY;};
 struct PlayerData {};
@@ -41,17 +44,20 @@ class CPed:public CEntity {
 public:
     Matrix matrix;Matrix*m_matrix=&matrix;Intelligence intelligence;Intelligence*m_pIntelligence=&intelligence;
     PlayerData playerData;PlayerData*m_pPlayerData=&playerData;CVehicle*m_pVehicle=nullptr;CEntity*m_pTargetedObject=nullptr;
-    struct {bool bInVehicle=false;int CantBeKnockedOffBike=2;}m_nPedFlags;
+    struct {bool bInVehicle=false;bool bDoesntDropWeaponsWhenDead=false;int CantBeKnockedOffBike=2;}m_nPedFlags;
     int m_nPedType=PED_TYPE_CIVMALE,m_nModelIndex=MODEL_MALE01,m_nCreatedBy=RANDOM_CHAR,m_nAreaCode=0,field_54C=0;
+    int m_nMoneyCount=25;
+    ePedState m_ePedState=PEDSTATE_IDLE;
     float m_fHealth=100,m_fArmour=0,m_fAimingRotation=0,m_fCurrentRotation=0,m_fLookDirection=0;
     CVector m_vecMoveSpeed{};uint8_t m_nFightingStyle=4,m_nActiveWeaponSlot=0;bool ducked=false;
     std::array<Weapon,13>m_aWeapons;
     CPed(int type=PED_TYPE_CIVMALE,int model=MODEL_MALE01):m_nPedType(type),m_nModelIndex(model){++nativeCreates;}
     ~CPed();bool IsPlayer(){return m_nPedType<4;}bool IsVTableValid(){return true;}
     CVector&GetPosition(){return matrix.pos;}void SetPosn(CVector p){matrix.pos=p;}void SetOrientation(float,float,float){}void SetCharCreatedBy(int c){m_nCreatedBy=c;}
+    void SetModelIndex(int model){m_nModelIndex=model;}void SetPedState(ePedState state){m_ePedState=state;}void SetMoveState(eMoveState){}void SetMoveAnim(){}
     void Remove(){}Weapon&GetWeapon(){return m_aWeapons[m_nActiveWeaponSlot];}
 };
-class CCopPed:public CPed {public:CCopPed(eCopType):CPed(PED_TYPE_COP,MODEL_LAPDM1){}};
+class CCopPed:public CPed {public:static eModelID GetPedModelForCopType(eCopType);CCopPed(eCopType type);};
 class CEmergencyPed:public CPed {public:CEmergencyPed(ePedType type,int model):CPed(type,model){}};
 class CCivilianPed:public CPed {public:CCivilianPed(ePedType type,int model):CPed(type,model){}};
 struct Pool {std::map<int,CPed*>refs;int next=100;unsigned GetNoOfFreeSpaces(){return poolFull?0:255;}bool IsObjectValid(CPed*p){for(auto r:refs)if(r.second==p)return true;return false;}};
@@ -60,8 +66,11 @@ inline CPed::~CPed(){++nativeDeletes;for(auto i=CPools::pool.refs.begin();i!=CPo
 constexpr int MODEL_INFO_PED=7,LOADSTATE_LOADED=1;
 struct ModelInfo {int GetModelType(){return MODEL_INFO_PED;}};
 struct CModelInfo {static inline std::array<ModelInfo*,300>ms_modelInfoPtrs{};};
-struct CStreaming {struct Info {int m_nLoadState=0;};static inline std::array<Info,300>ms_aInfoForModel{};static void RequestModel(int,int){++modelRequests;}static void RequestSpecialModel(int,const char*,int){++modelRequests;}static void LoadAllRequestedModels(bool){if(modelsAvailable)for(auto&i:ms_aInfoForModel)i.m_nLoadState=1;}};
+struct CStreaming {struct Info {int m_nLoadState=0;};static inline std::array<Info,300>ms_aInfoForModel{};static eModelID GetDefaultCopModel(){return eModelID(nativeCopCityModel);}static void RequestModel(int,int){++modelRequests;}static void RequestSpecialModel(int,const char*,int){++modelRequests;}static void LoadAllRequestedModels(bool){if(modelsAvailable)for(auto&i:ms_aInfoForModel)i.m_nLoadState=1;}};
 struct CWorld {struct Info {CPed*m_pPed=nullptr;};static inline std::array<Info,10>Players{};static inline int PlayerInFocus=0;static void Add(CPed*){}static void Remove(CPed*){}};
+#define NOTSA_UNREACHABLE() std::abort()
+#include "cop_native_models.inc"
+inline CCopPed::CCopPed(eCopType type):CPed(PED_TYPE_COP,ResolveModelForCopType(uint32_t(type))){}
 struct CVehicle:public CEntity {
     Matrix matrix;Matrix*m_matrix=&matrix;CPed*m_pDriver=nullptr;CPed*m_apPassengers[8]{};int m_nMaxPassengers=8,m_nAreaCode=0;
     CVector m_vecMoveSpeed{},m_vecTurnSpeed{};uint8_t m_nPrimaryColor=0,m_nSecondaryColor=0;float m_fHealth=1000,m_fGasPedal=0,m_fBreakPedal=0,m_fSteerAngle=0;
@@ -80,7 +89,9 @@ struct CUtil {static bool IsDucked(CPed*p){return p->ducked;}template<class T>st
 struct CAutoPilot{};struct CRadar {static void ClearBlipForEntity(int,int){}};struct eBlipType {static constexpr int BLIP_CHAR=0;};
 namespace Commands {constexpr int WARP_CHAR_FROM_CAR_TO_COORD=1;}
 namespace plugin {template<int Op,class...A>void Command(A...){}}
-struct PedHooks {static inline char ms_aszLoadedSpecialModels[10][8]{};};
+static int baseCopControls=0,ownerCopControls=0;
+namespace plugin {template<int Address,class...A>void CallMethod(A...){if(Address==0x5E8CD0)++baseCopControls;if(Address==0x5DE160)++ownerCopControls;}}
+struct PedHooks {static void ProcessCopControl(CCopPed*);static inline char ms_aszLoadedSpecialModels[10][8]{};};
 struct Phase {std::vector<std::function<void()>>callbacks;template<class T>void operator+=(T callback){callbacks.emplace_back(callback);}void Fire(){for(auto&callback:callbacks)callback();}};
 struct Event {Phase before,after;};namespace Events {static Event initScriptsEvent,processScriptsEvent;}static Event gameShutdownEvent;
 static int gGameState=0;static uint32_t tick=1000;inline uint32_t GetTickCount(){return tick;}

@@ -4,13 +4,31 @@
 #include <CCarEnterExit.h>
 #include <CTaskSimpleCarSetPedOut.h>
 #include <Hooks/PedHooks.h>
+#include <CTaskComplexDie.h>
 
 CNetworkPed::CNetworkPed(int pedid, int modelId, ePedType pedType, CVector pos, unsigned char createdBy, char specialModelName[])
 {
     m_nPedId = pedid; m_nPedType = pedType; m_nCreatedBy = createdBy;
     if (!CPools::ms_pPedPool || !CPools::ms_pPedPool->GetNoOfFreeSpaces()) return;
-    if (pedType == PED_TYPE_COP && modelId != MODEL_LAPDM1 && modelId != MODEL_CSHER &&
-        modelId != MODEL_SWAT && modelId != MODEL_FBI && modelId != MODEL_ARMY) return;
+    if (pedType == PED_TYPE_COP && (modelId < MODEL_LAPD1 || modelId > MODEL_ARMY)) return;
+    const int requestedModel = modelId;
+    eCopType copType = COP_TYPE_CITYCOP;
+    int constructorModel = requestedModel;
+    if (pedType == PED_TYPE_COP) {
+        switch (modelId) {
+        case MODEL_LAPDM1: copType = COP_TYPE_LAPDM1; break;
+        case MODEL_CSHER: copType = COP_TYPE_CSHER; break;
+        case MODEL_SWAT: copType = COP_TYPE_SWAT1; break;
+        case MODEL_FBI: copType = COP_TYPE_FBI; break;
+        case MODEL_ARMY: copType = COP_TYPE_ARMY; break;
+        default: break; // City cop constructor selects its local city's model.
+        }
+        if (copType == COP_TYPE_CITYCOP) {
+            const int localModel = CStreaming::GetDefaultCopModel(); constructorModel = localModel;
+            if (localModel < MODEL_LAPD1 || localModel > MODEL_ARMY) return;
+            CStreaming::RequestModel(localModel, 0);
+        }
+    }
     if (modelId >= 290 && modelId <= 299)
         CStreaming::RequestSpecialModel(modelId, specialModelName, 0);
     else
@@ -19,33 +37,13 @@ CNetworkPed::CNetworkPed(int pedid, int modelId, ePedType pedType, CVector pos, 
     CStreaming::LoadAllRequestedModels(false);
     if (!CPools::ms_pPedPool || !CModelInfo::ms_modelInfoPtrs[modelId] ||
         CModelInfo::ms_modelInfoPtrs[modelId]->GetModelType() != MODEL_INFO_PED ||
-        CStreaming::ms_aInfoForModel[modelId].m_nLoadState != LOADSTATE_LOADED) return;
+        CStreaming::ms_aInfoForModel[modelId].m_nLoadState != LOADSTATE_LOADED ||
+        !CModelInfo::ms_modelInfoPtrs[constructorModel] || CStreaming::ms_aInfoForModel[constructorModel].m_nLoadState != LOADSTATE_LOADED) return;
 
     if (pedType == PED_TYPE_COP)
     {
-        switch (modelId) 
-        {
-        case MODEL_LAPDM1:
-            modelId = COP_TYPE_LAPDM1;
-            break;
-        case MODEL_CSHER:
-            modelId = COP_TYPE_CSHER;
-            break;
-        case MODEL_SWAT:
-            modelId = COP_TYPE_SWAT1;
-            break;
-        case MODEL_FBI:
-            modelId = COP_TYPE_FBI;
-            break;
-        case MODEL_ARMY:
-            modelId = COP_TYPE_ARMY;
-            break;
-        }
-    }
-
-    if (pedType == PED_TYPE_COP)
-    {
-        m_pPed = new CCopPed((eCopType)modelId);
+        m_pPed = new CCopPed(copType);
+        if (m_pPed->m_nModelIndex != requestedModel) m_pPed->SetModelIndex(requestedModel);
     }
     else if (pedType == PED_TYPE_MEDIC || pedType == PED_TYPE_FIREMAN)
     {
@@ -56,6 +54,7 @@ CNetworkPed::CNetworkPed(int pedid, int modelId, ePedType pedType, CVector pos, 
         m_pPed = new CCivilianPed(pedType, modelId);
     }
 
+    if (!m_pPed) return;
     m_nPedPoolRef = CPools::GetPedRef(m_pPed);
     m_pPed->m_nCreatedBy = 2;
     m_pPed->m_pIntelligence->SetPedDecisionMakerType(-1);
@@ -72,6 +71,27 @@ CNetworkPed::CNetworkPed(int pedid, int modelId, ePedType pedType, CVector pos, 
     m_nPedType = pedType;
     m_bSyncing = false;
     m_nCreatedBy = createdBy;
+}
+
+void CNetworkPed::ApplyReplicaHealth(float health)
+{
+    if (!HasValidPed()) return;
+    // Death is terminal for this native lifetime, including delayed alive SYNC.
+    if (m_replicaDeath || m_deathStamp.State()) health = 0;
+    m_fHealth = m_pPed->m_fHealth = health;
+    if (health > 0 || m_replicaDeath) return;
+    m_replicaDeath = true;
+    m_nMoveState = PEDMOVE_STILL;
+    m_vecVelocity = CVector(0, 0, 0); m_pPed->m_vecMoveSpeed = CVector(0, 0, 0);
+    m_pPed->m_nPedFlags.bDoesntDropWeaponsWhenDead = true;
+    m_pPed->m_nMoneyCount = 0;
+    if (m_pPed->m_ePedState == PEDSTATE_DIE || m_pPed->m_ePedState == PEDSTATE_DEAD) return;
+    m_pPed->m_pIntelligence->ClearTasks(false, true);
+    m_pPed->SetPedState(PEDSTATE_DIE);
+    // Verified native default KO-front association (group 0, animation 15).
+    // Native task/event processing finishes the corpse; no kill attribution is fabricated.
+    auto* task = new CTaskComplexDie(WEAPON_UNARMED, 0, 15, 4.f, 1.f, false, false, 0, false);
+    m_pPed->m_pIntelligence->m_TaskMgr.SetTask(task, TASK_PRIMARY_EVENT_RESPONSE_NONTEMP, false);
 }
 
 CNetworkPed::~CNetworkPed()
