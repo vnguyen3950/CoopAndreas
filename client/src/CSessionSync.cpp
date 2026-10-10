@@ -251,8 +251,8 @@ void __fastcall HostParoleHook(CWanted* wanted, void*)
 void __fastcall ResurrectionResetHook(CWanted* wanted, void*)
 {
     auto* ped = FindPlayerPed(0);
-    bool local = CashReady() && CWorld::PlayerInFocus == 0 && ped && ped->m_pPlayerData && wanted == FindPlayerWanted(0);
-    bool publish = local && !g_suppress && EnsureSession() && g_client.state.ready && g_client.Predicted().wanted > 0;
+    bool local = CashReady() && ped && ped->m_pPlayerData && wanted == FindPlayerWanted(0);
+    bool publish = local && CWorld::PlayerInFocus == 0 && !g_suppress && EnsureSession() && g_client.state.ready && g_client.Predicted().wanted > 0;
     wanted->Reset();
     if (publish)
     {
