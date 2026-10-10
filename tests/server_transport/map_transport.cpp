@@ -181,6 +181,10 @@ int main(int argc, char** argv)
     const auto hostLife = host.animations.back().life;
     PickupSync::Actor hostActor{hostLife.generation,hostLife.birth,hostLife.sequence,hostLife.model,hostLife.area};
     PickupSync::Actor guestActor{host.generations[guest.id],3,4,0,0};
+    Packets::Pickups::Hello pickupHello; pickupHello.actor = hostActor;
+    expect(host.Send(pickupHello) && Wait([&]{return !host.pickups.empty();}), "Integrated host pickup HELLO seeds room and receives SYSTEM state.");
+    pickupHello.actor = guestActor;
+    expect(guest.Send(pickupHello) && Wait([&]{return !guest.pickups.empty();}), "Guest with exact acknowledged life receives pickup room replay.");
     Packets::Peds::PedSpawn cop; cop.tempid = 1; cop.requestToken = 1;
     cop.modelId = MODEL_LAPD1; cop.pedType = PED_TYPE_COP; cop.createdBy = RANDOM_CHAR;
     expect(guest.Send(cop) && Wait([&]{return !guest.pedConfirms.empty() && !host.pedSpawns.empty();}),
@@ -196,11 +200,31 @@ int main(int argc, char** argv)
     expect(host.Send(death), "Foreign death seal is a well-formed packet.");
     Wait([]{return false;},150);
     expect(late.pedDeaths.size() == deathsBefore, "Room host cannot seal another peer's cop death.");
+    Packets::Pickups::Action copDrop; copDrop.operation = Packets::Pickups::Operation::Create;
+    copDrop.actor = guestActor; copDrop.epoch = guest.pickups.back().epoch; copDrop.sequence = 1;
+    copDrop.item.creation = 1; copDrop.item.owner = guest.id; copDrop.item.model = 346;
+    copDrop.item.type = 4; copDrop.item.ammo = 3; copDrop.item.remaining = 30000;
+    copDrop.item.cop = {confirmedCop.pedid,death.stamp,1,guestActor.generation};
+    const auto pickupCount = guest.pickups.size();
+    expect(guest.Send(copDrop), "Original producer sends a bounded cop manifest before the EVENT death seal.");
+    Wait([]{return false;},150);
+    expect(guest.pickups.size() == pickupCount, "Real server keeps unsealed cop loot inert rather than minting an item.");
     expect(guest.Send(death) && Wait([&]{return host.pedDeaths.size() > 0 && late.pedDeaths.size() > deathsBefore;}),
         "Authenticated NPC owner death reaches every observing peer through real EVENT transport.");
     expect(host.pedDeaths.back().stamp.SameOwner(confirmedCop.stamp)
         && host.pedDeaths.back().stamp.sequence == 1 && host.pedDeaths.back().serverTime != 0x7fffffff,
         "Server preserves the immutable death seal and replaces the client framing timestamp.");
+    expect(Wait([&]{return !guest.pickups.back().reset && guest.pickups.back().row.item.cop.Present()
+        && !host.pickups.back().reset && host.pickups.back().row.item.cop.Present();}),
+        "Normal server tick drains SYSTEM-before-EVENT manifest after the authenticated death seal.");
+    const auto copItemId = guest.pickups.back().row.item.id;
+    expect(host.pickups.back().row.item.id == copItemId && host.pickups.back().row.item.owner == guest.id
+        && host.pickups.back().row.item.cop.producerGeneration == guestActor.generation,
+        "Host receives the guest's canonical firearm and exact original producer incarnation.");
+    const auto copRevision = guest.pickups.back().row.item.revision;
+    copDrop.sequence = 2; guest.Send(copDrop); Wait([]{return false;},150);
+    expect(guest.pickups.back().row.item.id == copItemId && guest.pickups.back().row.item.revision == copRevision,
+        "Repeated manifest returns the same item without minting another drop.");
     const auto deathCount = host.pedDeaths.size();
     guest.Send(death); Wait([]{return false;},150);
     expect(host.pedDeaths.size() == deathCount, "Duplicate death seal cannot publish another corpse lifecycle.");
@@ -210,20 +234,29 @@ int main(int argc, char** argv)
     expect(corpseObserver.pedDeaths.back().stamp.SameOwner(confirmedCop.stamp)
         && corpseObserver.pedDeaths.back().stamp.sequence == death.stamp.sequence,
         "Late join corpse replay retains the original owner death identity.");
-    Packets::Pickups::Hello pickupHello; pickupHello.actor = hostActor;
-    expect(host.Send(pickupHello) && Wait([&]{return !host.pickups.empty();}), "Integrated host pickup HELLO seeds room and receives SYSTEM state.");
-    pickupHello.actor = guestActor;
-    expect(guest.Send(pickupHello) && Wait([&]{return !guest.pickups.empty();}), "Guest with exact acknowledged life receives pickup room replay.");
+    auto observerAnimation = animation; observerAnimation.playerid = corpseObserver.id;
+    observerAnimation.life = {0,1,1,0,0,201}; observerAnimation.state = {};
+    expect(corpseObserver.Send(observerAnimation) && Wait([&]{return !corpseObserver.animations.empty()
+        && corpseObserver.animations.back().playerid == corpseObserver.id;}),
+        "Late observer establishes its own acknowledged actor life before pickup replay.");
+    // Identity announcements go to other peers. The owner learns its generation
+    // from the exact actor-life acknowledgment, as the real pickup client does.
+    pickupHello.actor = {corpseObserver.animations.back().life.generation,1,1,0,0};
+    expect(corpseObserver.Send(pickupHello) && Wait([&]{return !corpseObserver.pickups.empty()
+        && !corpseObserver.pickups.back().reset && corpseObserver.pickups.back().row.item.id == copItemId;}),
+        "Ready late join receives the same retained cop firearm identity.");
     Packets::Pickups::Action pickupCreate; pickupCreate.operation = Packets::Pickups::Operation::Create;
     pickupCreate.actor = hostActor; pickupCreate.epoch = host.pickups.back().epoch; pickupCreate.sequence = 1;
     pickupCreate.item.creation = 1; pickupCreate.item.owner = host.id; pickupCreate.item.model = 1240; pickupCreate.item.type = 3;
-    expect(host.Send(pickupCreate) && Wait([&]{return !guest.pickups.back().reset;}), "Authenticated host registers supported exterior pickup through real handlers.");
+    expect(host.Send(pickupCreate) && Wait([&]{return !guest.pickups.back().reset
+        && guest.pickups.back().row.item.owner == host.id && guest.pickups.back().row.item.creation == 1
+        && guest.pickups.back().row.item.model == 1240;}), "Authenticated host registers supported exterior pickup through real handlers.");
     const auto itemId = guest.pickups.back().row.item.id;
     Packets::Pickups::Action claim; claim.operation = Packets::Pickups::Operation::Claim; claim.actor = guestActor;
-    claim.epoch = pickupCreate.epoch; claim.sequence = 1; claim.id = itemId;
+    claim.epoch = pickupCreate.epoch; claim.sequence = 3; claim.id = itemId;
     expect(guest.Send(claim) && Wait([&]{return !guest.pickupActions.empty();}), "Real SYSTEM claim atomically reserves and grants the exact collector life.");
     const auto originalGrant = guest.pickupActions.back().grant;
-    auto receipt = claim; receipt.operation = Packets::Pickups::Operation::Result; receipt.sequence = 2; receipt.grant = originalGrant;
+    auto receipt = claim; receipt.operation = Packets::Pickups::Operation::Result; receipt.sequence = 4; receipt.grant = originalGrant;
     receipt.outcome = PickupSync::Outcome::DeclinedBeforeApply;
     expect(guest.Send(receipt) && Wait([&]{return guest.pickups.back().row.item.id == itemId && guest.pickups.back().row.stage == PickupSync::Stage::Removed;}),
         "Exact pre-apply decline settles accounting without native effect or pickup reactivation.");
@@ -232,7 +265,7 @@ int main(int argc, char** argv)
     pickupCreate.sequence = 2; pickupCreate.item.creation = 2;
     expect(host.Send(pickupCreate) && Wait([&]{return guest.pickups.back().row.item.id != itemId && guest.pickups.back().row.stage == PickupSync::Stage::Active;}),
         "Terminal receipt releases collector for a distinct non-reused item identity.");
-    claim.sequence = 3; claim.id = guest.pickups.back().row.item.id;
+    claim.sequence = 5; claim.id = guest.pickups.back().row.item.id;
     expect(guest.Send(claim) && Wait([&]{return guest.pickupActions.size() > actionCount;}) && guest.pickupActions.back().grant > originalGrant,
         "New reservation uses a distinct monotonic grant token.");
     expect(Wait([&]{return !host.sessions.empty() && !guest.sessions.empty();}),"Integrated session identities are delivered to real peers.");
