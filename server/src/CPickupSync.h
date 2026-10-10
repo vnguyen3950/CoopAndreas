@@ -9,4 +9,5 @@ public:
     static void Mission(CNetworkPlayer* player,bool active);
     static void Hello(const Packets::Pickups::Hello& packet,CNetworkPlayer* sender);
     static bool Action(const Packets::Pickups::Action& packet,CNetworkPlayer* sender);
+    static void ProcessPending();
 };

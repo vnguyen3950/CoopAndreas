@@ -14,7 +14,13 @@ template<class Stream>bool Item(Stream&stream,PickupSync::Item&i) {
     serialize_int(stream,i.id,0,PickupSync::MaxCounter);serialize_int(stream,i.epoch,0,PickupSync::MaxCounter);
     serialize_int(stream,i.revision,0,PickupSync::MaxCounter);serialize_int(stream,i.creation,1,PickupSync::MaxCounter);
     serialize_int(stream,i.owner,0,7);serialize_int(stream,i.model,0,19999);serialize_int(stream,i.type,0,22);serialize_int(stream,i.area,0,255);
-    serialize_int(stream,i.ammo,0,100000);serialize_int(stream,i.remaining,0,600000);return Position(stream,i.position)&&i.ValidMetadata();
+    serialize_int(stream,i.ammo,0,100000);serialize_int(stream,i.remaining,0,600000);
+    bool cop=i.cop.Present();serialize_bool(stream,cop);
+    if(cop){serialize_int(stream,i.cop.ped,0,254);serialize_int(stream,i.cop.death.generation,1,PickupSync::MaxCounter);
+        serialize_int(stream,i.cop.death.epoch,1,PickupSync::MaxCounter);serialize_int(stream,i.cop.death.sequence,1,PickupSync::MaxCounter);
+        serialize_int(stream,i.cop.sequence,1,PickupSync::MaxCounter);serialize_int(stream,i.cop.producerGeneration,1,PickupSync::MaxCounter);}
+    else if(Stream::IsReading)i.cop={};
+    return Position(stream,i.position)&&i.ValidMetadata();
 }
 template<class Stream>bool Row(Stream&stream,PickupSync::Row&r) {
     if(!Item(stream,r.item))return false;

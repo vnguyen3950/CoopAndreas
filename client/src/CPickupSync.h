@@ -3,6 +3,7 @@
 class CPickup;
 class CPlayerPed;
 class CVehicle;
+class CPed;
 class CPickupSync {
 public:
     static void Init();
@@ -19,4 +20,6 @@ public:
     static void NativeRemove(CPickup* pickup);
     static bool Replay();
     static void EnableNative();
+    static bool BeginCopDrops(CPed* ped);
+    static void EndCopDrops();
 };

@@ -2,6 +2,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include "network/npc_sync.h"
 
 namespace PickupSync {
 constexpr uint32_t MaxCounter=0x7fffffff;
@@ -22,13 +23,30 @@ struct Actor {
 inline bool SameLife(const Actor&a,const Actor&b){return a.Valid()&&b.Valid()&&a.generation==b.generation&&a.birth==b.birth&&a.model==b.model&&a.area==b.area;}
 inline bool CurrentActor(const Actor&request,const Actor&current){return SameLife(request,current)&&request.sequence<=current.sequence;}
 inline bool WeaponModel(int model){return (model>=346&&model<=353)||(model>=355&&model<=358);}
+inline bool StockCopWeapon(int copModel,int weaponModel){
+    return (copModel>=280&&copModel<=284&&weaponModel==346)||(copModel==285&&weaponModel==352)
+        ||(copModel==286&&weaponModel==353)||(copModel==287&&weaponModel==356);
+}
+// Receive envelope only: A559 native table words / SHR branch bound these stock
+// drops. The actual amount is captured unchanged from original native output.
+inline uint32_t StockCopAmmoLimit(int model){return model==346?15u:(model==352||model==353)?30u:model==356?40u:0u;}
+inline bool SameSeal(const NPCSync::Stamp&a,const NPCSync::Stamp&b){return a.State()&&b.State()&&a.generation==b.generation&&a.epoch==b.epoch&&a.sequence==b.sequence;}
+struct CopOrigin {
+    int ped=-1;
+    NPCSync::Stamp death;
+    uint32_t sequence=0,producerGeneration=0;
+    bool Present()const{return ped!=-1;}
+    bool Valid()const{return ped>=0&&ped<255&&death.State()&&sequence&&sequence<=MaxCounter&&producerGeneration&&producerGeneration<=MaxCounter;}
+};
 struct Item {
     uint32_t id=0,epoch=0,revision=0,creation=0;
     uint32_t ammo=0,remaining=0;
     int owner=-1,model=0,type=0,area=0;
     Position position;
+    CopOrigin cop;
     bool ValidMetadata()const {
         if(owner<0||owner>=MaxPlayers||area!=0||!position.Valid()||!creation||creation>MaxCounter||ammo>100000||remaining>600000)return false;
+        if(cop.Present())return cop.Valid()&&cop.sequence==creation&&type==4&&ammo>0&&ammo<=StockCopAmmoLimit(model);
         if(type==8)return model==1212&&ammo>0;
         return (type==3||type==4||type==5)&&(model==1240||model==1242||(WeaponModel(model)&&ammo>0));
     }
@@ -61,12 +79,23 @@ public:
     Row* Find(uint32_t id){for(auto&row:rows)if(row.item.id==id&&id)return &row;return nullptr;}
     const Row* Find(uint32_t id)const{for(const auto&row:rows)if(row.item.id==id&&id)return &row;return nullptr;}
     Row* Create(int sender,uint32_t expectedEpoch,const Actor&life,Item item) {
-        if(sender!=host||!CurrentActor(life,ownerLife)||expectedEpoch!=epoch||!item.ValidMetadata()||item.owner!=sender||item.creation<=creationHighWater||nextId==MaxCounter)return nullptr;
+        if(item.cop.Present()||sender!=host||!CurrentActor(life,ownerLife)||expectedEpoch!=epoch||!item.ValidMetadata()||item.owner!=sender||item.creation<=creationHighWater||nextId==MaxCounter)return nullptr;
+        auto*row=Allocate(item);if(row)creationHighWater=item.creation;return row;
+    }
+    // The server validates sealed NPC producer authority before entering here.
+    // Ambient Create retains its host-only contract above.
+    Row* CreateCopDrop(int sender,uint32_t expectedEpoch,const Actor&life,Item item) {
+        if(sender<0||sender>=MaxPlayers||host<0||!epoch||!life.Valid()||life.area!=0||expectedEpoch!=epoch||!item.cop.Valid()||!item.ValidMetadata()||item.owner!=sender||item.cop.producerGeneration!=life.generation||nextId==MaxCounter)return nullptr;
+        return Allocate(item);
+    }
+private:
+    Row* Allocate(Item item) {
         Row* target=nullptr;for(auto&row:rows)if(!row.item.id||(!row.awaitingOutcome&&(row.stage==Stage::Collected||row.stage==Stage::Removed))){target=&row;break;}
         if(!target)return nullptr;
         item.id=++nextId;item.epoch=epoch;item.revision=1;*target={};target->item=item;target->stage=Stage::Active;
-        creationHighWater=item.creation;return target;
+        return target;
     }
+public:
     bool Remove(int sender,uint32_t expectedEpoch,uint32_t id,Reason reason) {
         auto* row=Find(id);if(sender!=host||expectedEpoch!=epoch||!row||row->item.epoch!=epoch||row->item.revision==MaxCounter||int(reason)<1||int(reason)>int(Reason::SceneEnded))return false;
         if(row->stage==Stage::Collected||row->stage==Stage::Removed)return false;

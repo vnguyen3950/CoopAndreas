@@ -39,6 +39,19 @@ inline bool ModelsReady(CPickup*pickup){
     for(int model:models)if(model>=0&&(model>19999||!CModelInfo::ms_modelInfoPtrs[model]||CStreaming::ms_aInfoForModel[model].m_nLoadState!=LOADSTATE_LOADED))return false;
     return true;
 }
+inline bool RequestReplicaModels(const PickupSync::Item&item){
+    int models[]={item.model,-1,-1};
+    if(PickupSync::WeaponModel(item.model)){
+        auto*info=CWeaponInfo::GetWeaponInfo(eWeaponType(CPickups::WeaponForModel(item.model)),WEAPSKILL_STD);
+        if(!info)return false;models[1]=info->m_nModelId1;models[2]=info->m_nModelId2;
+    }
+    bool ready=true;
+    for(int model:models)if(model>=0){
+        if(model>19999||!CModelInfo::ms_modelInfoPtrs[model])return false;
+        if(CStreaming::ms_aInfoForModel[model].m_nLoadState!=LOADSTATE_LOADED){CStreaming::RequestModel(model,0);ready=false;}
+    }
+    return ready;
+}
 inline bool Eligible(CPickup* pickup,CPlayerPed* ped,bool mission,int area){
     if(!pickup||!ped||mission||area!=0||!ped->IsAlive()||ped->m_nPedFlags.bInVehicle||!ped->m_pPlayerData
         ||pickup->m_nFlags.bDisabled||!pickup->m_pObject||pickup->m_pObject->m_nAreaCode!=0||pickup->m_pObject->m_nObjectFlags.bDoNotRender)return false;

@@ -2,11 +2,12 @@
 #include "CPickupSync.h"
 #include "PickupNativeOutcome.h"
 #include "CPlayerAnimationSync.h"
+#include "CNetworkPedManager.h"
 #include <CGame.h>
 
 namespace {
 PickupSync::View view;
-struct Mapping {uint32_t id=0,creation=0;int handle=-1;bool replica=false;};
+struct Mapping {uint32_t id=0,creation=0;int handle=-1;bool replica=false;PickupSync::Item copItem;uint32_t copStarted=0;};
 std::array<Mapping,PickupSync::MaxPickups> mappings{};
 struct Hidden {int handle=-1;bool hidden=false,previous=false;};
 std::array<Hidden,PickupSync::MaxPickups> hidden{};
@@ -15,6 +16,9 @@ Packets::Pickups::Action pendingGrant;
 bool hasGrant=false,scriptsReady=false,nativeEnabled=false,receiving=false;
 bool authenticated=false;uint32_t connection=0,sequence=0,creation=0,lastHello=0,lastClaim=0;
 int expectedHost=-1;
+struct CopContext {bool active=false;PickupSync::CopOrigin origin;int model=-1,area=-1;};
+CopContext copContext;
+std::array<NPCSync::Stamp,255> capturedDeaths{};
 int Index(CPickup* pickup){const auto p=reinterpret_cast<uintptr_t>(pickup),b=reinterpret_cast<uintptr_t>(CPickups::aPickUps);
     return p>=b&&p<b+sizeof(CPickup)*PickupSync::MaxPickups&&(p-b)%sizeof(CPickup)==0?int((p-b)/sizeof(CPickup)):-1;}
 int Handle(int index){return int((uint32_t(uint16_t(CPickups::aPickUps[index].m_nReferenceIndex))<<16)|uint32_t(index));}
@@ -26,6 +30,10 @@ bool Life(PickupSync::Actor&actor){PlayerAnimation::Life life;if(!CPlayerAnimati
     actor={life.generation,life.birth,life.sequence,life.model,life.area};return actor.Valid();}
 bool Ready(){return nativeEnabled&&CNetwork::m_bAuthenticated&&scriptsReady&&gGameState==9&&CWorld::PlayerInFocus==0;}
 bool Host(){return Ready()&&CLocalPlayer::m_bIsHost&&view.epoch&&view.host==CNetworkPlayerManager::m_nMyId&&expectedHost==view.host;}
+bool OwnItem(const PickupSync::Item&item){
+    if(item.owner!=CNetworkPlayerManager::m_nMyId)return false;
+    PickupSync::Actor life;return !item.cop.Present()||(Life(life)&&life.generation==item.cop.producerGeneration);
+}
 PickupSync::Item Metadata(CPickup*pickup,uint32_t token){PickupSync::Item item;const auto pos=pickup->GetPosn();item.position={pos.x,pos.y,pos.z};
     item.creation=token;item.owner=CNetworkPlayerManager::m_nMyId;item.model=pickup->m_nModelIndex;item.type=pickup->m_nPickupType;item.ammo=pickup->m_nAmmo;
     item.remaining=pickup->m_nRegenerationTime>CTimer::m_snTimeInMilliseconds?(std::min)(600000u,pickup->m_nRegenerationTime-CTimer::m_snTimeInMilliseconds):0;
@@ -35,7 +43,7 @@ bool Action(Packets::Pickups::Action&packet){PickupSync::Actor life;if(sequence=
     packet.mission=Mission();packet.inVehicle=FindPlayerPed(0)->m_nPedFlags.bInVehicle;if(!packet.Valid())return false;GetPacketFactory().Send(packet);return true;}
 void RestoreHidden(){for(int i=0;i<PickupSync::MaxPickups;++i)if(hidden[i].hidden){
     if(Handle(i)==hidden[i].handle&&CPickups::aPickUps[i].m_pObject)CPickups::aPickUps[i].m_pObject->m_nObjectFlags.bDoNotRender=hidden[i].previous;hidden[i]={};}}
-void ClearMappings(){const bool saved=receiving;receiving=true;for(auto&map:mappings){if(map.replica)if(auto*pickup=Bound(map))CPickupSync::NativeRemove(pickup);map={};}receiving=saved;RestoreHidden();}
+void ClearMappings(){const bool saved=receiving;receiving=true;for(auto&map:mappings){if(map.replica||map.copItem.cop.Present())if(auto*pickup=Bound(map))CPickupSync::NativeRemove(pickup);map={};}receiving=saved;RestoreHidden();}
 void SendResult(const PickupSync::Receipt&result){if(!CNetwork::m_bAuthenticated||!result.applied||sequence==PickupSync::MaxCounter)return;
     Packets::Pickups::Action packet;packet.operation=Packets::Pickups::Operation::Result;packet.epoch=result.epoch;packet.sequence=++sequence;
     packet.id=result.id;packet.grant=result.grant;packet.actor=result.actor;packet.outcome=result.outcome;GetPacketFactory().Send(packet);}
@@ -78,7 +86,8 @@ void Replicas(){
         for(auto&map:mappings)if(map.id==row.item.id){found=&map;break;}
         if(row.stage==PickupSync::Stage::Collected||row.stage==PickupSync::Stage::Removed){if(found){if(auto*pickup=Bound(*found)){
             if(row.reason!=PickupSync::Reason::SceneEnded)CPickupSync::NativeRemove(pickup);}*found={};}continue;}
-        if(!found&&!Host()){
+        if(!found&&!OwnItem(row.item)){
+            if(!PickupNative::RequestReplicaModels(row.item))continue;
             const CVector pos{row.item.position.x,row.item.position.y,row.item.position.z};
             const int handle=CPickupSync::Generate(pos,row.item.model,uint8_t(row.item.type),row.item.ammo,0,false,nullptr);
             if(handle==-1)continue;const int i=int(uint32_t(handle)&0xffff);if(i>=PickupSync::MaxPickups)continue;
@@ -91,6 +100,21 @@ void Replicas(){
 }
 }
 bool CPickupSync::Replay(){return receiving;}
+bool CPickupSync::BeginCopDrops(CPed*ped){
+    copContext={};
+    if(!nativeEnabled||!CNetwork::m_bAuthenticated)return true; // Offline native behavior.
+    if(!ped||!CPools::ms_pPedPool)return false;
+    const int reference=CPools::GetPedRef(ped);
+    if(reference<0||CPools::GetPed(reference)!=ped)return false;
+    if(ped->m_nPedType!=PED_TYPE_COP)return true;
+    copContext.active=true;copContext.model=ped->m_nModelIndex;copContext.area=ped->m_nAreaCode;
+    // No replica/unknown-owner native loot. The getter publishes one immutable
+    // reliable death seal and validates the exact owner and full pool reference.
+    if(!Ready()||!CNetworkPedManager::GetOwnerDeathIdentity(ped,copContext.origin.ped,copContext.origin.death))return false;
+    PickupSync::Actor life;if(!Life(life))return false;copContext.origin.producerGeneration=life.generation;
+    return copContext.origin.ped>=0&&copContext.origin.ped<255&&copContext.origin.death.State();
+}
+void CPickupSync::EndCopDrops(){copContext={};}
 void CPickupSync::EnableNative(){nativeEnabled=true;}
 void CPickupSync::Reset(){ClearMappings();view={};hasGrant=false;receipt={};lastHello=lastClaim=0;expectedHost=-1;}
 void CPickupSync::HostChanged(int host){expectedHost=host;lastHello=0;}
@@ -100,7 +124,7 @@ void CPickupSync::Receive(const Packets::Pickups::State&packet){
     if(!CNetwork::m_bAuthenticated||!packet.Valid())return;PickupSync::Actor life;if(!Life(life)||!PickupSync::SameLife(life,packet.recipient))return;
     if(packet.reset){if(packet.epoch>view.epoch)ClearMappings();if(view.Reset(packet.epoch,packet.host)&&expectedHost==-1)expectedHost=packet.host;return;}
     if(packet.epoch!=view.epoch||!view.Accept(packet.row))return;
-    if(packet.row.item.owner==CNetworkPlayerManager::m_nMyId){bool found=false;
+    if(OwnItem(packet.row.item)){bool found=false;
         for(auto&map:mappings)if(map.creation==packet.row.item.creation&&!map.replica){map.id=packet.row.item.id;found=Bound(map)&&Bound(map)->m_nPickupType!=PICKUP_NONE;break;}
         if(!found&&packet.row.stage==PickupSync::Stage::Active){Packets::Pickups::Action remove;remove.operation=Packets::Pickups::Operation::Remove;remove.id=packet.row.item.id;Action(remove);}
     }
@@ -108,19 +132,39 @@ void CPickupSync::Receive(const Packets::Pickups::State&packet){
 void CPickupSync::Receive(const Packets::Pickups::Action&packet){if(!CNetwork::m_bAuthenticated||!packet.Valid()||packet.operation!=Packets::Pickups::Operation::Grant)return;
     if(hasGrant&&pendingGrant.grant!=packet.grant)return;pendingGrant=packet;hasGrant=true;}
 void CPickupSync::Created(int handle,bool freshCreation){
-    if(Replay()||!Host()||handle==-1)return;
+    if(Replay()||!Ready()||handle==-1)return;
     const uint32_t index=uint32_t(handle)&0xffff;if(index>=PickupSync::MaxPickups)return;auto*pickup=&CPickups::aPickUps[index];
     auto&map=mappings[index];
+    if(freshCreation&&map.id){
+        if(!map.replica&&(Host()||map.copItem.cop.Present())){Packets::Pickups::Action remove;remove.operation=Packets::Pickups::Operation::Remove;
+            remove.id=map.id;remove.reason=PickupSync::Reason::Ambiguous;Action(remove);}
+        map={}; // A local replacement never deletes a foreign canonical item.
+    }
+    if(copContext.active){
+        // Actual non-merged native output only. This path never also becomes an
+        // ambient host Create; unsupported melee/persistent drops remain native.
+        if(Mission()||copContext.area!=0||pickup->m_nPickupType!=4||!PickupSync::StockCopWeapon(copContext.model,pickup->m_nModelIndex))return;
+        if(!copContext.origin.death.State()||creation==PickupSync::MaxCounter)return;
+        auto item=Metadata(pickup,creation+1);item.area=copContext.area;item.cop=copContext.origin;item.cop.sequence=item.creation;
+        if(!item.ValidMetadata())return;
+        if(PickupSync::SameSeal(capturedDeaths[item.cop.ped],item.cop.death)){
+            const bool saved=receiving;receiving=true;NativeRemove(pickup);receiving=saved;return;
+        }
+        capturedDeaths[item.cop.ped]=item.cop.death;
+        ++creation;map={0,creation,handle,false,item,GetTickCount()};
+        Packets::Pickups::Action create;create.operation=Packets::Pickups::Operation::Create;create.item=item;Action(create);return;
+    }
+    if(!Host())return;
     // A successful native creation callback terminates any prior mapping even
     // if its new native type is unsupported. Do not expose that new type as shared.
-    if(freshCreation&&map.id){Packets::Pickups::Action remove;remove.operation=Packets::Pickups::Operation::Remove;remove.id=map.id;remove.reason=PickupSync::Reason::Ambiguous;Action(remove);map={};}
     if(Mission()||CGame::currArea!=0||creation==PickupSync::MaxCounter)return;
     auto item=Metadata(pickup,creation+1);if(!item.ValidMetadata())return;
     if(!freshCreation&&map.creation&&map.handle==handle)return;
     if(map.id){Packets::Pickups::Action remove;remove.operation=Packets::Pickups::Operation::Remove;remove.id=map.id;Action(remove);}
     ++creation;map={0,creation,handle,false};Packets::Pickups::Action create;create.operation=Packets::Pickups::Operation::Create;create.item=item;Action(create);
 }
-void CPickupSync::Removed(CPickup*pickup){if(Replay()||!Host())return;const int i=Index(pickup);if(i<0)return;auto&map=mappings[i];
+void CPickupSync::Removed(CPickup*pickup){if(Replay()||!Ready())return;const int i=Index(pickup);if(i<0)return;auto&map=mappings[i];
+    if(map.replica||(!Host()&&!map.copItem.cop.Present()))return;
     if(map.id){Packets::Pickups::Action packet;packet.operation=Packets::Pickups::Operation::Remove;packet.id=map.id;Action(packet);}map={};}
 bool CPickupSync::Update(CPickup*pickup,CPlayerPed*player,CVehicle*vehicle,int playerId){
     if(Replay()||!Ready())return pickup->Update(player,vehicle,playerId);const int i=Index(pickup);if(i<0)return pickup->Update(player,vehicle,playerId);
@@ -131,7 +175,7 @@ bool CPickupSync::Update(CPickup*pickup,CPlayerPed*player,CVehicle*vehicle,int p
     if(!map.creation)return pickup->Update(player,vehicle,playerId);
     if(Mission()||CGame::currArea!=0)return false;
     if((pickup->m_nPickupType==4||pickup->m_nPickupType==5||pickup->m_nPickupType==8)&&pickup->m_nRegenerationTime<CTimer::m_snTimeInMilliseconds){
-        if(Host()){Packets::Pickups::Action packet;packet.operation=Packets::Pickups::Operation::Remove;packet.id=map.id;packet.reason=PickupSync::Reason::Expired;Action(packet);}return false;}
+        if(!map.replica&&(Host()||map.copItem.cop.Present())){Packets::Pickups::Action packet;packet.operation=Packets::Pickups::Operation::Remove;packet.id=map.id;packet.reason=PickupSync::Reason::Expired;Action(packet);}return false;}
     PickupSync::Actor life;if(map.id&&Life(life)&&life.area==0&&!hasGrant&&GetTickCount()-lastClaim>=500&&PickupNative::Eligible(pickup,FindPlayerPed(0),false,0)){
         const PickupSync::Row*row=nullptr;for(const auto&r:view.rows)if(r.item.id==map.id){row=&r;break;}
         if(row&&row->stage==PickupSync::Stage::Active){Packets::Pickups::Action packet;packet.operation=Packets::Pickups::Operation::Claim;packet.id=map.id;if(Action(packet))lastClaim=GetTickCount();}
@@ -141,21 +185,23 @@ bool CPickupSync::Update(CPickup*pickup,CPlayerPed*player,CVehicle*vehicle,int p
 void CPickupSync::Process(){
     if(!CNetwork::m_bAuthenticated){if(authenticated)Reset();authenticated=false;return;}if(!Ready())return;
     const uint32_t current=CNetwork::m_pPeer?CNetwork::m_pPeer->connectID:0;
-    if(!authenticated||current!=connection){Reset();sequence=0;authenticated=true;connection=current;}
+    if(!authenticated||current!=connection){Reset();sequence=0;capturedDeaths={};authenticated=true;connection=current;}
     PickupSync::Actor life;if(!Life(life))return;
     if(GetTickCount()-lastHello>=2000||!view.epoch){Packets::Pickups::Hello packet;packet.actor=life;const auto pos=FindPlayerPed(0)->GetPosition();
         packet.position={pos.x,pos.y,pos.z};packet.mission=Mission();GetPacketFactory().Send(packet);lastHello=GetTickCount();}
     if(!view.epoch||expectedHost!=view.host)return;
     if(Mission()||CGame::currArea!=0){RestoreHidden();ApplyGrant();return;}
     Replicas();ApplyGrant();
-    if(Host())for(auto&map:mappings)if(map.id)if(auto*pickup=Bound(map))if(pickup->m_pObject){
+    for(auto&map:mappings)if(!map.replica&&(Host()||map.copItem.cop.Present())&&map.id)if(auto*pickup=Bound(map))if(pickup->m_pObject){
         const PickupSync::Row*row=nullptr;for(const auto&r:view.rows)if(r.item.id==map.id){row=&r;break;}
         if(row&&(row->stage==PickupSync::Stage::Active||row->stage==PickupSync::Stage::Reserved)&&!PickupNative::Matches(pickup,row->item)){
             Packets::Pickups::Action remove;remove.operation=Packets::Pickups::Operation::Remove;remove.id=map.id;remove.reason=PickupSync::Reason::Ambiguous;
             if(Action(remove)){const bool saved=receiving;receiving=true;NativeRemove(pickup);receiving=saved;map={};}
         }
     }
-    if(Host())for(auto&map:mappings)if(map.creation&&!map.id)if(auto*pickup=Bound(map))if(pickup->m_nPickupType!=PICKUP_NONE){
-        auto item=Metadata(pickup,map.creation);if(item.ValidMetadata()){Packets::Pickups::Action create;create.operation=Packets::Pickups::Operation::Create;create.item=item;Action(create);}
+    for(auto&map:mappings)if(!map.replica&&(Host()||map.copItem.cop.Present())&&map.creation&&!map.id)if(auto*pickup=Bound(map))if(pickup->m_nPickupType!=PICKUP_NONE){
+        if(map.copItem.cop.Present()&&GetTickCount()-map.copStarted>15000){const bool saved=receiving;receiving=true;NativeRemove(pickup);receiving=saved;map={};continue;}
+        auto item=map.copItem.cop.Present()?map.copItem:Metadata(pickup,map.creation);
+        if(item.ValidMetadata()){Packets::Pickups::Action create;create.operation=Packets::Pickups::Operation::Create;create.item=item;Action(create);}
     }
 }

@@ -83,6 +83,17 @@ int main(){
  Packets::Pickups::State state;state.epoch=room.epoch;state.host=0;state.recipient=Life();Roundtrip(state);state.reset=false;state.row=*row;Roundtrip(state);
  room.Reserve(1,room.epoch,row->item.id,Life(),{},false,false);state.row=*row;Roundtrip(state);
  for(int mode=0;mode<=int(Packets::Pickups::Operation::Replay);++mode){Packets::Pickups::Action p;p.operation=Packets::Pickups::Operation(mode);p.epoch=1;p.sequence=1;p.actor=Life();p.item=Metadata();p.id=1;p.grant=1;Roundtrip(p);}
+ auto cop=Metadata();cop.owner=1;cop.model=346;cop.type=4;cop.ammo=15;cop.cop={3,{9,2,6},1,1};
+ expect(cop.ValidMetadata()&&!room.Create(0,room.epoch,Life(),cop),"Cop-origin item cannot enter ambient host creation");
+ Room copRoom;copRoom.ChangeHost(0,Life());auto*copRow=copRoom.CreateCopDrop(1,copRoom.epoch,Life(),cop);
+ expect(copRow&&copRow->item.owner==1&&copRow->item.ammo==15,"Verified cop allocation retains original producer and native quantity");
+ state.epoch=copRoom.epoch;state.recipient=Life();state.row=*copRow;Roundtrip(state);
+ Packets::Pickups::Action copCreate;copCreate.operation=Packets::Pickups::Operation::Create;copCreate.epoch=copRoom.epoch;copCreate.sequence=1;copCreate.actor=Life();copCreate.item=cop;Roundtrip(copCreate);
+ for(auto mutate:{0,1,2,3,4,5}){auto bad=cop;
+  if(mutate==0)bad.cop.producerGeneration=0;if(mutate==1)bad.cop.death.sequence=0;if(mutate==2)bad.cop.ped=255;
+  if(mutate==3)bad.ammo=16;if(mutate==4)bad.type=22;if(mutate==5)bad.model=334;
+  expect(!bad.ValidMetadata(),"Malformed seal, amount, persistent or melee cop metadata is rejected");
+ }
  hello.position.y=std::numeric_limits<float>::infinity();serialize::MeasureStream measure;
  expect(!static_cast<Packet&>(hello).SerializeMeasure(measure),"Invalid finite envelope fails actual writer before native calls");
  std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;

@@ -2,15 +2,15 @@
 import argparse,hashlib,json,subprocess,shutil,re
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
-INPUTS=('shared/network/pickup_lifecycle.h','shared/network/packets/pickups.h','shared/network/packet.h','shared/network/packet_types.h','third_party/serialize.h')
+INPUTS=('shared/network/pickup_lifecycle.h','shared/network/npc_sync.h','shared/network/packets/pickups.h','shared/network/packet.h','shared/network/packet_types.h','third_party/serialize.h')
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest().upper()
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,required=True);parser.add_argument('--mutation',action='store_true');parser.add_argument('--terminal-mutation',action='store_true');parser.add_argument('--held-view-mutation',action='store_true');parser.add_argument('--test-file',type=Path);parser.add_argument('--probe-file',type=Path);parser.add_argument('--native',action='store_true');parser.add_argument('--server',action='store_true');args=parser.parse_args();out=args.output.resolve()
     if args.held_view_mutation and not args.native:parser.error('Held-view mutation requires --native')
     if out.exists()or ROOT/'.cache'not in out.parents:parser.error('Choose a new worktree .cache directory')
-    inputs=INPUTS+('client/src/CPickupSync.h','client/src/CPickupSync.cpp','client/src/PickupNativeOutcome.h',
+    inputs=INPUTS+('client/src/CPickupSync.h','client/src/CPickupSync.cpp','client/src/CPickupSyncNative.cpp','client/src/PickupNativeOutcome.h',
                   'third_party/plugin-sdk/plugin_sa/game_sa/eWeaponType.h','third_party/plugin-sdk/plugin_sa/game_sa/CPickup.h',
-                  'third_party/plugin-sdk/plugin_sa/game_sa/CWeaponInfo.h')if args.native else INPUTS
+                  'third_party/plugin-sdk/plugin_sa/game_sa/CWeaponInfo.h','third_party/plugin-sdk/plugin_sa/game_sa/ePedType.h')if args.native else INPUTS
     if args.server:inputs+=('server/src/CPickupSync.h','server/src/CPickupSync.cpp')
     if args.native or args.server:inputs+=('shared/network/player_animation_sync.h',)
     out.mkdir(parents=True);before={name:sha(ROOT/name)for name in inputs}
@@ -40,6 +40,13 @@ def main():
             path=out/'pickup_client.inc';text=path.read_text();needle='if(!row||row->grant!=grant.grant||row->collector!=CNetworkPlayerManager::m_nMyId){SendResult(receipt);hasGrant=false;return;}'
             assert text.count(needle)==1;path.write_text(text.replace(needle,needle.replace('SendResult(receipt);',''),1),encoding='utf-8')
         text=(out/'source/client/src/PickupNativeOutcome.h').read_text(encoding='utf-8-sig');text=re.sub(r'^#include <[^\n]*\n?','',text,flags=re.M);(out/'pickup_native_outcome.inc').write_text(text,encoding='utf-8')
+        native=(out/'source/client/src/CPickupSyncNative.cpp').read_text(encoding='utf-8-sig')
+        hookParts=[]
+        for signature in ('int __cdecl GenerateHook','void __fastcall WeaponDropsHook'):
+            match=re.search(re.escape(signature)+r'\([^{}]+\)\{.*?\n\}',native,flags=re.S)
+            if not match:raise ValueError('Native hook changed: '+signature)
+            hookParts.append(match[0])
+        (out/'pickup_native_hooks.inc').write_text('using GenerateFn=int(__cdecl*)(CVector,uint32_t,uint8_t,uint32_t,uint32_t,bool,char*);\nusing WeaponDropsFn=void(__thiscall*)(CPed*);\nvoid*generateOriginal=nullptr;void*weaponDropsOriginal=nullptr;\n'+'\n'.join(hookParts),encoding='utf-8')
         if args.mutation:
             path=out/'pickup_native_outcome.inc';text=path.read_text();needle='||pickup->m_nAmmo!=item.ammo';assert text.count(needle)==1;path.write_text(text.replace(needle,''),encoding='utf-8')
         nativePath=Path(r'C:\Users\Vu\work\gta-coop\gta-reversed\source\game_sa\Pickups.cpp');reference=nativePath.read_text(encoding='utf-8-sig')
@@ -49,7 +56,7 @@ def main():
         (out/'pickup_native_merge.inc').write_text(match[0].replace('bool arg4','bool'),encoding='utf-8')
         nativeReferenceHash=sha(nativePath);nativeMergeHash=sha(out/'pickup_native_merge.inc')
         enums=[]
-        for file,name in (('eWeaponType.h','eWeaponType'),('CPickup.h','ePickupType'),('CWeaponInfo.h','eWeaponSkill')):
+        for file,name in (('eWeaponType.h','eWeaponType'),('CPickup.h','ePickupType'),('CWeaponInfo.h','eWeaponSkill'),('ePedType.h','ePedType')):
             text=(out/'source/third_party/plugin-sdk/plugin_sa/game_sa'/file).read_text(encoding='utf-8-sig')
             match=re.search(r'enum\s+(?:PLUGIN_API\s+)?'+name+r'\s*(?::[^{}]+)?\{[^}]+\};',text)
             if not match:raise ValueError('SDK enum changed: '+name)
