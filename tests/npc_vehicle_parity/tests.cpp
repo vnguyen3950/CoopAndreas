@@ -93,6 +93,7 @@ void authority()
     CNetworkPedManager::ped = &ped; CNetworkVehicleManager::vehicle = &vehicle;
     Packets::Peds::PedDriverUpdate packet; packet.pedid = 7; packet.vehicleid = 9; packet.pos.x = 20;
     packet.stamp = {1,1,1};
+    packet.pedHealth.iHealth = 100; // Vehicle parity uses an explicitly living driver.
     GetPacketFactory().forwarded = 0;
     ServerDriver(&packet, &other);
     expect(!GetPacketFactory().forwarded && !vehicle.m_bUsedByPed, "Wrong ped owner cannot mutate or forward NPC vehicle state.");
@@ -125,6 +126,7 @@ template<class T> void native_pipeline()
     T packet; packet.pedid = 7; packet.vehicleid = 9; packet.pos.x = 22;
     packet.stamp = {1,1,1};
     car.m_matrix->pos.x = 99; ped.m_bSyncing = true;
+    packet.pedHealth.iHealth = 100;
     ClientDriver(&packet);
     expect(car.m_matrix->pos.x == 99 && ped.warps == 0, "Queued remote NPC state cannot overwrite a locally owned ped.");
     ped.m_bSyncing = false; car.m_pDriver = &player;

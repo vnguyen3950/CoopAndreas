@@ -84,6 +84,8 @@ struct CNetworkPed
     uint32_t m_generation = 1, m_ownerEpoch = 1, m_stateSequence = 0;
     NPCSync::Stamp GetStamp() const { return {m_generation, m_ownerEpoch, m_stateSequence}; }
     bool m_bAllowReplay = false, m_hasState = false;
+    NPCSync::Stamp m_deathStamp{};
+    bool m_replicaDeath = false;
     CVector m_vecPos{};
     struct { int mode = 0; Packets::Peds::PedDriverUpdate driver; } m_lastState;
     bool HasValidPed() const { return !m_pPed || m_pPed->valid; } // Server records have no native actor; native clients are checked by caller.
@@ -98,6 +100,9 @@ struct CNetworkPed
     float m_fHealth = 100, m_fGasPedal = 0, m_fBreakPedal = 0, m_fSteerAngle = 0;
     unsigned warps = 0;
     void ApplyWeaponSnapshot(Packets::Players::SWeaponSnapshot&) {}
+    // This suite uses a living driver to test vehicle state. The actual corpse
+    // helper and its terminal lifetime are exercised by npc_world_sync.
+    void ApplyReplicaHealth(float health) { m_fHealth = m_pPed->m_fHealth = health; }
     void WarpIntoVehicleDriver(CVehicle* vehicle)
     { ++warps; m_pPed->m_pVehicle = vehicle; m_pPed->m_nPedFlags.bInVehicle = true; vehicle->m_pDriver = m_pPed; }
 };
