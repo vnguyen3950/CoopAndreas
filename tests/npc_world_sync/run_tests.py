@@ -3,6 +3,7 @@ import argparse, hashlib, importlib.util, json, os, re, shutil, subprocess
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 HERE=Path(__file__).resolve().parent
+WORKSPACE=ROOT.parent.parent if ROOT.parent.name=='worktrees' else ROOT.parent
 SDK='third_party/plugin-sdk/plugin_sa/game_sa/'
 INPUTS=['shared/config.h','shared/network/packet.h','shared/network/packet_types.h','third_party/serialize.h',
  'shared/network/npc_sync.h','shared/network/packets/peds.h','shared/network/packets/players.h',
@@ -22,7 +23,7 @@ def block(text,pattern):
   if not depth:return text[m.start():end+2]
  raise ValueError('Unbalanced extraction')
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client','passenger','police','deathserver'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');p.add_argument('--mutate-death-producer',action='store_true');p.add_argument('--null-cop',action='store_true');a=p.parse_args();out=a.output.resolve()
+ p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client','passenger','police','deathserver'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');p.add_argument('--mutate-death-producer',action='store_true');p.add_argument('--null-cop',action='store_true');p.add_argument('--native-source',type=Path,default=WORKSPACE/'gta-reversed/source/game_sa/Entity/Ped/CopPed.cpp');a=p.parse_args();out=a.output.resolve()
  if out.exists() or ROOT/'.cache' not in out.parents:p.error('Fresh worktree .cache directory required')
  inputs=INPUTS+(SERVER_INPUTS if a.suite in ('server','deathserver') else CLIENT_INPUTS if a.suite in ('client','passenger','police') else [])
  out.mkdir(parents=True);before={n:sha(ROOT/n) for n in inputs}
@@ -77,9 +78,11 @@ def main():
   (out/'client_functions.inc').write_text(prefix+'\n\n'+'\n\n'.join(methods))
   shutil.copyfile(HERE/'client_doubles.h',out/'client_doubles.h')
   hook=read('client/src/Hooks/PedHooks.cpp');(out/'cop_control.inc').write_text(block(hook,r'void PedHooks::ProcessCopControl\([^{}]*\{'))
+ native_hashes={}
  if a.suite in ('client','passenger','police'):
-  reference=ROOT.parent.parent/'gta-reversed/source/game_sa/Entity/Ped/CopPed.cpp'
-  native=reference.read_text(encoding='utf-8-sig')
+  reference=a.native_source.resolve();native_hashes[str(reference)]=sha(reference)
+  shutil.copyfile(reference,out/'cop_native_source.cpp')
+  native=(out/'cop_native_source.cpp').read_text(encoding='utf-8-sig')
   (out/'cop_native_models.inc').write_text(block(native,r'eModelID CCopPed::GetPedModelForCopType\([^{}]*\{')+'\n'+block(native,r'eModelID ResolveModelForCopType\([^{}]*\{'))
  shutil.copyfile(HERE/test_name,out/'tests.cpp')
  cmd=['cl.exe','/nologo','/std:c++17','/EHsc','/W4','/DNDEBUG','/DNOMINMAX','/DCOOP_CLIENT' if a.suite in ('client','passenger','police') else '/DCOOP_SERVER','tests.cpp','/I'+str(out/'source/shared'),'/I'+str(out/'source/third_party'),'/Fe:tests.exe','/Fo:tests.obj']
@@ -100,6 +103,8 @@ def main():
  if (out/'client_doubles.h').exists():result['FrozenDoubleHash']=sha(out/'client_doubles.h')
  if (out/'server_doubles.h').exists():result['FrozenDoubleHash']=sha(out/'server_doubles.h')
  result['CompilerCommand']=cmd
+ result['NativeReferenceHashes']=native_hashes
+ result['NativeReferencesStable']=all(sha(Path(n))==value for n,value in native_hashes.items())
  (out/'result.json').write_text(json.dumps(result,indent=2)+'\n');print(result.get('Output','Compile failure'))
- return 0 if result['InputsStable'] and result['FrozenInputsMatch'] and result['SupportStable'] and result.get('TestExitCode')==0 else 1
+ return 0 if result['InputsStable'] and result['FrozenInputsMatch'] and result['SupportStable'] and result['NativeReferencesStable'] and result.get('TestExitCode')==0 else 1
 if __name__=='__main__':raise SystemExit(main())
