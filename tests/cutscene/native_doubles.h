@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <array>
 #include <cstdint>
+#include <cstddef>
+#include "native_input_layout.inc"
 #include <cstring>
 #include <deque>
 #include <iostream>
@@ -63,7 +65,18 @@ inline void RecordedFactory::Send(Packet& packet, CNetworkPlayer* player) {
 inline void RecordedFactory::SendToAll(Packet& packet, CNetworkPlayer* ignore) {
     for (auto* player : CNetworkPlayerManager::m_pPlayers) if (player != ignore) Send(packet, player);
 }
-namespace Double { static bool focused = true, pressed = false; }
+namespace Double {
+static bool focused = true, pressed = false;
+static uint32_t foreground = 1;
+static unsigned nativeQueries = 0;
+static std::string overlay;
+}
+struct CPad {
+    static inline CKeyboardState NewKeyState{}, OldKeyState{};
+    static inline CMouseControllerState NewMouseControllerState{};
+    CControllerState NewState{}, OldState{};
+    static CPad* GetPad(int) { static CPad pad; return &pad; }
+};
 struct CNetwork { static inline bool m_bAuthenticated = true; };
 struct CLocalPlayer { static inline bool m_bIsHost = false; };
 struct COpCodeSync { static inline bool ms_bLoadingCutscene = false; };
@@ -81,10 +94,11 @@ struct CTheScripts {
 };
 namespace plugin { template<class T, uintptr_t Address> T CallAndReturn() {
     static_assert(Address == 0x4D5D10, "Only the original native skip query is doubled");
+    ++Double::nativeQueries;
     return T(Double::pressed || !Double::focused);
 } }
 namespace patch { template<class T> void RedirectCall(uintptr_t, T) {} }
-struct CDXFont { static inline int m_fFontSize = 18; static void Draw(int, int, const std::string&, uint32_t) {} };
+struct CDXFont { static inline int m_fFontSize = 18; static void Draw(int, int, const std::string& text, uint32_t) { Double::overlay = text; } };
 static struct { int maximumHeight = 720; } RsGlobal;
 #define D3DCOLOR_ARGB(a,r,g,b) uint32_t(0xffffffff)
 namespace Commands { constexpr int START_CUTSCENE = 0x02E7; }

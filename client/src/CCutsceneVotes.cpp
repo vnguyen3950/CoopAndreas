@@ -3,6 +3,7 @@
 #include "COpCodeSync.h"
 #include "CPacketBuffer.h"
 #include "UI/CDXFont.h"
+#include <CPad.h>
 #include <limits>
 
 namespace {
@@ -51,6 +52,10 @@ bool PendingUpdate(const CutsceneVotes::Snapshot& state, bool commit) {
         pending.latest = state; pending.committed = commit; return true;
     }
     return false;
+}
+bool VoteInputFocused() {
+    // Native IsForeground (0x746070) tests the full DWORD at this address.
+    return *reinterpret_cast<const uint32_t*>(0xC920EC) != 0 && !CChat::m_bInputActive;
 }
 bool Covered() {
     return Votes().Started() && CCutsceneMgr::dataFileLoaded &&
@@ -150,6 +155,8 @@ void CCutsceneVotes::ObserveOpcode(uint16_t opcode, bool fromHostScript) {
 }
 void CCutsceneVotes::Process() {
     if (!CNetwork::m_bAuthenticated) { Reset(); return; }
+    // Disarm even if the native skip query is not reached during this frame.
+    if (!VoteInputFocused()) Votes().WantsVote(false, false);
     const bool onMission = CTheScripts::OnAMissionFlag && CTheScripts::ScriptSpace[CTheScripts::OnAMissionFlag];
     if ((wasOnMission && !onMission) || CTheScripts::FailCurrentMission) {
         COpCodeSync::ms_bLoadingCutscene = false;
@@ -163,16 +170,18 @@ void CCutsceneVotes::Process() {
         (sawPlaying && (!CCutsceneMgr::ms_running || CCutsceneMgr::HasCutsceneFinished()))) Cancel(true);
 }
 bool CCutsceneVotes::NativeSkipQuery() {
-    const bool pressed = plugin::CallAndReturn<bool, 0x4D5D10>();
     if (!CNetwork::m_bAuthenticated || !managed ||
-        managedName != CutsceneVotes::Name(CCutsceneMgr::ms_cutsceneName) || !CCutsceneMgr::dataFileLoaded) return pressed;
+        managedName != CutsceneVotes::Name(CCutsceneMgr::ms_cutsceneName) || !CCutsceneMgr::dataFileLoaded)
+        return plugin::CallAndReturn<bool, 0x4D5D10>();
     if (CTheScripts::FailCurrentMission || (wasOnMission && CTheScripts::OnAMissionFlag &&
         !CTheScripts::ScriptSpace[CTheScripts::OnAMissionFlag])) {
         Cancel(true); COpCodeSync::ms_bLoadingCutscene = false; return false;
     }
-    // Native query includes !isForeground. Losing focus is not an explicit vote.
-    const bool focused = *reinterpret_cast<const bool*>(0xC920EC) && !CChat::m_bInputActive;
-    const bool input = focused && pressed;
+    const bool focused = VoteInputFocused();
+    // Feed actual held Space state: the scene-bound focused-release latch
+    // supplies the edge. A broad/just-pressed result would confuse other
+    // inputs or a held key with a release.
+    const bool input = focused && CPad::NewKeyState.standardKeys[' '] != 0;
     const bool playing = Playing();
     if (playing && Votes().WantsVote(input, focused)) {
         Packets::Cutscene::Vote packet;
@@ -213,7 +222,7 @@ void CCutsceneVotes::Draw() {
         text = "Skip votes: " + std::to_string(state.votes) + "/" + std::to_string(state.total);
         if (!state.eligible) text += " (not in this scene's voting roster)";
         else if (state.voted) text += " - your vote is counted";
-        else text += " - Enter / Space / click / controller Cross to vote";
+        else text += " - press Space to vote";
     }
     CDXFont::Draw(20, RsGlobal.maximumHeight - 2 * CDXFont::m_fFontSize, text, D3DCOLOR_ARGB(255, 255, 255, 255));
 }

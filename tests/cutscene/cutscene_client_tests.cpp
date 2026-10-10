@@ -39,14 +39,14 @@ int main() {
     expect(!COpCodeSync::ms_bLoadingCutscene, "Server cancellation invalidates deferred native START");
     CCutsceneVotes::ObserveOpcode(0x02E7, false); begin.state = Announcement(3); CCutsceneVotes::ReceiveBegin(begin);
     GetPacketFactory().sent.clear();
-    Double::pressed = false; CCutsceneVotes::NativeSkipQuery();
+    CPad::NewKeyState.standardKeys[' '] = 0; CCutsceneVotes::NativeSkipQuery();
     Double::focused = false; CCutsceneVotes::NativeSkipQuery();
-    Double::pressed = true; Double::focused = true;
+    CPad::NewKeyState.standardKeys[' '] = 128; Double::focused = true;
     expect(!CCutsceneVotes::NativeSkipQuery() && GetPacketFactory().sent.empty(), "Focus return with held input casts no vote");
-    Double::pressed = false; CCutsceneVotes::NativeSkipQuery();
-    Double::pressed = true; CCutsceneVotes::NativeSkipQuery();
+    CPad::NewKeyState.standardKeys[' '] = 0; CCutsceneVotes::NativeSkipQuery();
+    CPad::NewKeyState.standardKeys[' '] = 128; CCutsceneVotes::NativeSkipQuery();
     expect(GetPacketFactory().sent.size() == 1 && GetPacketFactory().sent.back().second->GetType() == ePacketType::CUTSCENE_VOTE,
-        "Focused native release and press emits one real vote packet");
+        "Focused Space release and press emits one real vote packet");
     CCutsceneVotes::NativeSkipQuery();
     expect(GetPacketFactory().sent.size() == 1, "Repeated native query does not duplicate vote");
     CCutsceneVotes::Cancel();
