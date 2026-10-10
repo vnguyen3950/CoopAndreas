@@ -5,12 +5,17 @@
 #include "CNetworkPedManager.h"
 #include <CGame.h>
 #include "runtime_diagnostics.h"
+#include <cstring>
 
 namespace {
 enum class TraceStage {State,Death,Create,Hello,Receive,Replica,Grant,Remove,Reset,Count};
 void Trace(TraceStage stage,const char*reason,uint32_t generation=0,uint32_t sequence=0,uint32_t id=0,int code=0){
-    static std::array<uint8_t,size_t(TraceStage::Count)> counts{};
-    auto&count=counts[size_t(stage)];if(count>=8)return;++count;
+    static constexpr const char*reasons[]={"readiness-mask","local-life-ready","local-life-unavailable","reset","sealed","not-ready","owner-seal-unavailable","wrapper-unbound","out-of-scope","manifest-sent","manifest-pending","model-wait","generation-failed","generated","unauthenticated-or-invalid","recipient-life-mismatch","row","native-outcome","sent"};
+    static std::array<std::array<uint8_t,sizeof(reasons)/sizeof(reasons[0])>,size_t(TraceStage::Count)> counts{};
+    static unsigned emitted=0;size_t reasonIndex=0;
+    for(;reasonIndex<sizeof(reasons)/sizeof(reasons[0]);++reasonIndex)if(std::strcmp(reason,reasons[reasonIndex])==0)break;
+    if(reasonIndex==sizeof(reasons)/sizeof(reasons[0])||emitted>=128)return; // Fixed catalog only, with global bound.
+    auto&count=counts[size_t(stage)][reasonIndex];if(count>=8)return;++count;++emitted;
     RuntimeDiagnostics::Write("pickup-client","\"event\":\"pickup-stage\",\"stage\":%u,\"reason\":\"%s\",\"generation\":%u,\"sequence\":%u,\"id\":%u,\"code\":%d,\"count\":%u",unsigned(stage),reason,generation,sequence,id,code,unsigned(count));
 }
 PickupSync::View view;

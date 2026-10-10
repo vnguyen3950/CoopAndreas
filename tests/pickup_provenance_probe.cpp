@@ -20,7 +20,7 @@ int main(){
     expect(nativeWeaponDropCalls==0&&generated==0&&CopCreates()==0,"Wrapper provenance never bypasses authenticated owner/seal rejection");
     deathIdentityAvailable=true;
     const unsigned before=RuntimeDiagnostics::calls;
-    for(unsigned i=0;i<1000;++i)Trace(TraceStage::Death,"test-cap",9,6,3,1);
+    for(unsigned i=0;i<1000;++i)Trace(TraceStage::Death,"sealed",9,6,3,1);
     expect(RuntimeDiagnostics::calls-before<=8,"Pickup diagnostic stage cap prevents repeated callbacks or frame retries flooding common sink");
     bool fieldsOnly=true;for(const auto&line:RuntimeDiagnostics::reasons)fieldsOnly&=line.find("@") == std::string::npos&&line.find("password")==std::string::npos;
     expect(fieldsOnly,"Recorded pickup diagnostics include fixed scopes and fields only, no names or credentials");

@@ -5,7 +5,8 @@ ROOT=Path(__file__).resolve().parents[1]
 INPUTS=('shared/network/pickup_lifecycle.h','shared/network/npc_sync.h','shared/network/packets/pickups.h','shared/network/packet.h','shared/network/packet_types.h','third_party/serialize.h')
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest().upper()
 def main():
-    parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,required=True);parser.add_argument('--mutation',action='store_true');parser.add_argument('--ordinal-mutation',action='store_true');parser.add_argument('--terminal-mutation',action='store_true');parser.add_argument('--held-view-mutation',action='store_true');parser.add_argument('--test-file',type=Path);parser.add_argument('--probe-file',type=Path);parser.add_argument('--native',action='store_true');parser.add_argument('--server',action='store_true');args=parser.parse_args();out=args.output.resolve()
+    parser=argparse.ArgumentParser();parser.add_argument('--output',type=Path,required=True);parser.add_argument('--mutation',action='store_true');parser.add_argument('--ordinal-mutation',action='store_true');parser.add_argument('--diagnostic-stage-mutation',action='store_true');parser.add_argument('--terminal-mutation',action='store_true');parser.add_argument('--held-view-mutation',action='store_true');parser.add_argument('--test-file',type=Path);parser.add_argument('--probe-file',type=Path);parser.add_argument('--native',action='store_true');parser.add_argument('--server',action='store_true');args=parser.parse_args();out=args.output.resolve()
+    if args.diagnostic_stage_mutation and not args.native:parser.error('Diagnostic stage mutation requires --native')
     if args.ordinal_mutation and not args.server:parser.error('Ordinal mutation requires --server')
     if args.held_view_mutation and not args.native:parser.error('Held-view mutation requires --native')
     if out.exists()or ROOT/'.cache'not in out.parents:parser.error('Choose a new worktree .cache directory')
@@ -40,6 +41,10 @@ def main():
         support=ROOT/'tests/pickup_server_doubles.h';supportHash=sha(support);shutil.copyfile(support,out/support.name)
     if args.native:
         text=(out/'source/client/src/CPickupSync.cpp').read_text(encoding='utf-8-sig');(out/'pickup_client.inc').write_text(re.sub(r'^#include[^\n]*\n?','',text,flags=re.M),encoding='utf-8')
+        if args.diagnostic_stage_mutation:
+            path=out/'pickup_client.inc';value=path.read_text();start=value.index('    static constexpr const char*reasons[]=');end=value.index('    RuntimeDiagnostics::Write',start)
+            original='    static std::array<uint8_t,size_t(TraceStage::Count)> counts{};\n    auto&count=counts[size_t(stage)];if(count>=8)return;++count;\n'
+            path.write_text(value[:start]+original+value[end:],encoding='utf-8')
         if args.held_view_mutation:
             path=out/'pickup_client.inc';text=path.read_text();needle='if(!row||row->grant!=grant.grant||row->collector!=CNetworkPlayerManager::m_nMyId){SendResult(receipt);hasGrant=false;return;}'
             assert text.count(needle)==1;path.write_text(text.replace(needle,needle.replace('SendResult(receipt);',''),1),encoding='utf-8')
@@ -78,7 +83,7 @@ def main():
     env=r'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\Common7\Tools\VsDevCmd.bat'
     (out/'compile.cmd').write_text('@echo off\ncall "'+env+'" -arch=x86 -host_arch=x64 > environment.log 2>&1\nif errorlevel 1 exit /b 1\n'+subprocess.list2cmdline(cmd)+'\n')
     c=subprocess.run(['cmd.exe','/d','/c',str(out/'compile.cmd')],cwd=out,capture_output=True,text=True);(out/'compile.log').write_text(c.stdout+c.stderr,encoding='utf-8')
-    record={'ProductionHashes':before,'TestHash':testHash,'TestSource':str(test),'CompilerCommand':cmd,'CompileExitCode':c.returncode,'RuntimeValidated':False,'EnumOverlayApplied':enumOverlayApplied,'Mutation':args.mutation or args.terminal_mutation or args.held_view_mutation or args.ordinal_mutation,'OrdinalMutation':args.ordinal_mutation,'TerminalMutation':args.terminal_mutation,'HeldViewMutation':args.held_view_mutation,'Native':args.native,'AnimationHeaderSource':'Current checkout frozen with other inputs','AnimationHeaderHash':animationHash,'DoubleHash':supportHash}
+    record={'ProductionHashes':before,'TestHash':testHash,'TestSource':str(test),'CompilerCommand':cmd,'CompileExitCode':c.returncode,'RuntimeValidated':False,'EnumOverlayApplied':enumOverlayApplied,'Mutation':args.mutation or args.terminal_mutation or args.held_view_mutation or args.ordinal_mutation or args.diagnostic_stage_mutation,'DiagnosticStageMutation':args.diagnostic_stage_mutation,'OrdinalMutation':args.ordinal_mutation,'TerminalMutation':args.terminal_mutation,'HeldViewMutation':args.held_view_mutation,'Native':args.native,'AnimationHeaderSource':'Current checkout frozen with other inputs','AnimationHeaderHash':animationHash,'DoubleHash':supportHash}
     record.update(NativeReferenceHash=nativeReferenceHash,ExtractedNativeMergeHash=nativeMergeHash,NativeMergeEdits='Only unused parameter name omitted; native body unchanged'if args.native else None,NativeTouchReferenceHash=sha(pickupPath)if args.native else None,ExtractedNativeTouchHash=sha(out/'pickup_native_touch.inc')if args.native else None)
     record.update(ProbeSource=str(probe)if probe else None,ProbeHash=probeHash)
     if not c.returncode:
@@ -89,7 +94,7 @@ def main():
     record['InputsStable']=before=={name:sha(ROOT/name)for name in inputs}and sha(test)==testHash
     if supportHash:record['InputsStable']&=sha(support)==supportHash
     if probeHash:record['InputsStable']&=sha(probe)==probeHash
-    record['Pass']=record['InputsStable']and c.returncode==0 and record.get('TestExitCode')==(1 if args.mutation or args.terminal_mutation or args.held_view_mutation or args.ordinal_mutation else 0)
+    record['Pass']=record['InputsStable']and c.returncode==0 and record.get('TestExitCode')==(1 if args.mutation or args.terminal_mutation or args.held_view_mutation or args.ordinal_mutation or args.diagnostic_stage_mutation else 0)
     (out/'result.json').write_text(json.dumps(record,indent=2)+'\n',encoding='utf-8');print(json.dumps({'Pass':record['Pass'],'Output':record.get('Output',c.stdout+c.stderr),'Evidence':str(out/'result.json')},indent=2))
     return 0 if record['Pass']else 1
 if __name__=='__main__':raise SystemExit(main())
