@@ -111,10 +111,10 @@ void CPickupServer::ProcessPending(){
         // Do not recenter them or reconstruct their values. Admit only bounded
         // exterior ground drops. Ground projection may legitimately change Z;
         // finite world bounds remain enforced, without an invented Z-distance limit.
-        const bool near=item.type==8?dx*dx+dy*dy<=225.0:dx*dx+dy*dy+dz*dz<=25.0;
+        const bool withinDeathRange=item.type==8?dx*dx+dy*dy<=225.0:dx*dx+dy*dy+dz*dz<=25.0;
         if(mission||packet.mission||life.area!=0||ped->m_deathArea!=0
             ||ped->m_deathProducerGeneration!=entry.producerGeneration||!PickupSync::SameSeal(ped->m_deathStamp,entry.death)
-            ||!NativeDeathItem(ped,item)||!NPCSync::Position(pos)||!near){output.pending=false;output.expired=true;continue;}
+            ||!NativeDeathItem(ped,item)||!NPCSync::Position(pos)||!withinDeathRange){output.pending=false;output.expired=true;continue;}
         auto&peer=peers[entry.producer];
         if(!output.authorised&&item.cop.sequence<=peer.copSequence){output.pending=false;output.expired=true;continue;}
         output.authorised=entry.authorised=true;peer.copSequence=(std::max)(peer.copSequence,item.cop.sequence);
