@@ -1,0 +1,487 @@
+{
+  "Status": "READY for cop-only integration and frozen independent review",
+  "SourceCommit": "b94bbdd9976fe867026bb0cd38a6c1c50a695ab1",
+  "SourceHashes": {
+    "client/src/CPickupSync.cpp": "43262BB316042EFEE46B8A79199A585B10648C61C6511BE96B57CD0D3A0AF5DD",
+    "client/src/CPickupSync.h": "3BDDFDB5A5886DAF4969AB163F9714921D35B9B014913E5EE6C0700BA8A35256",
+    "client/src/CPickupSyncNative.cpp": "20012494C34999A4ED8AF2C58B62CC0434B0B5875F5BE38DF3B42F95B352B4C3",
+    "client/src/PickupNativeOutcome.h": "80D3A8DD00EA332436465F773D2757AEABB8CBDA9400E3CADBD449E93596E605",
+    "server/src/CPickupSync.cpp": "A08062B485ECF6C4F9F28EF7248A8749B38E92F484F0CFADC9CC1CC08B684B24",
+    "server/src/CPickupSync.h": "2F4958FB73BAA4B4F5D3B7DDDBB48F2D8C4E5AC7ECCC402613A3B674AF9D2856",
+    "shared/network/packets/pickups.h": "66105690FD15CB8AA15B67137E9F4D129F459B3B0650BD530774F073BEB9DCD7",
+    "shared/network/pickup_lifecycle.h": "D9BF934A47D1BB29BECCDC8C29E82076DB6A3CF2F1A483F8CAAF8576DD943580"
+  },
+  "Assertions": 1370,
+  "RuntimeValidated": false,
+  "Batch008Unchanged": true,
+  "Batch008ManifestHash": "55F8011B1BEBE10203A399244B2005CA85571D47EFD5CF3D8745E09427187FCC",
+  "Scope": "One sealed stock cop firearm; ambient host-only; other NPC publication deferred. No melee334, persistent22, interior/mission or stock cop money parity.",
+  "TestRuns": {
+    "cop-drop-codec-cases-001": {
+      "ProductionHashes": {
+        "shared/network/pickup_lifecycle.h": "D9BF934A47D1BB29BECCDC8C29E82076DB6A3CF2F1A483F8CAAF8576DD943580",
+        "shared/network/npc_sync.h": "431BE1E72CA8D9725E8D2DBA30D6F8140D9B51764FF96D749B5666D6FA20D61C",
+        "shared/network/packets/pickups.h": "66105690FD15CB8AA15B67137E9F4D129F459B3B0650BD530774F073BEB9DCD7",
+        "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+        "shared/network/packet_types.h": "D5B5EE96D7E0263878C30360E760EAC5F9801662F054492FE837DDF1EDF1D814",
+        "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E"
+      },
+      "TestHash": "C03F82B32F9512451651DA8A692DA867816C02B666B5DBA07F5B0CD3D8163B1E",
+      "TestSource": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\tests\\pickup_lifecycle_tests.cpp",
+      "CompilerCommand": [
+        "cl.exe",
+        "/nologo",
+        "/std:c++17",
+        "/EHsc",
+        "/W4",
+        "/WX",
+        "/O2",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-codec-cases-001\\source",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-codec-cases-001",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-codec-cases-001\\source\\shared",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-codec-cases-001\\source\\third_party",
+        "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-codec-cases-001\\tests.cpp",
+        "/Fe:C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-codec-cases-001\\tests.exe",
+        "/Fo:C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-codec-cases-001\\tests.obj"
+      ],
+      "CompileExitCode": 0,
+      "RuntimeValidated": false,
+      "EnumOverlayApplied": false,
+      "Mutation": false,
+      "TerminalMutation": false,
+      "HeldViewMutation": false,
+      "Native": false,
+      "AnimationHeaderSource": "Current checkout frozen with other inputs",
+      "AnimationHeaderHash": null,
+      "DoubleHash": null,
+      "NativeReferenceHash": null,
+      "ExtractedNativeMergeHash": null,
+      "NativeMergeEdits": null,
+      "ProbeSource": null,
+      "ProbeHash": null,
+      "TestExitCode": 0,
+      "Output": "987 assertions, 0 failures\n",
+      "InputsStable": true,
+      "Pass": true
+    },
+    "cop-drop-server-cases-002": {
+      "ProductionHashes": {
+        "shared/network/pickup_lifecycle.h": "D9BF934A47D1BB29BECCDC8C29E82076DB6A3CF2F1A483F8CAAF8576DD943580",
+        "shared/network/npc_sync.h": "431BE1E72CA8D9725E8D2DBA30D6F8140D9B51764FF96D749B5666D6FA20D61C",
+        "shared/network/packets/pickups.h": "66105690FD15CB8AA15B67137E9F4D129F459B3B0650BD530774F073BEB9DCD7",
+        "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+        "shared/network/packet_types.h": "D5B5EE96D7E0263878C30360E760EAC5F9801662F054492FE837DDF1EDF1D814",
+        "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E",
+        "server/src/CPickupSync.h": "2F4958FB73BAA4B4F5D3B7DDDBB48F2D8C4E5AC7ECCC402613A3B674AF9D2856",
+        "server/src/CPickupSync.cpp": "A08062B485ECF6C4F9F28EF7248A8749B38E92F484F0CFADC9CC1CC08B684B24",
+        "shared/network/player_animation_sync.h": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038"
+      },
+      "TestHash": "B23FA00E6C04C2122AF4335C9D494FA3CC858FFE5F694D5B695427800F1CE1F6",
+      "TestSource": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\tests\\pickup_server_tests.cpp",
+      "CompilerCommand": [
+        "cl.exe",
+        "/nologo",
+        "/std:c++17",
+        "/EHsc",
+        "/W4",
+        "/WX",
+        "/O2",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-server-cases-002\\source",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-server-cases-002",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-server-cases-002\\source\\shared",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-server-cases-002\\source\\third_party",
+        "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-server-cases-002\\tests.cpp",
+        "/Fe:C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-server-cases-002\\tests.exe",
+        "/Fo:C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-server-cases-002\\tests.obj"
+      ],
+      "CompileExitCode": 0,
+      "RuntimeValidated": false,
+      "EnumOverlayApplied": false,
+      "Mutation": false,
+      "TerminalMutation": false,
+      "HeldViewMutation": false,
+      "Native": false,
+      "AnimationHeaderSource": "Current checkout frozen with other inputs",
+      "AnimationHeaderHash": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038",
+      "DoubleHash": "B0E012DCFF704EDB24F1B6DFAC06681551FBB3D2EF46985966112A7B4CFE99FF",
+      "NativeReferenceHash": null,
+      "ExtractedNativeMergeHash": null,
+      "NativeMergeEdits": null,
+      "ProbeSource": null,
+      "ProbeHash": null,
+      "TestExitCode": 0,
+      "Output": "318 assertions, 0 failures\n",
+      "InputsStable": true,
+      "Pass": true
+    },
+    "cop-drop-native-cases-003": {
+      "ProductionHashes": {
+        "shared/network/pickup_lifecycle.h": "D9BF934A47D1BB29BECCDC8C29E82076DB6A3CF2F1A483F8CAAF8576DD943580",
+        "shared/network/npc_sync.h": "431BE1E72CA8D9725E8D2DBA30D6F8140D9B51764FF96D749B5666D6FA20D61C",
+        "shared/network/packets/pickups.h": "66105690FD15CB8AA15B67137E9F4D129F459B3B0650BD530774F073BEB9DCD7",
+        "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+        "shared/network/packet_types.h": "D5B5EE96D7E0263878C30360E760EAC5F9801662F054492FE837DDF1EDF1D814",
+        "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E",
+        "client/src/CPickupSync.h": "3BDDFDB5A5886DAF4969AB163F9714921D35B9B014913E5EE6C0700BA8A35256",
+        "client/src/CPickupSync.cpp": "43262BB316042EFEE46B8A79199A585B10648C61C6511BE96B57CD0D3A0AF5DD",
+        "client/src/CPickupSyncNative.cpp": "20012494C34999A4ED8AF2C58B62CC0434B0B5875F5BE38DF3B42F95B352B4C3",
+        "client/src/PickupNativeOutcome.h": "80D3A8DD00EA332436465F773D2757AEABB8CBDA9400E3CADBD449E93596E605",
+        "third_party/plugin-sdk/plugin_sa/game_sa/eWeaponType.h": "C7A3170581A559BD0D91B7410E91CFBDB4A2E27B77AA6B3AE99F43E994EEC182",
+        "third_party/plugin-sdk/plugin_sa/game_sa/CPickup.h": "EC567AE4C1DF89990570926633ACFC525753505ED3934F6498AE3CFA217CA4B1",
+        "third_party/plugin-sdk/plugin_sa/game_sa/CWeaponInfo.h": "94DAB0E01E8D6423582B3B10C1B8B7B47B11C9F0F0406DC46914CF420EFEC4B0",
+        "third_party/plugin-sdk/plugin_sa/game_sa/ePedType.h": "DEFCA649596BC035374417CB8F3B7914BB47D91070F17CC59A0DD4D0C89F7D40",
+        "shared/network/player_animation_sync.h": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038"
+      },
+      "TestHash": "FB22961E1E3968273F221CE8ED5646A4B7DC52AA880437B0054F556E43AB1384",
+      "TestSource": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\tests\\pickup_native_tests.cpp",
+      "CompilerCommand": [
+        "cl.exe",
+        "/nologo",
+        "/std:c++17",
+        "/EHsc",
+        "/W4",
+        "/WX",
+        "/O2",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-cases-003\\source",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-cases-003",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-cases-003\\source\\shared",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-cases-003\\source\\third_party",
+        "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-cases-003\\tests.cpp",
+        "/Fe:C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-cases-003\\tests.exe",
+        "/Fo:C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-cases-003\\tests.obj"
+      ],
+      "CompileExitCode": 0,
+      "RuntimeValidated": false,
+      "EnumOverlayApplied": false,
+      "Mutation": false,
+      "TerminalMutation": false,
+      "HeldViewMutation": false,
+      "Native": true,
+      "AnimationHeaderSource": "Current checkout frozen with other inputs",
+      "AnimationHeaderHash": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038",
+      "DoubleHash": "B6D42C4CA0FEBE67E9809E8B19695453EA95D45152A2CBCE85688817291AC773",
+      "NativeReferenceHash": "A588BDE269BD1BD292600EFBC0C2B70038D1B95EE05DD2B33E444BA407CDB39E",
+      "ExtractedNativeMergeHash": "46F11CD3D1F3C0A33FF14FD8D37901AF812D78B35155ED64AF18D81BB6B5FAE0",
+      "NativeMergeEdits": "Only unused parameter name omitted; native body unchanged",
+      "ProbeSource": null,
+      "ProbeHash": null,
+      "TestExitCode": 0,
+      "Output": "65 assertions, 0 failures\n",
+      "InputsStable": true,
+      "Pass": true
+    },
+    "cop-drop-native-mutation-001": {
+      "ProductionHashes": {
+        "shared/network/pickup_lifecycle.h": "D9BF934A47D1BB29BECCDC8C29E82076DB6A3CF2F1A483F8CAAF8576DD943580",
+        "shared/network/npc_sync.h": "431BE1E72CA8D9725E8D2DBA30D6F8140D9B51764FF96D749B5666D6FA20D61C",
+        "shared/network/packets/pickups.h": "66105690FD15CB8AA15B67137E9F4D129F459B3B0650BD530774F073BEB9DCD7",
+        "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+        "shared/network/packet_types.h": "D5B5EE96D7E0263878C30360E760EAC5F9801662F054492FE837DDF1EDF1D814",
+        "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E",
+        "client/src/CPickupSync.h": "3BDDFDB5A5886DAF4969AB163F9714921D35B9B014913E5EE6C0700BA8A35256",
+        "client/src/CPickupSync.cpp": "43262BB316042EFEE46B8A79199A585B10648C61C6511BE96B57CD0D3A0AF5DD",
+        "client/src/CPickupSyncNative.cpp": "20012494C34999A4ED8AF2C58B62CC0434B0B5875F5BE38DF3B42F95B352B4C3",
+        "client/src/PickupNativeOutcome.h": "80D3A8DD00EA332436465F773D2757AEABB8CBDA9400E3CADBD449E93596E605",
+        "third_party/plugin-sdk/plugin_sa/game_sa/eWeaponType.h": "C7A3170581A559BD0D91B7410E91CFBDB4A2E27B77AA6B3AE99F43E994EEC182",
+        "third_party/plugin-sdk/plugin_sa/game_sa/CPickup.h": "EC567AE4C1DF89990570926633ACFC525753505ED3934F6498AE3CFA217CA4B1",
+        "third_party/plugin-sdk/plugin_sa/game_sa/CWeaponInfo.h": "94DAB0E01E8D6423582B3B10C1B8B7B47B11C9F0F0406DC46914CF420EFEC4B0",
+        "third_party/plugin-sdk/plugin_sa/game_sa/ePedType.h": "DEFCA649596BC035374417CB8F3B7914BB47D91070F17CC59A0DD4D0C89F7D40",
+        "shared/network/player_animation_sync.h": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038"
+      },
+      "TestHash": "FB22961E1E3968273F221CE8ED5646A4B7DC52AA880437B0054F556E43AB1384",
+      "TestSource": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\tests\\pickup_native_tests.cpp",
+      "CompilerCommand": [
+        "cl.exe",
+        "/nologo",
+        "/std:c++17",
+        "/EHsc",
+        "/W4",
+        "/WX",
+        "/O2",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-mutation-001\\source",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-mutation-001",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-mutation-001\\source\\shared",
+        "/IC:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-mutation-001\\source\\third_party",
+        "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-mutation-001\\tests.cpp",
+        "/Fe:C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-mutation-001\\tests.exe",
+        "/Fo:C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-native-mutation-001\\tests.obj"
+      ],
+      "CompileExitCode": 0,
+      "RuntimeValidated": false,
+      "EnumOverlayApplied": false,
+      "Mutation": true,
+      "TerminalMutation": false,
+      "HeldViewMutation": false,
+      "Native": true,
+      "AnimationHeaderSource": "Current checkout frozen with other inputs",
+      "AnimationHeaderHash": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038",
+      "DoubleHash": "B6D42C4CA0FEBE67E9809E8B19695453EA95D45152A2CBCE85688817291AC773",
+      "NativeReferenceHash": "A588BDE269BD1BD292600EFBC0C2B70038D1B95EE05DD2B33E444BA407CDB39E",
+      "ExtractedNativeMergeHash": "46F11CD3D1F3C0A33FF14FD8D37901AF812D78B35155ED64AF18D81BB6B5FAE0",
+      "NativeMergeEdits": "Only unused parameter name omitted; native body unchanged",
+      "ProbeSource": null,
+      "ProbeHash": null,
+      "TestExitCode": 1,
+      "Output": "FAIL: Same-handle merge mismatch is rejected before native effects\nFAIL: Actual active or reserved native merge retires the pile and clears its mapping\nFAIL: Retired merged full pile is never automatically republished or re-reserved\nFAIL: Actual active or reserved native merge retires the pile and clears its mapping\nFAIL: Retired merged full pile is never automatically republished or re-reserved\n65 assertions, 5 failures\n",
+      "InputsStable": true,
+      "Pass": true
+    }
+  },
+  "VisibilityMutation": {
+    "CompileExitCode": 0,
+    "TestExitCode": 1,
+    "Mutation": "Restore prior host-only replica condition in actual client function",
+    "Output": "FAIL: Remote cop loot requests missing native models before creating an inert replica\nFAIL: Host and reused producer slot both render remote-owner loot as replicas without benefits\nFAIL: Replica cleanup cannot publish original producer removal\n65 assertions, 3 failures\n",
+    "ProductionEdits": false,
+    "RuntimeValidated": false
+  },
+  "SDKCheckpoint": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001",
+    "BuildExitCode": 0,
+    "InputsStable": true,
+    "NPCSource": "9fa9ae173ff9cca410cede131905f2d97766cfae",
+    "NPCOverlayHashes": {
+      "client/src/CNetworkPed.cpp": "F2A564DA0AE211C716DD93BAD9810BF09112C3049CCA6F9D54CD69F9967DB3C1",
+      "client/src/CNetworkPed.h": "E17E8E888367C585D18F1FF7605F19DCA2E904298D1DC9FD734C09EA2B235FD1",
+      "client/src/CNetworkPedManager.cpp": "B4D9CF341FEE28F66C5CE9A50631EDACF5032EF3D52F65F574909B3F2BA50F2D",
+      "client/src/CNetworkPedManager.h": "8F579BFD5A8BD3E991CB3D482BF68E4FCC000299A9B9A424D924ED448A2C446F",
+      "client/src/Hooks/PedHooks.cpp": "C9F3527761B1871AEAA528E6515D29A679AA54043F7DFFD62F20349A2AE0D7B9",
+      "client/src/Hooks/PedHooks.h": "5EB75695BB8BC3746D075AB34733F570FA7A4A4F01A9353F7B1285F63F2A8A55",
+      "client/src/PacketHandlers/peds.cpp": "EE686C4345C257A669C8FE86B654813C8E2942939628B035D32C8EC9899E19E8",
+      "server/src/CNetworkPed.h": "D56D41CEE89EFE7571B761529025A8D24663B1CAE414CC461B8661769980A37B",
+      "server/src/CNetworkPedManager.cpp": "468A0DD70CAB3AF008CD74D9CF2E5344BB04E403CBA06F935D36258CCEC020D9",
+      "server/src/CNetworkPedManager.h": "0FFE8D12C494DC273B1C1CC5925CB576045AC85CC5968F6B9EE199F60C0B8405",
+      "server/src/PacketHandlers/peds.cpp": "39BF72ED9EB1E8F3D74862615783577577FA809C0BB4E6700806A0417A749735",
+      "shared/network/packet_types.h": "B8C31AC1442DF8879AF2CF1CC0208B4FA2740AA178EAA382E73F3B454802A774",
+      "shared/network/packets/peds.h": "D2F7513B70DC689357ADB08BA1131606666DE1AF4BD40B312AC99682CCB59AEF"
+    },
+    "EffectivePaths": {
+      "GTA_SA_DIR": "<unset>",
+      "targets": {
+        "server": {
+          "targetfile": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release\\server.exe",
+          "pchSource": "server\\src\\stdafx.h",
+          "autogendir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\server\\windows\\x86\\release",
+          "targetdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release",
+          "objectdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\server\\windows\\x86\\release",
+          "pchOutput": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\server\\windows\\x86\\release\\gens\\server\\src\\cxx\\stdafx.h_v143.pch",
+          "pchWrapper": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\server\\windows\\x86\\release\\server\\src\\stdafx.h"
+        },
+        "proxy": {
+          "targetdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release",
+          "objectdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\proxy\\windows\\x86\\release",
+          "targetfile": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release\\proxy.dll",
+          "autogendir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\proxy\\windows\\x86\\release"
+        },
+        "plugin_sa": {
+          "targetfile": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release\\plugin_sa.lib",
+          "pchSource": "third_party\\plugin-sdk\\plugin_sa\\plugin_sa.h",
+          "autogendir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\plugin_sa\\windows\\x86\\release",
+          "targetdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release",
+          "objectdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\plugin_sa\\windows\\x86\\release",
+          "pchOutput": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\plugin_sa\\windows\\x86\\release\\gens\\third_party\\plugin-sdk\\plugin_sa\\cxx\\plugin_sa.h_v143.pch",
+          "pchWrapper": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\plugin_sa\\windows\\x86\\release\\third_party\\plugin-sdk\\plugin_sa\\plugin_sa.h"
+        },
+        "client": {
+          "targetfile": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release\\CoopAndreasSA.dll",
+          "pchSource": "client\\src\\stdafx.h",
+          "autogendir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\client\\windows\\x86\\release",
+          "targetdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release",
+          "objectdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\client\\windows\\x86\\release",
+          "pchOutput": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\client\\windows\\x86\\release\\gens\\client\\src\\cxx\\stdafx.h_v143.pch",
+          "pchWrapper": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\client\\windows\\x86\\release\\client\\src\\stdafx.h"
+        },
+        "discordrpc": {
+          "targetdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release",
+          "objectdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\discordrpc\\windows\\x86\\release",
+          "targetfile": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release\\discordrpc.lib",
+          "autogendir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\discordrpc\\windows\\x86\\release"
+        },
+        "launcher": {
+          "targetdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release",
+          "objectdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\launcher\\windows\\x86\\release",
+          "targetfile": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release\\LaunchCoopAndreas.exe",
+          "autogendir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\launcher\\windows\\x86\\release"
+        },
+        "enet": {
+          "targetfile": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release\\enet.lib",
+          "pchSource": "third_party\\enet\\enet.h",
+          "autogendir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\enet\\windows\\x86\\release",
+          "targetdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\windows\\x86\\release",
+          "objectdir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\enet\\windows\\x86\\release",
+          "pchOutput": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.objs\\enet\\windows\\x86\\release\\gens\\third_party\\enet\\cxx\\enet.h_v143.pch",
+          "pchWrapper": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build\\.gens\\enet\\windows\\x86\\release\\third_party\\enet\\enet.h"
+        }
+      },
+      "configfile": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\config\\.xmake\\windows\\x64\\xmake.conf",
+      "builddir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\cop-drop-fix\\.cache\\cop-drop-sdk-001\\build"
+    },
+    "BuildLogHash": "1743AE2EBBF791AB72C555F9155C4FBCB7CCEE2EE043C56181C306F09C26AAF9",
+    "Binaries": {
+      "CoopAndreasSA.dll": "C5E69549C3B28F6A3CAAA2D44721FAA6973224B862093A323D20B04712D72C3A",
+      "server.exe": "2B713DE78C31415AEFA32EFCF4918DEBA31062A29D801A8024318016CF7319D2"
+    }
+  },
+  "RootIntegrationPending": [
+    "Matched0.7 config/version/final enum",
+    "CPickupServer::ProcessPending after normal receive dispatch",
+    "Combined actual ENet/player/death integration and package009"
+  ],
+  "NativeDiskEvidence": {
+    "ExecutablePath": "C:\\Users\\Vu\\work\\gta-coop\\game-lab\\gta_sa.exe",
+    "SHA256": "A559AA772FD136379155EFA71F00C47AAD34BBFEAE6196B0FE1047D0645CBD26",
+    "DiskReadOnly": true,
+    "NativeExecution": false,
+    "Functions": {
+      "GenerateNewOne": {
+        "Address": "0x456f20",
+        "Prefix": "8a4c241480f90d5356740f80f90b740a8a54242884d2742a",
+        "Calls": [
+          {
+            "Address": "0x4571ad",
+            "Target": "0x563280"
+          },
+          {
+            "Address": "0x4571c0",
+            "Target": "dword ptr [eax]"
+          },
+          {
+            "Address": "0x4572a1",
+            "Target": "0x455500"
+          },
+          {
+            "Address": "0x4572c8",
+            "Target": "0x821b40"
+          },
+          {
+            "Address": "0x4572db",
+            "Target": "0x821b40"
+          },
+          {
+            "Address": "0x4572ee",
+            "Target": "0x821b40"
+          },
+          {
+            "Address": "0x4572f9",
+            "Target": "0x454c70"
+          },
+          {
+            "Address": "0x45732d",
+            "Target": "0x4567e0"
+          },
+          {
+            "Address": "0x45733a",
+            "Target": "0x563220"
+          }
+        ]
+      },
+      "GiveUsAPickUpObject": {
+        "Address": "0x4567e0",
+        "Prefix": "83ec0c568b742414c70600000000833d4cf8b50002578bf9",
+        "Calls": [
+          {
+            "Address": "0x45680b",
+            "Target": "dword ptr [edx + 0x10]"
+          },
+          {
+            "Address": "0x456823",
+            "Target": "0x743c60"
+          },
+          {
+            "Address": "0x456835",
+            "Target": "0x550080"
+          },
+          {
+            "Address": "0x45684c",
+            "Target": "0x5a1ef0"
+          },
+          {
+            "Address": "0x456861",
+            "Target": "0x5a1d70"
+          },
+          {
+            "Address": "0x456873",
+            "Target": "0x5a1f60"
+          },
+          {
+            "Address": "0x456893",
+            "Target": "0x4549a0"
+          },
+          {
+            "Address": "0x4568e6",
+            "Target": "0x439a80"
+          },
+          {
+            "Address": "0x456902",
+            "Target": "0x59ad70"
+          },
+          {
+            "Address": "0x45690c",
+            "Target": "0x54ef40"
+          },
+          {
+            "Address": "0x456913",
+            "Target": "0x532b00"
+          },
+          {
+            "Address": "0x456963",
+            "Target": "0x454d20"
+          },
+          {
+            "Address": "0x456992",
+            "Target": "0x571b70"
+          },
+          {
+            "Address": "0x456b1b",
+            "Target": "0x50ad20"
+          },
+          {
+            "Address": "0x456b90",
+            "Target": "0x420c40"
+          }
+        ]
+      },
+      "GenerateWeapon": {
+        "Address": "0x457380",
+        "Prefix": "e98b6b1101e9a4b4faffe961d1faff30b5e9c9f8faff7936",
+        "Calls": []
+      },
+      "CopMoney": {
+        "Address": "0x4590f0",
+        "Prefix": "e94bb01001e989c0faffcce942ddfafff4caa1e9eb99faff",
+        "Calls": []
+      },
+      "DeadPedWeapons": {
+        "Address": "0x4591d0",
+        "Prefix": "83ec14535556578bf98b876c040000f6c401897c24100f85",
+        "Calls": [
+          {
+            "Address": "0x45922c",
+            "Target": "0x73b1c0"
+          },
+          {
+            "Address": "0x45924a",
+            "Target": "0x459180"
+          },
+          {
+            "Address": "0x459291",
+            "Target": "0x4555a0"
+          },
+          {
+            "Address": "0x4592f7",
+            "Target": "0x457380"
+          },
+          {
+            "Address": "0x459315",
+            "Target": "0x5e6320"
+          }
+        ]
+      }
+    },
+    "UpdateCallTargets": {
+      "0x45902e": "0x457410",
+      "0x459095": "0x457410"
+    }
+  },
+  "Checklist": "tests/COP_DROP_CONTRACT.md"
+}
