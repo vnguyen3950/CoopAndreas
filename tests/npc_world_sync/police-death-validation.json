@@ -1,0 +1,87 @@
+{
+  "Status": "Stable checkpoint for independent review/root integration; pickup linkage pending",
+  "SourceCommit": "9fa9ae173ff9cca410cede131905f2d97766cfae",
+  "SourceHashes": {
+    "client/src/CNetworkPed.cpp": "A2A74BD88064BD90D42BF1C62B43F4BE4CFBC86A488CAE5064E4D5CC46C0752C",
+    "client/src/CNetworkPed.h": "FC67C78F410D398EF45E1CAC0C2D553779767179E18E652D2E3C84C8E45CEC61",
+    "client/src/CNetworkPedManager.cpp": "5B18DC88D10071023D26D0857DC1CAF11A93EB6C3434310BFF4C38D97033445A",
+    "client/src/CNetworkPedManager.h": "B5279EE62084DBB2A25FAF7187EAD08F93D6C3C9C93F208FC9A43EB02BDDB938",
+    "client/src/Hooks/PedHooks.cpp": "571D469766780AC2EE82D6C3074A6F15BD2D327F60E85D814A9D3D2D3EF2D28C",
+    "server/src/CNetworkPed.h": "2122EE4CB73558921DC3D3AC7F90EB778A73AF8B51171D5C94C52F04AE65DA63",
+    "server/src/CNetworkPedManager.cpp": "090CE15F9A2858E25AB00C40B88E10E66D1C1A011DCB00130928AF7B5948009D",
+    "server/src/CNetworkPedManager.h": "B833FC06D70B44744327B4ABD7976220711D9BD74A330150B2B1D7A56ABC8F8F",
+    "server/src/PacketHandlers/peds.cpp": "DB9E99CA9227F50498EFE810893196A249442C06103659BE975393E166E08948",
+    "shared/network/packets/peds.h": "60BBE969A516D1EBF22ACE6D1E2EB51FFCCE39DDC016581DA0FC57DB100324A3"
+  },
+  "RuntimeValidated": false,
+  "InstalledBatchModified": false,
+  "PickupParticipationClaimed": false,
+  "BuildLogs": {
+    "Client": ".cache/police-build/client-checkpoint.log",
+    "Server": ".cache/police-build/server-checkpoint.log"
+  },
+  "Tests": {
+    "red-004": {
+      "Output": "FAIL: Every stock city/sheriff/biker/SWAT/FBI/army cop creates through actual constructor\nFAIL: Replica preserves requested skin across different native local city\nFAIL: Every stock city/sheriff/biker/SWAT/FBI/army cop creates through actual constructor\nFAIL: Replica preserves requested skin across different native local city\nFAIL: Every stock city/sheriff/biker/SWAT/FBI/army cop creates through actual constructor\nFAIL: Replica preserves requested skin across different native local city\nFAIL: Every stock city/sheriff/biker/SWAT/FBI/army cop creates through actual constructor\nFAIL: Replica preserves requested skin across different native local city\nFAIL: Every stock city/sheriff/biker/SWAT/FBI/army cop creates through actual constructor\nFAIL: Replica preserves requested skin across different native local city\nFAIL: Every stock city/sheriff/biker/SWAT/FBI/army cop creates through actual constructor\nFAIL: Replica preserves requested skin across different native local city\nFAIL: Every stock city/sheriff/biker/SWAT/FBI/army cop creates through actual constructor\nFAIL: Replica preserves requested skin across different native local city\nFAIL: Every stock city/sheriff/biker/SWAT/FBI/army cop creates through actual constructor\nFAIL: Replica preserves requested skin across different native local city\nFAIL: Every stock city/sheriff/biker/SWAT/FBI/army cop creates through actual constructor\nFAIL: Replica preserves requested skin across different native local city\nFAIL: Zero health must enter a native corpse/death state instead of alive idle\n50 police constructor/handler assertions, 19 failures\n",
+      "CompileExitCode": 0,
+      "TestExitCode": 1,
+      "InputsStable": true,
+      "SupportStable": true,
+      "Evidence": ".cache/police-tests/red-004/result.json"
+    },
+    "checkpoint-police": {
+      "Output": "62 police constructor/handler assertions, 0 failures\n",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "InputsStable": true,
+      "SupportStable": true,
+      "Evidence": ".cache/police-tests/checkpoint-police/result.json"
+    },
+    "checkpoint-deathserver": {
+      "Output": "16 death producer/server assertions, 0 failures\n",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "InputsStable": true,
+      "SupportStable": true,
+      "Evidence": ".cache/police-tests/checkpoint-deathserver/result.json"
+    },
+    "checkpoint-client": {
+      "Output": "37 assertions, 0 failures\n",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "InputsStable": true,
+      "SupportStable": true,
+      "Evidence": ".cache/police-tests/checkpoint-client/result.json"
+    },
+    "checkpoint-server": {
+      "Output": "35 assertions, 0 failures\n",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "InputsStable": true,
+      "SupportStable": true,
+      "Evidence": ".cache/police-tests/checkpoint-server/result.json"
+    },
+    "codec-001": {
+      "Output": "25991 assertions, 0 failures\n",
+      "CompileExitCode": 0,
+      "TestExitCode": 0,
+      "InputsStable": true,
+      "SupportStable": true,
+      "Evidence": ".cache/police-tests/codec-001/result.json"
+    },
+    "producer-mutation-001": {
+      "Output": "FAIL: Reused pointer/slot with new incarnation rejected\n16 death producer/server assertions, 1 failures\n",
+      "CompileExitCode": 0,
+      "TestExitCode": 1,
+      "InputsStable": true,
+      "SupportStable": true,
+      "Evidence": ".cache/police-tests/producer-mutation-001/result.json"
+    }
+  },
+  "NativeReferenceHashes": {
+    "C:\\Users\\Vu\\work\\gta-coop\\gta-reversed\\source\\game_sa\\Entity\\Ped\\CopPed.cpp": "4D3FAA45169F483749B5021BA7AD8406CA40EAA33ACFC203473D449BC1EE3F15",
+    "C:\\Users\\Vu\\work\\gta-coop\\gta-reversed\\source\\game_sa\\Tasks\\TaskTypes\\TaskComplexDie.cpp": "DA40AFB0C7628B2A39C2B45311F4C0858DCE50918EB85BD8B7ACEACD25ABB342",
+    "third_party\\plugin-sdk\\plugin_sa\\game_sa\\CCopPed.cpp": "D94A244BDFEDD32FE3EB5BB1BBDEABA9E051EA1299B356E7425C26FB47A768CD",
+    "third_party\\plugin-sdk\\plugin_sa\\game_sa\\CTaskComplexDie.cpp": "DDEFD4F5F214532AD835C3BD3853E898B216154652A92D4AC7602DC8FF8893E1"
+  }
+}
