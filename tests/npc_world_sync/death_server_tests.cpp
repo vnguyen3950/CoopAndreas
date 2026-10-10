@@ -30,5 +30,36 @@ int main()
     ped=new CNetworkPed(2,&b,MODEL_LAPD1,PED_TYPE_COP,{},RANDOM_CHAR);ped->m_generation=51;CNetworkPedManager::Add(ped);
     receive(death,&a);expect(!ped->m_deathStamp.State(),"Old seal cannot kill reused ped slot");
     CNetworkPedManager::Remove(ped);delete ped;
+    struct Case { eModelID model; ePedType type; };
+    const Case cases[] = {
+        {MODEL_MALE01, PED_TYPE_CIVMALE}, {MODEL_BFYRI, PED_TYPE_CIVFEMALE},
+        {MODEL_BALLAS1, PED_TYPE_GANG1}, {MODEL_FAM1, PED_TYPE_GANG2}
+    };
+    uint32_t generation = 100;
+    for (const auto& item : cases) {
+        ped = new CNetworkPed(2, &a, item.model, item.type, {}, RANDOM_CHAR);
+        ped->m_generation = ++generation; ped->m_ownerEpoch = 1;
+        CNetworkPedManager::Add(ped);
+        death.stamp = {generation, 1, 2}; death.position = {11, 22, 3};
+        receive(death, &b);
+        expect(!ped->m_deathStamp.State(), "Non-cop death seal rejects foreign owner");
+        receive(death, &a);
+        expect(ped->m_deathStamp.sequence == 2 && ped->m_nModelId == item.model && ped->m_nPedType == item.type,
+            "Civilian/gang seal preserves registered native model and type");
+        sent = GetPacketFactory().sent.size(); receive(death, &a);
+        expect(GetPacketFactory().sent.size() == sent, "Duplicate non-cop seal does not broadcast again");
+        later.stamp = {generation, 1, 3}; later.healthSnapshot.iHealth = 100; receive(later, &a);
+        expect(ped->m_lastState.onFoot.healthSnapshot.iHealth == 0,
+            "Server caches terminal non-cop health despite delayed alive SYNC");
+        expect(CNetworkPedManager::AssignOwner(ped, &b) &&
+            CNetworkPedManager::GetDeathProducer(&a, 2, death.stamp) &&
+            !CNetworkPedManager::GetDeathProducer(&b, 2, death.stamp),
+            "Non-cop transfer retains original producer, not new owner");
+        second = death; second.stamp = {generation, 2, 4}; receive(second, &b);
+        expect(ped->m_deathStamp.epoch == 1, "New owner cannot reseal civilian/gang lifetime");
+        CNetworkPedManager::Remove(ped); delete ped;
+        expect(!CNetworkPedManager::GetDeathProducer(&a, 2, death.stamp),
+            "Removed non-cop lifetime cannot supply native drop proof");
+    }
     std::cout<<checks<<" death producer/server assertions, "<<failures<<" failures\n";return failures?1:0;
 }

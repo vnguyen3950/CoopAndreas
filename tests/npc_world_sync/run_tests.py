@@ -23,12 +23,12 @@ def block(text,pattern):
   if not depth:return text[m.start():end+2]
  raise ValueError('Unbalanced extraction')
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client','passenger','police','deathserver'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');p.add_argument('--mutate-death-producer',action='store_true');p.add_argument('--null-cop',action='store_true');p.add_argument('--native-source',type=Path,default=WORKSPACE/'gta-reversed/source/game_sa/Entity/Ped/CopPed.cpp');a=p.parse_args();out=a.output.resolve()
+ p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client','passenger','police','noncop','deathserver'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');p.add_argument('--mutate-death-producer',action='store_true');p.add_argument('--mutate-replica-loot',action='store_true');p.add_argument('--null-cop',action='store_true');p.add_argument('--native-source',type=Path,default=WORKSPACE/'gta-reversed/source/game_sa/Entity/Ped/CopPed.cpp');a=p.parse_args();out=a.output.resolve()
  if out.exists() or ROOT/'.cache' not in out.parents:p.error('Fresh worktree .cache directory required')
- inputs=INPUTS+(SERVER_INPUTS if a.suite in ('server','deathserver') else CLIENT_INPUTS if a.suite in ('client','passenger','police') else [])
+ inputs=INPUTS+(SERVER_INPUTS if a.suite in ('server','deathserver') else CLIENT_INPUTS if a.suite in ('client','passenger','police','noncop') else [])
  out.mkdir(parents=True);before={n:sha(ROOT/n) for n in inputs}
- test_name='death_server_tests.cpp' if a.suite=='deathserver' else 'police_tests.cpp' if a.suite=='police' else 'server_tests.cpp' if a.suite in ('server','deathserver') else 'passenger_counterexamples.cpp' if a.suite=='passenger' else 'client_tests.cpp' if a.suite=='client' else 'tests.cpp'
- support=['run_tests.py',test_name]+(['server_doubles.h'] if a.suite in ('server','deathserver') else ['client_doubles.h'] if a.suite in ('client','passenger','police') else [])
+ test_name='non_cop_death_tests.cpp' if a.suite=='noncop' else 'death_server_tests.cpp' if a.suite=='deathserver' else 'police_tests.cpp' if a.suite=='police' else 'server_tests.cpp' if a.suite in ('server','deathserver') else 'passenger_counterexamples.cpp' if a.suite=='passenger' else 'client_tests.cpp' if a.suite=='client' else 'tests.cpp'
+ support=['run_tests.py',test_name]+(['server_doubles.h'] if a.suite in ('server','deathserver') else ['client_doubles.h'] if a.suite in ('client','passenger','police','noncop') else [])
  support_before={n:sha(HERE/n) for n in support}
  for n in inputs:
   target=out/'source'/n;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/n,target)
@@ -64,13 +64,18 @@ def main():
   (out/'server_factory.inc').write_text('static uint8_t packetBuffer[10*1024];\n'+block(read('server/src/CPacketFactory.cpp'),r'static void BuildPacketStream\([^{}]*\{'))
   (out/'client_buffer.inc').write_text(block(read('client/src/CPacketBuffer.cpp'),r'void CPacketBuffer::Receive\([^{}]*\{'))
   shutil.copyfile(HERE/'server_doubles.h',out/'server_doubles.h')
- if a.suite in ('client','passenger','police'):
+ if a.suite in ('client','passenger','police','noncop'):
   fragments += [block(read(SDK+'eCopType.h'),r'enum\s+(?:PLUGIN_API\s+)?eCopType\b[^{}]*\{')]
   (out/'extracted_packet.h').write_text('\n'.join(fragments))
   for name,path in [('client_ped_decl','client/src/CNetworkPed.h'),('client_manager_decl','client/src/CNetworkPedManager.h')]:
    (out/(name+'.inc')).write_text(includes_only(read(path)))
   ped=read('client/src/CNetworkPed.cpp');mgr=read('client/src/CNetworkPedManager.cpp');handlers=read('client/src/PacketHandlers/peds.cpp')
   methods=[block(ped,re.escape(signature)+r'[^{}]*\{') for signature in ('CNetworkPed::CNetworkPed(int pedid','CNetworkPed::~CNetworkPed()','bool CNetworkPed::HasValidPed() const','void CNetworkPed::DetachPed()','CNetworkPed* CNetworkPed::CreateHosted(','void CNetworkPed::ApplyWeaponSnapshot(','void CNetworkPed::ApplyReplicaHealth(','void CNetworkPed::CancelClaim()','bool CNetworkPed::NextState(','bool CNetworkPed::AcceptState(','bool CNetworkPed::CanAcceptState(')]
+  if a.mutate_replica_loot:
+   assert a.suite=='noncop'
+   needle='m_pPed->m_nPedFlags.bDoesntDropWeaponsWhenDead = true;\n    m_pPed->m_nMoneyCount = 0;'
+   assert sum(text.count(needle) for text in methods)==1
+   methods=[text.replace(needle,'// Mutation: omit replica native loot suppression.') for text in methods]
   methods += [block(mgr,re.escape(signature)+r'[^{}]*\{') for signature in ('CNetworkPed* CNetworkPedManager::GetPed(int','CNetworkPed* CNetworkPedManager::GetPed(CEntity*','void CNetworkPedManager::Add(','void CNetworkPedManager::Remove(','void CNetworkPedManager::HandlePedDestruction(','void CNetworkPedManager::RemoveInvalidPeds()','unsigned char CNetworkPedManager::AddToTempList(','bool CNetworkPedManager::AcceptSpawn(','bool CNetworkPedManager::AcceptRemoval(','bool CNetworkPedManager::PinGangWarPedToHost(','void CNetworkPedManager::RequestReset()','void CNetworkPedManager::ProcessPendingReset()','void CNetworkPedManager::Clear()','void CNetworkPedManager::Init()','bool CNetworkPedManager::NativeReady()','bool CNetworkPedManager::GetOwnerDeathIdentity(','bool CNetworkPedManager::Defer(','void CNetworkPedManager::ProcessPendingNative()')]
   for packet in ('PED_SPAWN','PED_CONFIRM','PED_REMOVE','ASSIGN_PED','PED_ONFOOT','PED_DRIVER_UPDATE','PED_PASSENGER_UPDATE','PED_REPLAY','PED_PIN','PED_DEATH'):
    methods += [block(handlers,r'PACKET_HANDLER\(\s*ePacketType::'+packet+r'\b[^{}]*\{')]
@@ -79,13 +84,13 @@ def main():
   shutil.copyfile(HERE/'client_doubles.h',out/'client_doubles.h')
   hook=read('client/src/Hooks/PedHooks.cpp');(out/'cop_control.inc').write_text(block(hook,r'void PedHooks::ProcessCopControl\([^{}]*\{'))
  native_hashes={}
- if a.suite in ('client','passenger','police'):
+ if a.suite in ('client','passenger','police','noncop'):
   reference=a.native_source.resolve();native_hashes[str(reference)]=sha(reference)
   shutil.copyfile(reference,out/'cop_native_source.cpp')
   native=(out/'cop_native_source.cpp').read_text(encoding='utf-8-sig')
   (out/'cop_native_models.inc').write_text(block(native,r'eModelID CCopPed::GetPedModelForCopType\([^{}]*\{')+'\n'+block(native,r'eModelID ResolveModelForCopType\([^{}]*\{'))
  shutil.copyfile(HERE/test_name,out/'tests.cpp')
- cmd=['cl.exe','/nologo','/std:c++17','/EHsc','/W4','/DNDEBUG','/DNOMINMAX','/DCOOP_CLIENT' if a.suite in ('client','passenger','police') else '/DCOOP_SERVER','tests.cpp','/I'+str(out/'source/shared'),'/I'+str(out/'source/third_party'),'/Fe:tests.exe','/Fo:tests.obj']
+ cmd=['cl.exe','/nologo','/std:c++17','/EHsc','/W4','/DNDEBUG','/DNOMINMAX','/DCOOP_CLIENT' if a.suite in ('client','passenger','police','noncop') else '/DCOOP_SERVER','tests.cpp','/I'+str(out/'source/shared'),'/I'+str(out/'source/third_party'),'/Fe:tests.exe','/Fo:tests.obj']
  env=r'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat'
  (out/'compile.cmd').write_text('@echo off\ncall "'+env+'" x64_x86 > environment.log 2>&1\nif errorlevel 1 exit /b 1\n'+subprocess.list2cmdline(cmd)+'\n')
  processEnv=os.environ.copy();processEnv.pop('GTA_SA_DIR',None)
@@ -95,7 +100,7 @@ def main():
  if not c.returncode:
   t=subprocess.run([str(out/'tests.exe')]+(['--null-only'] if a.null_cop else []),cwd=out,env=processEnv,capture_output=True,text=True);result.update(TestExitCode=t.returncode,Output=t.stdout+t.stderr);(out/'test.log').write_text(result['Output'])
  else:print(c.stdout+c.stderr)
- result['NullCopAllocation']=a.null_cop;result['DeathProducerMutation']=a.mutate_death_producer;result['Suite']=a.suite;result['Mutation']=a.mutate_generation;result['ReplayTimeMutation']=a.mutate_replay_time
+ result['ReplicaLootMutation']=a.mutate_replica_loot;result['NullCopAllocation']=a.null_cop;result['DeathProducerMutation']=a.mutate_death_producer;result['Suite']=a.suite;result['Mutation']=a.mutate_generation;result['ReplayTimeMutation']=a.mutate_replay_time
  result['InputsStable']=before=={n:sha(ROOT/n) for n in inputs}
  result['FrozenInputsMatch']=before=={n:sha(out/'source'/n) for n in inputs}
  result['SupportHashes']=support_before;result['SupportStable']=support_before=={n:sha(HERE/n) for n in support}
