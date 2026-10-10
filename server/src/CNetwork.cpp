@@ -86,6 +86,9 @@ bool CNetwork::Init(unsigned short port)
                     break;
             }
         }
+        // SYSTEM loot manifests may arrive before their reliable EVENT death
+        // seal. Retry after dispatch and expire pending proofs while idle.
+        CPickupServer::ProcessPending();
     }
 
     enet_host_destroy(pENetHost);
