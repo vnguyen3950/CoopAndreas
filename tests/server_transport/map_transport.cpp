@@ -225,14 +225,61 @@ int main(int argc, char** argv)
     copDrop.sequence = 2; guest.Send(copDrop); Wait([]{return false;},150);
     expect(guest.pickups.back().row.item.id == copItemId && guest.pickups.back().row.item.revision == copRevision,
         "Repeated manifest returns the same item without minting another drop.");
+    // Ordinary NPC outputs share the original owner seal, with one lifetime per
+    // native output ordinal. No native resource effect is emulated by this client.
+    auto civilian = cop; civilian.tempid = 2; civilian.requestToken = 2;
+    civilian.modelId = MODEL_MALE01; civilian.pedType = PED_TYPE_CIVMALE;
+    const auto confirmations = guest.pedConfirms.size();
+    expect(guest.Send(civilian) && Wait([&]{return guest.pedConfirms.size() > confirmations;}),
+        "Actual guest registers an ordinary civilian with a distinct server lifetime.");
+    const auto confirmedCivilian = guest.pedConfirms.back();
+    auto civilianDeath = death; civilianDeath.pedid = confirmedCivilian.pedid;
+    civilianDeath.stamp = confirmedCivilian.stamp; civilianDeath.stamp.sequence = 1;
+    const auto priorDeaths = host.pedDeaths.size();
+    expect(guest.Send(civilianDeath) && Wait([&]{return host.pedDeaths.size() > priorDeaths;}),
+        "Civilian death seal reaches the real server's original-producer ledger.");
+    auto npcWeapon = copDrop; npcWeapon.sequence = 3; npcWeapon.item.creation = 2;
+    npcWeapon.item.cop = {confirmedCivilian.pedid,civilianDeath.stamp,2,guestActor.generation};
+    const auto beforeWeapon = guest.pickups.size();
+    expect(guest.Send(npcWeapon) && Wait([&]{return guest.pickups.size() > beforeWeapon
+        && guest.pickups.back().row.item.cop.ped == confirmedCivilian.pedid;}),
+        "A guest civilian's supported firearm is published to all watching peers.");
+    const auto npcWeaponId = guest.pickups.back().row.item.id;
+    auto npcMoney = npcWeapon; npcMoney.sequence = 4; npcMoney.item.creation = 3;
+    npcMoney.item.model = 1212; npcMoney.item.type = 8; npcMoney.item.ammo = 20;
+    npcMoney.item.cop.sequence = 3; npcMoney.item.cop.ordinal = 14;
+    const auto beforeMoney = guest.pickups.size();
+    expect(guest.Send(npcMoney) && Wait([&]{return guest.pickups.size() > beforeMoney
+        && guest.pickups.back().row.item.cop.ordinal == 14 && !host.pickups.back().reset
+        && host.pickups.back().row.item.cop.ordinal == 14;}),
+        "Original civilian producer publishes its first native cash output to host and guest.");
+    const auto firstMoneyId = guest.pickups.back().row.item.id;
+    npcMoney.sequence = 5; npcMoney.item.creation = 4; npcMoney.item.cop.sequence = 4;
+    npcMoney.item.cop.ordinal = 15; npcMoney.item.ammo = 21;
+    const auto beforeSecondMoney = guest.pickups.size();
+    expect(guest.Send(npcMoney) && Wait([&]{return guest.pickups.size() > beforeSecondMoney
+        && guest.pickups.back().row.item.cop.ordinal == 15;}),
+        "Second native cash wad gets its own non-reused item identity under the same death seal.");
+    expect(guest.pickups.back().row.item.id != firstMoneyId && firstMoneyId != npcWeaponId,
+        "Weapon and both native cash outputs have independent collection lifetimes.");
+    const auto afterOutputs = guest.pickups.size();
+    auto forgedRepeat = npcMoney; forgedRepeat.sequence = 6; forgedRepeat.item.creation = 5;
+    forgedRepeat.item.cop.sequence = 5;
+    expect(guest.Send(forgedRepeat), "Changed creation nonce with spent death ordinal is well-formed.");
+    Wait([]{return false;},150);
+    expect(guest.pickups.size() == afterOutputs,
+        "A new creation nonce cannot mint another item from a spent native death ordinal.");
     const auto deathCount = host.pedDeaths.size();
     guest.Send(death); Wait([]{return false;},150);
     expect(host.pedDeaths.size() == deathCount, "Duplicate death seal cannot publish another corpse lifecycle.");
     expect(Connect(corpseObserver,port,"fixture_corpse_observer")
         && Wait([&]{return !corpseObserver.pedDeaths.empty() && !corpseObserver.pedSpawns.empty();}),
         "A real late join receives both registered cop identity and retained death seal.");
-    expect(corpseObserver.pedDeaths.back().stamp.SameOwner(confirmedCop.stamp)
-        && corpseObserver.pedDeaths.back().stamp.sequence == death.stamp.sequence,
+    bool copDeathReplayed = false;
+    for (const auto& replay : corpseObserver.pedDeaths)
+        if (replay.pedid == confirmedCop.pedid && replay.stamp.SameOwner(confirmedCop.stamp)
+            && replay.stamp.sequence == death.stamp.sequence) copDeathReplayed = true;
+    expect(copDeathReplayed,
         "Late join corpse replay retains the original owner death identity.");
     auto observerAnimation = animation; observerAnimation.playerid = corpseObserver.id;
     observerAnimation.life = {0,1,1,0,0,201}; observerAnimation.state = {};
@@ -242,8 +289,11 @@ int main(int argc, char** argv)
     // Identity announcements go to other peers. The owner learns its generation
     // from the exact actor-life acknowledgment, as the real pickup client does.
     pickupHello.actor = {corpseObserver.animations.back().life.generation,1,1,0,0};
-    expect(corpseObserver.Send(pickupHello) && Wait([&]{return !corpseObserver.pickups.empty()
-        && !corpseObserver.pickups.back().reset && corpseObserver.pickups.back().row.item.id == copItemId;}),
+    expect(corpseObserver.Send(pickupHello) && Wait([&]{
+        for (const auto& state : corpseObserver.pickups)
+            if (!state.reset && state.row.item.id == copItemId) return true;
+        return false;
+    }),
         "Ready late join receives the same retained cop firearm identity.");
     Packets::Pickups::Action pickupCreate; pickupCreate.operation = Packets::Pickups::Operation::Create;
     pickupCreate.actor = hostActor; pickupCreate.epoch = host.pickups.back().epoch; pickupCreate.sequence = 1;
@@ -253,10 +303,10 @@ int main(int argc, char** argv)
         && guest.pickups.back().row.item.model == 1240;}), "Authenticated host registers supported exterior pickup through real handlers.");
     const auto itemId = guest.pickups.back().row.item.id;
     Packets::Pickups::Action claim; claim.operation = Packets::Pickups::Operation::Claim; claim.actor = guestActor;
-    claim.epoch = pickupCreate.epoch; claim.sequence = 3; claim.id = itemId;
+    claim.epoch = pickupCreate.epoch; claim.sequence = 7; claim.id = itemId;
     expect(guest.Send(claim) && Wait([&]{return !guest.pickupActions.empty();}), "Real SYSTEM claim atomically reserves and grants the exact collector life.");
     const auto originalGrant = guest.pickupActions.back().grant;
-    auto receipt = claim; receipt.operation = Packets::Pickups::Operation::Result; receipt.sequence = 4; receipt.grant = originalGrant;
+    auto receipt = claim; receipt.operation = Packets::Pickups::Operation::Result; receipt.sequence = 8; receipt.grant = originalGrant;
     receipt.outcome = PickupSync::Outcome::DeclinedBeforeApply;
     expect(guest.Send(receipt) && Wait([&]{return guest.pickups.back().row.item.id == itemId && guest.pickups.back().row.stage == PickupSync::Stage::Removed;}),
         "Exact pre-apply decline settles accounting without native effect or pickup reactivation.");
@@ -265,7 +315,7 @@ int main(int argc, char** argv)
     pickupCreate.sequence = 2; pickupCreate.item.creation = 2;
     expect(host.Send(pickupCreate) && Wait([&]{return guest.pickups.back().row.item.id != itemId && guest.pickups.back().row.stage == PickupSync::Stage::Active;}),
         "Terminal receipt releases collector for a distinct non-reused item identity.");
-    claim.sequence = 5; claim.id = guest.pickups.back().row.item.id;
+    claim.sequence = 9; claim.id = guest.pickups.back().row.item.id;
     expect(guest.Send(claim) && Wait([&]{return guest.pickupActions.size() > actionCount;}) && guest.pickupActions.back().grant > originalGrant,
         "New reservation uses a distinct monotonic grant token.");
     expect(Wait([&]{return !host.sessions.empty() && !guest.sessions.empty();}),"Integrated session identities are delivered to real peers.");
