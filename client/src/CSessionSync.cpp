@@ -20,6 +20,12 @@ std::deque<Packets::Session::CheatAction> g_actions;
 uint32_t g_retryRevision = 0, g_retryAcknowledged = 0;
 DWORD g_lastHello = 0;
 bool g_helloPending = false;
+struct DeferredResurrection
+{
+    bool pending = false;
+    uint32_t epoch = 0, incarnation = 0;
+    uint64_t lifecycle = 0;
+} g_resurrection;
 
 struct Suppression { Suppression() { ++g_suppress; } ~Suppression() { --g_suppress; } };
 uintptr_t ExpectedCallback(int id)
@@ -54,7 +60,7 @@ bool EnsureSession()
     if (!CNetwork::m_bAuthenticated)
     {
         if (g_authenticated) { g_client = {}; g_money = {}; g_unsentMoney = 0; g_seedSent = false; g_staged.clear(); g_actions.clear(); }
-        g_authenticated = false; return false;
+        g_resurrection = {}; g_authenticated = false; return false;
     }
     if (!g_authenticated || connection != g_connection)
     {
@@ -62,6 +68,7 @@ bool EnsureSession()
         g_client = {}; g_money = {}; g_unsentMoney = 0; g_seedSent = false;
         g_lastEffect = 0; g_lastWanted = -1; g_wantedLife = 0;
         g_staged.clear(); g_actions.clear(); g_retryRevision = 0; g_retryAcknowledged = 0;
+        g_resurrection = {};
         g_helloPending = true; g_lastHello = GetTickCount();
         Packets::Session::Hello hello; GetPacketFactory().Send(hello);
     }
@@ -78,6 +85,21 @@ bool StageOrSubmit(SessionSync::Operation op)
     if (g_client.state.ready) return Submit(op);
     if (!g_seedSent || g_staged.size() >= SessionSync::MAX_PENDING) return false;
     g_staged.push_back(op); return true;
+}
+bool DeferredResurrectionCurrent()
+{
+    return g_resurrection.pending && g_client.state.ready && CashReady()
+        && g_resurrection.epoch == g_client.state.epoch && g_resurrection.incarnation == g_client.state.incarnation
+        && g_resurrection.lifecycle == Lifecycle();
+}
+void RetryResurrection()
+{
+    if (!g_resurrection.pending) return;
+    if (!CashReady()) return;
+    if (!DeferredResurrectionCurrent()) { g_resurrection = {}; return; }
+    SessionSync::Operation op;
+    op.kind = SessionSync::Kind::WantedLower; op.reason = SessionSync::Reason::Resurrection; op.level = 0;
+    if (StageOrSubmit(op)) g_resurrection = {};
 }
 void ObserveLocal();
 void WriteMoney()
@@ -148,6 +170,7 @@ void ApplyCurrent()
     WriteMoney();
     if (!NativeReady() || !g_client.state.ready) return;
     auto predicted = g_client.Predicted();
+    if (DeferredResurrectionCurrent()) predicted.wanted = 0;
     for (int id = 0; id < SessionSync::CHEATS; ++id)
         if (SessionSync::Mode(id) == SessionSync::CheatMode::FlagToggle || SessionSync::Mode(id) == SessionSync::CheatMode::FunctionToggle)
             ApplyCheat(id, predicted.toggles[id], false);
@@ -176,6 +199,7 @@ void WantedChange(SessionSync::Reason reason, int level)
 void ObserveLocal()
 {
     CaptureMoney();
+    RetryResurrection();
     if (!NativeReady()) { g_wantedLife = 0; g_lastWanted = -1; return; }
     uint64_t life = Lifecycle();
     int wanted = int(FindPlayerWanted(0)->m_nWantedLevel);
@@ -262,7 +286,8 @@ void __fastcall ResurrectionResetHook(CWanted* wanted, void*)
         op.kind = SessionSync::Kind::WantedLower;
         op.reason = SessionSync::Reason::Resurrection;
         op.level = 0;
-        StageOrSubmit(op);
+        if (!StageOrSubmit(op))
+            g_resurrection = {true, g_client.state.epoch, g_client.state.incarnation, Lifecycle()};
     }
     if (local)
     {
@@ -313,6 +338,7 @@ void CSessionSync::HandleState(const Packets::Session::Update& packet)
         g_money = {}; g_unsentMoney = 0; g_seedSent = false; g_lastEffect = packet.state.revision;
         g_lastWanted = -1; g_wantedLife = 0;
         g_staged.clear(); g_actions.clear(); g_retryRevision = 0; g_retryAcknowledged = 0;
+        g_resurrection = {};
     }
     while (g_client.state.ready && !g_staged.empty())
     { if (!Submit(g_staged.front())) break; g_staged.pop_front(); }
@@ -404,7 +430,7 @@ void CSessionSync::Init()
     patch::RedirectCall(0x44AF10, ResprayHook);
     patch::RedirectCall(0x47AB4B, HostParoleHook);
     patch::RedirectCall(0x4421A3, ResurrectionResetHook);
-    Events::initScriptsEvent.before += [] { g_scriptsCompleted = false; ++g_gameGeneration; g_money.armed = false; g_lastWanted = -1; };
+    Events::initScriptsEvent.before += [] { g_resurrection = {}; g_scriptsCompleted = false; ++g_gameGeneration; g_money.armed = false; g_lastWanted = -1; };
     Events::processScriptsEvent.after += [] { if (gGameState == 9) g_scriptsCompleted = true; };
-    gameShutdownEvent.before += [] { g_scriptsCompleted = false; g_money.armed = false; };
+    gameShutdownEvent.before += [] { g_resurrection = {}; g_scriptsCompleted = false; g_money.armed = false; };
 }

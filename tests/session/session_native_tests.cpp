@@ -273,6 +273,25 @@ static void resurrection_guards()
     ++g_suppress;for(const auto& hook:patch::wantedHooks)if(hook.first==0x4421A3)hook.second(&localWanted);--g_suppress;
     CSessionSync::Process();expect(operations().empty()&&localWanted.m_nWantedLevel==4,"Replayed/suppressed reset cannot echo a wanted clear.");
 }
+static void resurrection_full_queue()
+{
+    auto s=room(1000,4);boot(s,1,1000);
+    for(size_t i=0;i<MAX_PENDING;++i){Operation op;expect(Submit(op),"Prior bounded money operation accepted.");}
+    CWorld::Players[0].m_nMoney-=100;
+    for(const auto& hook:patch::wantedHooks)if(hook.first==0x4421A3)hook.second(&localWanted);
+    CSessionSync::Process();
+    expect(g_resurrection.pending&&localWanted.m_nWantedLevel==0&&g_client.pending.size()==MAX_PENDING,
+        "Saturated queue retains one exact deferred clear without restoring native stars or exceeding bound.");
+    auto before=unique_operations();for(const auto& op:before)expect(s.Apply(1,op).status==Status::Accepted,"Older queued operation retains ordering.");
+    receipt(s,1);CSessionSync::Process();auto all=unique_operations();unsigned clears=0,fees=0;uint32_t feeSeq=0,clearSeq=0;
+    for(const auto& op:all)if(op.reason==Reason::Resurrection){++clears;clearSeq=op.sequence;}else if(op.kind==Kind::Money&&op.delta==-100){++fees;feeSeq=op.sequence;}
+    expect(clears==1&&fees==1&&feeSeq<clearSeq&&!g_resurrection.pending&&localWanted.m_nWantedLevel==0,
+        "Queue drain submits exactly one real fee before one deferred resurrection clear.");
+    for(const auto& op:all)if(op.sequence>MAX_PENDING)expect(s.Apply(1,op).status==Status::Accepted,"Deferred operations are canonically accepted in sequence.");
+    receipt(s,1);CSessionSync::Process();
+    expect(s.state.wanted==0&&localWanted.m_nWantedLevel==0&&s.state.money==900&&CWorld::Players[0].m_nMoney==900,
+        "Saturation recovery clears shared stars and preserves the native fee once.");
+}
 static void reset_same_ped()
 {
     bool found = false;
@@ -368,6 +387,7 @@ int main(int argc, char** argv)
         else if(name=="host_death_clear")resurrection_actor(0,false);else if(name=="guest_death_clear")resurrection_actor(1,false);
         else if(name=="host_arrest_clear")resurrection_actor(0,true);else if(name=="guest_arrest_clear")resurrection_actor(1,true);
         else if(name=="resurrection_guards")resurrection_guards();
+        else if(name=="resurrection_full_queue")resurrection_full_queue();
         else if (name == "native_wanted") native_wanted();
         else if (name == "hospital_fee") punishment_fee(100,false,true);
         else if (name == "arrest_fee") punishment_fee(600,true,true);

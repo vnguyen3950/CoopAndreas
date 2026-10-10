@@ -18,6 +18,7 @@ CASES = (
     "hospital_fee", "arrest_fee", "same_frame_fee", "debt_budget", "bribe_receipt",
     "host_death_clear", "guest_death_clear", "host_arrest_clear", "guest_arrest_clear",
     "resurrection_guards",
+    "resurrection_full_queue",
 )
 
 
