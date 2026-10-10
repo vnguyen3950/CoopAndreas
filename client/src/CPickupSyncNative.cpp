@@ -2,6 +2,7 @@
 #include "CPickupSync.h"
 #include <CPickups.h>
 #include <cstring>
+#include "runtime_diagnostics.h"
 namespace {
 void*generateOriginal=nullptr;
 void*removeOriginal=nullptr;
@@ -39,7 +40,17 @@ void __fastcall MoneyDropsHook(CPed*ped,void*){
     if(CPickupSync::BeginMoneyDrops(ped))reinterpret_cast<WeaponDropsFn>(moneyDropsOriginal)(ped);
     CPickupSync::EndCopDrops();
 }
-bool Calls(uintptr_t source,uintptr_t target){const auto*p=reinterpret_cast<const uint8_t*>(source);int32_t relative=0;std::memcpy(&relative,p+1,4);return p[0]==0xE8&&source+5+relative==target;}
+bool Readable(uintptr_t address,size_t length){
+    MEMORY_BASIC_INFORMATION region{};
+    if(!VirtualQuery(reinterpret_cast<const void*>(address),&region,sizeof region)||region.State!=MEM_COMMIT
+        ||(region.Protect&(PAGE_NOACCESS|PAGE_GUARD)))return false;
+    const DWORD protection=region.Protect&0xff;
+    if(protection!=PAGE_READONLY&&protection!=PAGE_READWRITE&&protection!=PAGE_WRITECOPY
+        &&protection!=PAGE_EXECUTE_READ&&protection!=PAGE_EXECUTE_READWRITE&&protection!=PAGE_EXECUTE_WRITECOPY)return false;
+    const uintptr_t begin=reinterpret_cast<uintptr_t>(region.BaseAddress);
+    return address>=begin&&address-begin<=region.RegionSize&&length<=region.RegionSize-(address-begin);
+}
+bool Calls(uintptr_t source,uintptr_t target){if(!Readable(source,5))return false;const auto*p=reinterpret_cast<const uint8_t*>(source);int32_t relative=0;std::memcpy(&relative,p+1,4);return p[0]==0xE8&&source+5+relative==target;}
 }
 void CPickupSync::NativeInit(){
     // Disk-verified supported executable A559AA... . Prefixes end at complete
@@ -50,22 +61,30 @@ void CPickupSync::NativeInit(){
     const uint8_t remove[]={0x56,0x8B,0xF1,0x8B,0xC6};
     const uint8_t merge[]={0x8B,0x44,0x24,0x10,0x83,0xEC,0x1C};
     const uint8_t weapons[]={0x83,0xEC,0x14,0x53,0x55,0x56,0x57,0x8B,0xF9};
-    if(std::memcmp(reinterpret_cast<const void*>(0x456F20),generate,sizeof generate)
-        ||std::memcmp(reinterpret_cast<const void*>(0x4556C0),remove,sizeof remove)
-        ||std::memcmp(reinterpret_cast<const void*>(0x4555A0),merge,sizeof merge)
-        ||std::memcmp(reinterpret_cast<const void*>(0x4591D0),weapons,sizeof weapons)
-        ||std::memcmp(reinterpret_cast<const void*>(0x4590F0),money,sizeof money)
-        ||std::memcmp(reinterpret_cast<const void*>(0x1564140),moneyTarget,sizeof moneyTarget)
-        ||!Calls(0x45902E,0x457410)||!Calls(0x459095,0x457410)){
-        logger::warn("Ordinary pickup sharing disabled: native prefix/call mismatch");return;
+    bool match=true;
+    const auto prefix=[&match](const char*site,uintptr_t address,const uint8_t*expected,size_t length){
+        if(!Readable(address,(std::max)(length,size_t(5)))){match=false;
+            RuntimeDiagnostics::Write("pickup-native","\"event\":\"signature\",\"site\":\"%s\",\"address\":%u,\"reason\":\"unreadable\",\"match\":0",site,unsigned(address));return;}
+        const auto*actual=reinterpret_cast<const uint8_t*>(address);
+        const bool equal=std::memcmp(actual,expected,length)==0;match=match&&equal;
+        RuntimeDiagnostics::Write("pickup-native","\"event\":\"signature\",\"site\":\"%s\",\"address\":%u,\"match\":%u,\"actual_prefix\":\"%02X%02X%02X%02X%02X\",\"count\":%u",site,unsigned(address),equal?1u:0u,actual[0],actual[1],actual[2],actual[3],actual[4],unsigned(length));
+    };
+    prefix("generate",0x456F20,generate,sizeof generate);prefix("remove",0x4556C0,remove,sizeof remove);
+    prefix("merge",0x4555A0,merge,sizeof merge);prefix("weapons",0x4591D0,weapons,sizeof weapons);
+    prefix("money-entry",0x4590F0,money,sizeof money);prefix("money-target",0x1564140,moneyTarget,sizeof moneyTarget);
+    for(uintptr_t source:{uintptr_t(0x45902E),uintptr_t(0x459095)}){
+        const bool equal=Calls(source,0x457410);match=match&&equal;
+        RuntimeDiagnostics::Write("pickup-native","\"event\":\"update-call\",\"address\":%u,\"match\":%u,\"count\":1",unsigned(source),equal?1u:0u);
     }
+    if(!match){RuntimeDiagnostics::Write("pickup-native","\"event\":\"disabled\",\"reason\":\"signature\",\"count\":1");logger::warn("Ordinary pickup sharing disabled: native prefix/call mismatch");return;}
     moneyDropsOriginal=reinterpret_cast<void*>(0x1564140); // Follow verified relative JMP; never trampoline-copy it.
     generateOriginal=Trampoline(0x456F20,sizeof generate);removeOriginal=Trampoline(0x4556C0,sizeof remove);
     weaponDropsOriginal=Trampoline(0x4591D0,sizeof weapons);mergeOriginal=Trampoline(0x4555A0,sizeof merge);
-    if(!generateOriginal||!removeOriginal||!weaponDropsOriginal||!mergeOriginal){logger::warn("Ordinary pickup sharing disabled: trampoline allocation failed");return;}
+    if(!generateOriginal||!removeOriginal||!weaponDropsOriginal||!mergeOriginal){RuntimeDiagnostics::Write("pickup-native","\"event\":\"disabled\",\"reason\":\"allocation\",\"count\":1");logger::warn("Ordinary pickup sharing disabled: trampoline allocation failed");return;}
     patch::RedirectJump(0x456F20,GenerateHook);patch::RedirectJump(0x4556C0,RemoveHook);
     patch::RedirectCall(0x45902E,UpdateHook);patch::RedirectCall(0x459095,UpdateHook);EnableNative();
     patch::RedirectJump(0x4590F0,MoneyDropsHook);patch::RedirectJump(0x4591D0,WeaponDropsHook);patch::RedirectJump(0x4555A0,MergeHook);
+    RuntimeDiagnostics::Write("pickup-native","\"event\":\"enabled\",\"count\":1");
 }
 int CPickupSync::Generate(CVector position,uint32_t model,uint8_t type,uint32_t ammo,uint32_t money,bool empty,char*message){
     return generateOriginal?reinterpret_cast<GenerateFn>(generateOriginal)(position,model,type,ammo,money,empty,message)

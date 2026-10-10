@@ -7,8 +7,12 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <cstdio>
+#include <cstdarg>
 #define PLUGIN_API
 #include "pickup_sdk_enums.inc"
+namespace RuntimeDiagnostics {inline unsigned calls=0;inline std::vector<std::string>reasons;
+    inline void Write(const char*scope,const char*format,...){++calls;char fields[768]{};va_list args;va_start(args,format);std::vsnprintf(fields,sizeof fields,format,args);va_end(args);reasons.emplace_back(std::string("{\"scope\":\"")+scope+"\","+fields+"}");}}
 using uint32=uint32_t;
 class Packet;
 struct Factory{std::vector<std::unique_ptr<Packet>>sent;template<class T>void RegisterPacket(T*p){delete p;}template<class T>void Send(const T&p);};
@@ -42,7 +46,11 @@ struct CPools{inline static int pool=1;inline static int*ms_pPedPool=&pool;inlin
     static CPed*GetPed(int ref){if(ref==localLife.nativeReference)return &testPlayer;const auto found=pedRefs.find(ref);return found==pedRefs.end()?nullptr:found->second;}
     static int GetPedRef(CPed*p){return p&&p->poolValid?p->poolRef:-1;}static int GetObjectRef(CObject*p){return objects.refs.at(p);}};
 inline bool deathIdentityAvailable=true;inline int deathPedId=3;inline NPCSync::Stamp deathIdentity{9,2,6};
-struct CNetworkPedManager{static bool GetOwnerDeathIdentity(CPed*,int&pid,NPCSync::Stamp&out){pid=deathPedId;out=deathIdentity;return deathIdentityAvailable;}};
+inline int originalCreation=1;
+struct CNetworkPed{CPed*m_pPed=nullptr;int m_nCreatedBy=1;
+    bool HasValidPed(){return m_pPed&&CPools::GetPed(m_pPed->poolRef)==m_pPed;}};
+struct CNetworkPedManager{static CNetworkPed*GetPed(CPed*p){static CNetworkPed wrapper;wrapper.m_pPed=p;wrapper.m_nCreatedBy=originalCreation;return deathIdentityAvailable&&wrapper.HasValidPed()?&wrapper:nullptr;}
+    static bool GetOwnerDeathIdentity(CPed*,int&pid,NPCSync::Stamp&out){pid=deathPedId;out=deathIdentity;return deathIdentityAvailable;}};
 inline CPlayerPed*FindPlayerPed(int){return &testPlayer;}
 struct CWeaponInfo{int m_nSlot=2,m_nModelId1=346,m_nModelId2=-1;static CWeaponInfo*GetWeaponInfo(eWeaponType,int=WEAPSKILL_STD){static CWeaponInfo i;return &i;}};
 inline bool frenzy=false,weaponAllowed=true;

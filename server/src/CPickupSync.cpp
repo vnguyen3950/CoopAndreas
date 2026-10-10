@@ -3,15 +3,22 @@
 #include "CPlayerAnimationSync.h"
 #include "CNetworkPedManager.h"
 #include "CNetworkPed.h"
+#include "runtime_diagnostics.h"
 
 namespace {
+enum class TraceStage {Hello,Create,Queued,ProofWait,ProofReject,Publish,Send,Claim,Result,Count};
+void Trace(TraceStage stage,const char*reason,uint32_t generation=0,uint32_t sequence=0,uint32_t id=0,int code=0){
+    static std::array<uint8_t,size_t(TraceStage::Count)> counts{};
+    auto&count=counts[size_t(stage)];if(count>=8)return;++count;
+    RuntimeDiagnostics::Write("pickup-server","\"event\":\"pickup-stage\",\"stage\":%u,\"reason\":\"%s\",\"generation\":%u,\"sequence\":%u,\"id\":%u,\"code\":%d,\"count\":%u",unsigned(stage),reason,generation,sequence,id,code,unsigned(count));
+}
 PickupSync::Room& Room(){static PickupSync::Room room;return room;}
 struct Peer {uint32_t sequence=0,copSequence=0;bool watching=false;};
 std::array<Peer,PickupSync::MaxPlayers> peers{};
 bool mission=false;
 struct DeathOutput {
     uint32_t itemId=0,epoch=0,started=0;
-    bool used=false,pending=false,spent=false,authorised=false,expired=false;
+    bool used=false,pending=false,spent=false,authorised=false,expired=false;uint8_t diagnosticWait=0;
     Packets::Pickups::Action request;
 };
 struct CopManifest { // One immutable original-producer death, bounded native outputs.
@@ -33,6 +40,7 @@ void Send(CNetworkPlayer* player,const PickupSync::Row* row=nullptr){
     PickupSync::Actor actor;if(!Life(player,actor)||!Room().epoch)return;
     Packets::Pickups::State packet;packet.epoch=Room().epoch;packet.host=Room().host;packet.recipient=actor;
     if(row){packet.reset=false;packet.row=*row;}GetPacketFactory().Send(packet,player);
+    Trace(TraceStage::Send,row?"row":"reset",actor.generation,actor.sequence,row?row->item.id:Room().epoch,player->m_iPlayerId);
 }
 void Broadcast(const PickupSync::Row* row=nullptr){for(auto*player:CNetworkPlayerManager::m_pPlayers)if(Registered(player)&&peers[player->m_iPlayerId].watching)Send(player,row);}
 void Grant(const PickupSync::Row& row,CNetworkPlayer* player){
@@ -59,7 +67,7 @@ bool NativeDeathItem(const CNetworkPed*ped,const PickupSync::Item&item){
 bool CopCreate(const Packets::Pickups::Action&packet,CNetworkPlayer*sender){
     const auto&item=packet.item;auto*ped=CNetworkPedManager::GetPed(item.cop.ped);
     if(!item.cop.Valid()||item.owner!=sender->m_iPlayerId||item.cop.producerGeneration!=packet.actor.generation
-        ||!ped||ped->m_generation!=item.cop.death.generation||!NativeDeathItem(ped,item))return false;
+        ||!ped||ped->m_generation!=item.cop.death.generation||!NativeDeathItem(ped,item)){Trace(TraceStage::Create,"origin-rejected",item.cop.death.generation,item.cop.death.sequence,0,item.cop.ped);return false;}
     auto&entry=copManifests[item.cop.ped];auto&peer=peers[sender->m_iPlayerId];
     const bool proof=CNetworkPedManager::GetDeathProducer(sender,item.cop.ped,item.cop.death);
     // Unknown proof cannot poison a different actual producer. Once any output
@@ -87,7 +95,7 @@ bool CopCreate(const Packets::Pickups::Action&packet,CNetworkPlayer*sender){
         for(const auto&prior:entry.outputs)if(prior.used&&prior.request.item.creation==item.creation)return false;
         output.used=true;output.pending=true;output.started=enet_time_get();
     }
-    output.request=packet;peer.sequence=packet.sequence;CPickupServer::ProcessPending();return true;
+    output.request=packet;peer.sequence=packet.sequence;Trace(TraceStage::Queued,"manifest",item.cop.death.generation,item.cop.death.sequence,item.creation,item.cop.ordinal);CPickupServer::ProcessPending();return true;
 }
 }
 void CPickupServer::ProcessPending(){
@@ -102,9 +110,9 @@ void CPickupServer::ProcessPending(){
         auto*sender=CNetworkPlayerManager::GetPlayer(entry.producer);const auto&packet=output.request;const auto&item=packet.item;
         auto*ped=CNetworkPedManager::GetPed(item.cop.ped);
         if(!Registered(sender)||sender->m_vitals.generation!=entry.producerGeneration||packet.epoch!=Room().epoch
-            ||!ped||ped->m_generation!=entry.death.generation||enet_time_get()-output.started>15000){output.pending=false;output.expired=true;continue;}
-        if(!CNetworkPedManager::GetDeathProducer(sender,item.cop.ped,entry.death))continue;
-        PickupSync::Actor life;if(!Life(sender,life)||!PickupSync::CurrentActor(packet.actor,life))continue;
+            ||!ped||ped->m_generation!=entry.death.generation||enet_time_get()-output.started>15000){Trace(TraceStage::ProofReject,"expired-or-lifetime",entry.death.generation,entry.death.sequence,item.creation);output.pending=false;output.expired=true;continue;}
+        if(!CNetworkPedManager::GetDeathProducer(sender,item.cop.ped,entry.death)){if(!(output.diagnosticWait&1)){output.diagnosticWait|=1;Trace(TraceStage::ProofWait,"death-seal",entry.death.generation,entry.death.sequence,item.creation);}continue;}
+        PickupSync::Actor life;if(!Life(sender,life)||!PickupSync::CurrentActor(packet.actor,life)){if(!(output.diagnosticWait&2)){output.diagnosticWait|=2;Trace(TraceStage::ProofWait,"producer-life",entry.death.generation,entry.death.sequence,item.creation);}continue;}
         const auto&pos=ped->m_deathPosition;const auto&drop=item.position;
         const double dx=double(pos.x)-drop.x,dy=double(pos.y)-drop.y,dz=double(pos.z)-drop.z;
         // Original CreateSomeMoney cumulatively scatters seven native wads.
@@ -114,11 +122,12 @@ void CPickupServer::ProcessPending(){
         const bool withinDeathRange=item.type==8?dx*dx+dy*dy<=225.0:dx*dx+dy*dy+dz*dz<=25.0;
         if(mission||packet.mission||life.area!=0||ped->m_deathArea!=0
             ||ped->m_deathProducerGeneration!=entry.producerGeneration||!PickupSync::SameSeal(ped->m_deathStamp,entry.death)
-            ||!NativeDeathItem(ped,item)||!NPCSync::Position(pos)||!withinDeathRange){output.pending=false;output.expired=true;continue;}
+            ||!NativeDeathItem(ped,item)||!NPCSync::Position(pos)||!withinDeathRange){Trace(TraceStage::ProofReject,"scope-or-metadata",entry.death.generation,entry.death.sequence,item.creation);output.pending=false;output.expired=true;continue;}
         auto&peer=peers[entry.producer];
         if(!output.authorised&&item.cop.sequence<=peer.copSequence){output.pending=false;output.expired=true;continue;}
         output.authorised=entry.authorised=true;peer.copSequence=(std::max)(peer.copSequence,item.cop.sequence);
         auto*row=Room().CreateCopDrop(entry.producer,packet.epoch,life,item);if(!row)continue;
+        Trace(TraceStage::Publish,"row",entry.death.generation,entry.death.sequence,row->item.id,item.cop.ordinal);
         output.pending=false;output.spent=true;output.itemId=row->item.id;output.epoch=Room().epoch;Broadcast(row);
     }
 }
@@ -148,7 +157,7 @@ void CPickupServer::Mission(CNetworkPlayer* player,bool active){
 void CPickupServer::Hello(const Packets::Pickups::Hello& packet,CNetworkPlayer* sender){
     ProcessPending();
     PickupSync::Actor life;if(!packet.Valid()||!Life(sender,life)||!PickupSync::CurrentActor(packet.actor,life))return;
-    peers[sender->m_iPlayerId].watching=true;
+    peers[sender->m_iPlayerId].watching=true;Trace(TraceStage::Hello,"watching",life.generation,life.sequence,Room().epoch,sender->m_iPlayerId);
     if(sender->m_bIsHost&&CNetworkPlayerManager::GetHost()==sender){
         if(!PickupSync::SameLife(Room().ownerLife,life)||Room().host!=sender->m_iPlayerId){Room().ChangeHost(sender->m_iPlayerId,life);Broadcast();}
         Room().ownerLife=life;
@@ -158,6 +167,7 @@ void CPickupServer::Hello(const Packets::Pickups::Hello& packet,CNetworkPlayer* 
 bool CPickupServer::Action(const Packets::Pickups::Action& packet,CNetworkPlayer* sender){
     ProcessPending();
     if(!Registered(sender)||!packet.Valid()||packet.operation==Packets::Pickups::Operation::Grant||packet.epoch!=Room().epoch)return false;
+    Trace(TraceStage::Claim,"action",packet.actor.generation,packet.sequence,packet.id,int(packet.operation));
     auto&peer=peers[sender->m_iPlayerId];
     if(packet.operation!=Packets::Pickups::Operation::Result&&packet.sequence<=peer.sequence)return false;
     if(packet.operation==Packets::Pickups::Operation::Result){

@@ -4,8 +4,15 @@
 #include "CPlayerAnimationSync.h"
 #include "CNetworkPedManager.h"
 #include <CGame.h>
+#include "runtime_diagnostics.h"
 
 namespace {
+enum class TraceStage {State,Death,Create,Hello,Receive,Replica,Grant,Remove,Reset,Count};
+void Trace(TraceStage stage,const char*reason,uint32_t generation=0,uint32_t sequence=0,uint32_t id=0,int code=0){
+    static std::array<uint8_t,size_t(TraceStage::Count)> counts{};
+    auto&count=counts[size_t(stage)];if(count>=8)return;++count;
+    RuntimeDiagnostics::Write("pickup-client","\"event\":\"pickup-stage\",\"stage\":%u,\"reason\":\"%s\",\"generation\":%u,\"sequence\":%u,\"id\":%u,\"code\":%d,\"count\":%u",unsigned(stage),reason,generation,sequence,id,code,unsigned(count));
+}
 PickupSync::View view;
 struct Mapping {uint32_t id=0,creation=0;int handle=-1;bool replica=false;PickupSync::Item copItem;uint32_t copStarted=0;};
 std::array<Mapping,PickupSync::MaxPickups> mappings{};
@@ -77,6 +84,7 @@ void ApplyGrant(){
     const bool saved=receiving;receiving=true;const bool result=pickup->Update(ped,nullptr,0);receiving=saved;
     const auto after=PickupNative::Capture(ped);const bool retired=pickup->m_nPickupType==PICKUP_NONE||pickup->m_nFlags.bDisabled;
     receipt.outcome=PickupNative::Outcome(result,row->item,before,after,retired);
+    Trace(TraceStage::Grant,"native-outcome",grant.actor.generation,grant.actor.sequence,grant.id,int(receipt.outcome));
     if(!retired)pickup->m_nRegenerationTime=savedExpiry;
     if(receipt.outcome==PickupSync::Outcome::Consumed){const int index=Index(pickup);if(index>=0)CPickups::AddToCollectedPickupsArray(index);}
     SendResult(receipt);hasGrant=false;
@@ -88,10 +96,10 @@ void Replicas(){
         if(row.stage==PickupSync::Stage::Collected||row.stage==PickupSync::Stage::Removed){if(found){if(auto*pickup=Bound(*found)){
             if(row.reason!=PickupSync::Reason::SceneEnded)CPickupSync::NativeRemove(pickup);}*found={};}continue;}
         if(!found&&!OwnItem(row.item)){
-            if(!PickupNative::RequestReplicaModels(row.item))continue;
+            if(!PickupNative::RequestReplicaModels(row.item)){Trace(TraceStage::Replica,"model-wait",row.item.cop.death.generation,0,row.item.id,row.item.model);continue;}
             const CVector pos{row.item.position.x,row.item.position.y,row.item.position.z};
             const int handle=CPickupSync::Generate(pos,row.item.model,uint8_t(row.item.type),row.item.ammo,0,false,nullptr);
-            if(handle==-1)continue;const int i=int(uint32_t(handle)&0xffff);if(i>=PickupSync::MaxPickups)continue;
+            if(handle==-1){Trace(TraceStage::Replica,"generation-failed",row.item.cop.death.generation,0,row.item.id,row.item.model);continue;}Trace(TraceStage::Replica,"generated",row.item.cop.death.generation,0,row.item.id,row.item.model);const int i=int(uint32_t(handle)&0xffff);if(i>=PickupSync::MaxPickups)continue;
             mappings[i]={row.item.id,row.item.creation,handle,true};found=&mappings[i];
         }
         if(found)if(auto*pickup=Bound(*found))if(pickup->m_pObject)pickup->m_pObject->m_nObjectFlags.bDoNotRender=
@@ -112,8 +120,16 @@ bool BeginDeath(CPed*ped,bool money){
     copContext.active=true;copContext.model=ped->m_nModelIndex;copContext.area=ped->m_nAreaCode;
     copContext.type=ped->m_nPedType;copContext.createdBy=ped->m_nCreatedBy;copContext.money=money;copContext.persistent=ped->m_nPedFlags.bDeathPickupsPersist;
     // This gate applies to every NPC, including a nonowner on the room host.
-    if(!Ready()||!CNetworkPedManager::GetOwnerDeathIdentity(ped,copContext.origin.ped,copContext.origin.death))return false;
-    PickupSync::Actor life;if(!Life(life))return false;copContext.origin.producerGeneration=life.generation;
+    if(!Ready()){Trace(TraceStage::Death,"not-ready",0,0,0);return false;}
+    if(!CNetworkPedManager::GetOwnerDeathIdentity(ped,copContext.origin.ped,copContext.origin.death)){Trace(TraceStage::Death,"owner-seal-unavailable",0,0,0);return false;}
+    // Engine lifetime markers on recreated replicas are not original provenance.
+    // The owner seal already validates authority; GetPed revalidates the full
+    // pool reference before reading the wrapper's retained creation metadata.
+    auto*networkPed=CNetworkPedManager::GetPed(ped);
+    if(!networkPed||!networkPed->HasValidPed()||networkPed->m_pPed!=ped){Trace(TraceStage::Death,"wrapper-unbound",copContext.origin.death.generation,copContext.origin.death.sequence);return false;}
+    copContext.createdBy=networkPed->m_nCreatedBy;
+    Trace(TraceStage::Death,"sealed",copContext.origin.death.generation,copContext.origin.death.sequence,uint32_t(copContext.origin.ped),copContext.createdBy);
+    PickupSync::Actor life;if(!Life(life)){Trace(TraceStage::Death,"local-life-unavailable");return false;}copContext.origin.producerGeneration=life.generation;
     const int id=copContext.origin.ped;if(id<0||id>=255||!copContext.origin.death.State())return false;
     if(!PickupSync::SameSeal(capturedDeaths[id],copContext.origin.death)){capturedDeaths[id]=copContext.origin.death;capturedKinds[id]=0;}
     const uint8_t kind=money?2:1;if(capturedKinds[id]&kind)return false;
@@ -129,12 +145,14 @@ bool CPickupSync::SeparateDeathWeapon(int model,uint8_t type,uint32_t ammo){
         &&(copContext.type!=PED_TYPE_COP||PickupSync::StockCopWeapon(copContext.model,model))&&ammo>0&&ammo<=PickupSync::DeathWeaponLimit(model);
 }
 void CPickupSync::EnableNative(){nativeEnabled=true;}
-void CPickupSync::Reset(){ClearMappings();view={};hasGrant=false;receipt={};lastHello=lastClaim=0;expectedHost=-1;}
+void CPickupSync::Reset(){Trace(TraceStage::Reset,"reset",0,0,view.epoch);ClearMappings();view={};hasGrant=false;receipt={};lastHello=lastClaim=0;expectedHost=-1;}
 void CPickupSync::HostChanged(int host){expectedHost=host;lastHello=0;}
 void CPickupSync::Init(){NativeInit();Events::initScriptsEvent.before+=[]{scriptsReady=false;Reset();};
     Events::processScriptsEvent.after+=[]{if(gGameState==9)scriptsReady=true;};gameShutdownEvent.before+=[]{scriptsReady=false;Reset();};}
 void CPickupSync::Receive(const Packets::Pickups::State&packet){
-    if(!CNetwork::m_bAuthenticated||!packet.Valid())return;PickupSync::Actor life;if(!Life(life)||!PickupSync::SameLife(life,packet.recipient))return;
+    if(!CNetwork::m_bAuthenticated||!packet.Valid()){Trace(TraceStage::Receive,"unauthenticated-or-invalid");return;}
+    PickupSync::Actor life;if(!Life(life)||!PickupSync::SameLife(life,packet.recipient)){Trace(TraceStage::Receive,"recipient-life-mismatch",packet.recipient.generation,packet.recipient.sequence,packet.epoch);return;}
+    Trace(TraceStage::Receive,packet.reset?"reset":"row",packet.recipient.generation,packet.recipient.sequence,packet.reset?packet.epoch:packet.row.item.id);
     if(packet.reset){if(packet.epoch>view.epoch)ClearMappings();if(view.Reset(packet.epoch,packet.host)&&expectedHost==-1)expectedHost=packet.host;return;}
     if(packet.epoch!=view.epoch||!view.Accept(packet.row))return;
     if(OwnItem(packet.row.item)){bool found=false;
@@ -156,7 +174,7 @@ void CPickupSync::Created(int handle,bool freshCreation){
     if(copContext.active){
         // Captured outputs, never reconstructed rewards or ambient host Create.
         const unsigned ordinal=++copContext.output;
-        if(Mission()||copContext.area!=0||!PickupSync::OrdinaryNPC(copContext.model,copContext.type,copContext.createdBy))return;
+        if(Mission()||copContext.area!=0||!PickupSync::OrdinaryNPC(copContext.model,copContext.type,copContext.createdBy)){Trace(TraceStage::Create,"out-of-scope",copContext.origin.death.generation,copContext.origin.death.sequence,0,copContext.createdBy);return;}
         if(copContext.money){
             if(!PickupSync::NativeMoneyNPC(copContext.type)||ordinal>PickupSync::MaxDeathMoney||pickup->m_nPickupType!=8||pickup->m_nModelIndex!=1212)return;
         }else if(copContext.persistent||ordinal>PickupSync::MaxDeathWeapons||pickup->m_nPickupType!=4
@@ -167,7 +185,8 @@ void CPickupSync::Created(int handle,bool freshCreation){
         item.cop.ordinal=uint8_t(ordinal+(copContext.money?PickupSync::MaxDeathWeapons:0));
         if(!item.ValidMetadata())return;
         ++creation;map={0,creation,handle,false,item,GetTickCount()};
-        Packets::Pickups::Action create;create.operation=Packets::Pickups::Operation::Create;create.item=item;Action(create);return;
+        Packets::Pickups::Action create;create.operation=Packets::Pickups::Operation::Create;create.item=item;const bool sent=Action(create);
+        Trace(TraceStage::Create,sent?"manifest-sent":"manifest-pending",item.cop.death.generation,item.cop.death.sequence,item.creation,item.cop.ordinal);return;
     }
     if(!Host())return;
     // A successful native creation callback terminates any prior mapping even
@@ -198,12 +217,16 @@ bool CPickupSync::Update(CPickup*pickup,CPlayerPed*player,CVehicle*vehicle,int p
     return false;
 }
 void CPickupSync::Process(){
+    const unsigned state=(nativeEnabled?1u:0u)|(CNetwork::m_bAuthenticated?2u:0u)|(scriptsReady?4u:0u)|(gGameState==9?8u:0u)|(CWorld::PlayerInFocus==0?16u:0u);
+    static unsigned lastState=~0u;if(lastState!=state){lastState=state;Trace(TraceStage::State,"readiness-mask",0,0,view.epoch,int(state));}
     if(!CNetwork::m_bAuthenticated){if(authenticated)Reset();authenticated=false;return;}if(!Ready())return;
     const uint32_t current=CNetwork::m_pPeer?CNetwork::m_pPeer->connectID:0;
     if(!authenticated||current!=connection){Reset();sequence=0;capturedDeaths={};capturedKinds={};authenticated=true;connection=current;}
-    PickupSync::Actor life;if(!Life(life))return;
+    PickupSync::Actor life;const bool lifeReady=Life(life);static int previousLife=-1;
+    if(previousLife!=int(lifeReady)){previousLife=int(lifeReady);Trace(TraceStage::State,lifeReady?"local-life-ready":"local-life-unavailable",life.generation,life.sequence,view.epoch);}
+    if(!lifeReady)return;
     if(GetTickCount()-lastHello>=2000||!view.epoch){Packets::Pickups::Hello packet;packet.actor=life;const auto pos=FindPlayerPed(0)->GetPosition();
-        packet.position={pos.x,pos.y,pos.z};packet.mission=Mission();GetPacketFactory().Send(packet);lastHello=GetTickCount();}
+        packet.position={pos.x,pos.y,pos.z};packet.mission=Mission();GetPacketFactory().Send(packet);lastHello=GetTickCount();Trace(TraceStage::Hello,"sent",life.generation,life.sequence,view.epoch);}
     if(!view.epoch||expectedHost!=view.host)return;
     if(Mission()||CGame::currArea!=0){RestoreHidden();ApplyGrant();return;}
     Replicas();ApplyGrant();

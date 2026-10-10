@@ -5,6 +5,10 @@
 #include <memory>
 #include <map>
 #include <vector>
+#include <cstdio>
+#include <cstdarg>
+#include <string>
+namespace RuntimeDiagnostics {inline unsigned calls=0;inline std::vector<std::string>reasons;inline void Write(const char*scope,const char*format,...){++calls;char fields[768]{};va_list args;va_start(args,format);std::vsnprintf(fields,sizeof fields,format,args);va_end(args);reasons.emplace_back(std::string("{\"scope\":\"")+scope+"\","+fields+"}");}}
 #include "network/player_animation_sync.h"
 class CNetworkPlayer;
 class Packet;

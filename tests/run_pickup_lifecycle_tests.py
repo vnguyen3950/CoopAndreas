@@ -9,7 +9,7 @@ def main():
     if args.ordinal_mutation and not args.server:parser.error('Ordinal mutation requires --server')
     if args.held_view_mutation and not args.native:parser.error('Held-view mutation requires --native')
     if out.exists()or ROOT/'.cache'not in out.parents:parser.error('Choose a new worktree .cache directory')
-    inputs=INPUTS+('client/src/CPickupSync.h','client/src/CPickupSync.cpp','client/src/CPickupSyncNative.cpp','client/src/PickupNativeOutcome.h',
+    inputs=INPUTS+('shared/runtime_diagnostics.h',)+('client/src/CPickupSync.h','client/src/CPickupSync.cpp','client/src/CPickupSyncNative.cpp','client/src/PickupNativeOutcome.h',
                   'third_party/plugin-sdk/plugin_sa/game_sa/eWeaponType.h','third_party/plugin-sdk/plugin_sa/game_sa/CPickup.h',
                   'third_party/plugin-sdk/plugin_sa/game_sa/CWeaponInfo.h','third_party/plugin-sdk/plugin_sa/game_sa/ePedType.h')if args.native else INPUTS
     if args.server:inputs+=('server/src/CPickupSync.h','server/src/CPickupSync.cpp')
@@ -82,7 +82,10 @@ def main():
     record.update(NativeReferenceHash=nativeReferenceHash,ExtractedNativeMergeHash=nativeMergeHash,NativeMergeEdits='Only unused parameter name omitted; native body unchanged'if args.native else None,NativeTouchReferenceHash=sha(pickupPath)if args.native else None,ExtractedNativeTouchHash=sha(out/'pickup_native_touch.inc')if args.native else None)
     record.update(ProbeSource=str(probe)if probe else None,ProbeHash=probeHash)
     if not c.returncode:
-        run=subprocess.run([str(out/'tests.exe')],cwd=out,capture_output=True,text=True);record.update(TestExitCode=run.returncode,Output=run.stdout+run.stderr);(out/'test.log').write_text(record['Output'],encoding='utf-8')
+        run=subprocess.run([str(out/'tests.exe')],cwd=out,capture_output=True,text=True);record.update(TestExitCode=run.returncode,Output=run.stdout+run.stderr);
+        for line in run.stdout.splitlines():
+            if line.startswith('JSON '):json.loads(line[5:])
+        (out/'test.log').write_text(record['Output'],encoding='utf-8')
     record['InputsStable']=before=={name:sha(ROOT/name)for name in inputs}and sha(test)==testHash
     if supportHash:record['InputsStable']&=sha(support)==supportHash
     if probeHash:record['InputsStable']&=sha(probe)==probeHash
