@@ -262,6 +262,17 @@ static void resurrection_actor(int id,bool arrest)
     receipt(s,id);CSessionSync::Process();
     expect(s.state.wanted==0&&localWanted.m_nWantedLevel==0&&CWorld::Players[0].m_nMoney==100,"Death/arrest receipt keeps shared stars cleared without a fee invention.");
 }
+static void resurrection_guards()
+{
+    auto s=room(100,4);boot(s,0);CWanted foreign;foreign.m_nWantedLevel=5;
+    for(const auto& hook:patch::wantedHooks)if(hook.first==0x4421A3)hook.second(&foreign);
+    expect(foreign.m_nWantedLevel==0&&operations().empty(),"Foreign wanted reset preserves native behavior without a room clear.");
+    CWorld::PlayerInFocus=1;for(const auto& hook:patch::wantedHooks)if(hook.first==0x4421A3)hook.second(&localWanted);
+    expect(localWanted.m_nWantedLevel==0&&operations().empty(),"Remote focus cannot publish a local resurrection receipt.");
+    CWorld::PlayerInFocus=0;CSessionSync::Process();expect(localWanted.m_nWantedLevel==4,"Unattributed native reset still restores canonical room wanted.");
+    ++g_suppress;for(const auto& hook:patch::wantedHooks)if(hook.first==0x4421A3)hook.second(&localWanted);--g_suppress;
+    CSessionSync::Process();expect(operations().empty()&&localWanted.m_nWantedLevel==4,"Replayed/suppressed reset cannot echo a wanted clear.");
+}
 static void reset_same_ped()
 {
     bool found = false;
@@ -356,6 +367,7 @@ int main(int argc, char** argv)
         else if (name == "same_frame_resurrection") same_frame_resurrection(); else if (name == "migration") migration();
         else if(name=="host_death_clear")resurrection_actor(0,false);else if(name=="guest_death_clear")resurrection_actor(1,false);
         else if(name=="host_arrest_clear")resurrection_actor(0,true);else if(name=="guest_arrest_clear")resurrection_actor(1,true);
+        else if(name=="resurrection_guards")resurrection_guards();
         else if (name == "native_wanted") native_wanted();
         else if (name == "hospital_fee") punishment_fee(100,false,true);
         else if (name == "arrest_fee") punishment_fee(600,true,true);
