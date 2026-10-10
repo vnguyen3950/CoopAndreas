@@ -372,12 +372,51 @@ static void migration()
     expect(s.Apply(1,ops[0]).status == Status::Duplicate && s.state.money == 130,
         "Migration retry cannot double the accepted money delta.");
 }
+static void local_service_wallet_readiness()
+{
+    auto s = room(); prepare(1,900);
+    const auto packetsBefore = GetPacketFactory().sent.size();
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Guest service is denied before canonical wallet receipt.");
+    expect(CWorld::Players[0].m_nMoney == 900 && GetPacketFactory().sent.size() == packetsBefore,
+        "Readiness query cannot seed/send or alter native cash before initialization.");
+    receipt(s,1);
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Receipt alone cannot authorize an unarmed native money lifecycle.");
+    CSessionSync::Process();
+    expect(CSessionSync::IsWalletReadyForLocalService(), "Canonical wallet and current native observation permit local service.");
+    auto stateBefore = g_client.state; auto pendingBefore = g_client.pending.size();
+    const auto sentBefore = GetPacketFactory().sent.size(); const auto cashBefore = CWorld::Players[0].m_nMoney;
+    expect(CSessionSync::IsWalletReadyForLocalService() && CWorld::Players[0].m_nMoney == cashBefore
+        && GetPacketFactory().sent.size() == sentBefore && g_client.pending.size() == pendingBefore
+        && g_client.state.revision == stateBefore.revision, "Repeated readiness queries have no payment or reconciliation effects.");
+    CWorld::PlayerInFocus = 2;
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Remote player focus cannot authorize a local service.");
+    CWorld::PlayerInFocus = 0; ++g_suppress;
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Replayed native effects cannot enter a paid local service.");
+    --g_suppress; ++peer.connectID;
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Reconnected peer cannot inherit the previous wallet binding.");
+    --peer.connectID; g_client.state.recipient = 0;
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Another recipient's canonical wallet cannot authorize entry.");
+    g_client.state = stateBefore; ++nativePedRef;
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Recreated local ped waits for its money-observation rebase.");
+    CSessionSync::Process();
+    expect(CSessionSync::IsWalletReadyForLocalService(), "Current lifecycle becomes ready through normal session processing.");
+    Events::initScriptsEvent.before.Fire();
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Script restart immediately revokes local service readiness.");
+    Events::processScriptsEvent.after.Fire(); CSessionSync::Process();
+    expect(CSessionSync::IsWalletReadyForLocalService(), "Initialized new scene re-arms its canonical wallet lifecycle.");
+    playerExists = false;
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Missing local native player remains ineligible.");
+    playerExists = true; CNetwork::m_bAuthenticated = false;
+    expect(!CSessionSync::IsWalletReadyForLocalService(), "Disconnected session cannot authorize a paid service.");
+}
+
 int main(int argc, char** argv)
 {
     if (argc != 2) { std::cout << "One named case is required for fresh-process isolation.\n"; return 2; }
     const std::string name = argv[1];
     try {
-        if (name == "menu_seed") menu_seed(); else if (name == "guest_reset") guest_reset();
+        if (name == "local_service_wallet_readiness") local_service_wallet_readiness();
+        else if (name == "menu_seed") menu_seed(); else if (name == "guest_reset") guest_reset();
         else if (name == "seed_receipt") seed_receipt(); else if (name == "receipt_capture") receipt_capture();
         else if (name == "receipt_side_effects") receipt_side_effects();
         else if (name == "mission_reward") mission_reward(); else if (name == "cash_feedback") cash_feedback();

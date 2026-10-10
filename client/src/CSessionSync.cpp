@@ -387,6 +387,16 @@ void CSessionSync::Process()
     ProcessActions();
     ApplyCurrent();
 }
+bool CSessionSync::IsWalletReadyForLocalService()
+{
+    // A pure readiness query: never seed, rebase, write cash or send a payment.
+    if (!CNetwork::m_bAuthenticated || !CNetwork::m_pPeer || !g_authenticated
+        || CNetwork::m_pPeer->connectID != g_connection || g_suppress
+        || CWorld::PlayerInFocus != 0 || !g_client.state.ready || !g_client.state.Valid()
+        || g_client.state.recipient != CNetworkPlayerManager::m_nMyId || !CashReady()) return false;
+    return g_money.armed && g_money.lifecycle == Lifecycle();
+}
+
 bool CSessionSync::NeedsOpcodeCapture(uint16_t opcode)
 {
     if (!CNetwork::m_bAuthenticated || !CLocalPlayer::m_bIsHost) return false;

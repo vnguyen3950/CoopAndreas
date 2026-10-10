@@ -10,4 +10,5 @@ public:
     static bool NeedsOpcodeCapture(uint16_t opcode);
     static bool ConsumeOpcode(uint16_t opcode, const int* params, int count);
     static void OnLocalCheat(int id);
+    static bool IsWalletReadyForLocalService();
 };
