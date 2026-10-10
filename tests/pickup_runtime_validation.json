@@ -1,0 +1,176 @@
+{
+  "READY": true,
+  "Passed": true,
+  "Status": "SOURCE READY: scoped provenance correction and diagnostic instrumentation; overall gameplay visibility remains unresolved",
+  "SourceCommit": "c043b8c300889bf952deb5af5e1a735465f4193e",
+  "BaseCommit": "55bdf0958b17a3a796f0231bd789848c28b547f5",
+  "SourceRoot": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis",
+  "ImportCommits": [
+    "b9ee7c235c39784f1b188d0d1436a64ba8110f72",
+    "c043b8c300889bf952deb5af5e1a735465f4193e"
+  ],
+  "Prerequisite": {
+    "RootCommit": "d793e77",
+    "LocalCommit": "6f754f6",
+    "Path": "shared/runtime_diagnostics.h",
+    "SHA256": "C3F37D43BFA52CB2DEDE03FCAC533FD7FA923318E216E489EDE4D9E0EE098CEF",
+    "DoNotReimport": true
+  },
+  "ProductionHashes": {
+    "client/src/CPickupSync.cpp": "AE472EC62DC61D0529E4140AD602B28F311F128FC35DCA5DC550CCE7018A7637",
+    "client/src/CPickupSyncNative.cpp": "9DD06A75A17D3C54C9F48DD48DECD019E0C407DF1DC70C66EDBB77D79E2D181F",
+    "server/src/CPickupSync.cpp": "14C77921ABFB1E21921156C70D60CE18DCED8B299BAB39750156F081396C70FB"
+  },
+  "GitBlobHashes": {
+    "client/src/CPickupSync.cpp": "1394DB1AFC98341A089B18F7FECD273AFE856338203ABF4F60C80F56E8A627BA",
+    "client/src/CPickupSyncNative.cpp": "639D3C9FFA01615E3FB48DD7C61A4A493029598F11341DBC8C4420F3E6C8491B",
+    "server/src/CPickupSync.cpp": "476131B193E861005B9C57A0F6D37647B9627DEF2898716FC031FD5C815D5DCE"
+  },
+  "PrimaryTests": {
+    "native": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\native-final-003\\result.json",
+      "SHA256": "0D8F0D9CDC2E920FE6909A57946E9DAAE7862ACC4C75007425D6C21FBD1DE569",
+      "Assertions": 134
+    },
+    "server": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\server-final-003\\result.json",
+      "SHA256": "7A0E4A811D2742049A0BA0D2BE27B2FB652F4526267776BCB158CA617D972505",
+      "Assertions": 585
+    },
+    "codec": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\codec-final-001\\result.json",
+      "SHA256": "9DD197DCDBD189C89A7CC1C53022571F2B30C9BBC555B5305C95208B286EB700",
+      "Assertions": 2967
+    },
+    "merge": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\merge-final-001\\result.json",
+      "SHA256": "329862F55B53F6EC359428D1E9CC8150705CEB0A945975F90CD755FCC9FB65DC",
+      "Assertions": 8
+    },
+    "provenance": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\provenance-final-003\\result.json",
+      "SHA256": "C884C77CA74B5FC46786926E41C172496F255F5C9E3482113F19198E44792107",
+      "Assertions": 7
+    },
+    "activation": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\bootstrap-final-001\\result.json",
+      "SHA256": "8ABC3B7423C9A40D5AE6EE03C6DC4C69543303FC6AC1B871BBD7E94D2CA4CCA9",
+      "Assertions": 22
+    },
+    "diagnostic-transitions": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\transitions-final-001\\result.json",
+      "SHA256": "20C6546E944936FE3910C4701996011D3A0A33035AB15A0EC5AD5F03A9E46C4E",
+      "Assertions": 5
+    }
+  },
+  "PrimaryAssertions": 3728,
+  "ExpectedStageCapMutation": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\transitions-stage-final-red-001\\result.json",
+    "SHA256": "FE2C2FA7595F572F6EAB088469D76B7EABECD1880FA16039CAE6644A2688A0F8",
+    "ExpectedFailures": 2,
+    "CountedInPrimary": false
+  },
+  "SDKBuild": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\x86-final-002\\build-result.json",
+    "SHA256": "B57522D15FE0A50473060C4EBBC110DCE4B22532ED9275DAE33CC2D0F72DBB64",
+    "Targets": {
+      "client": {
+        "Command": [
+          "C:\\Users\\Vu\\work\\gta-coop\\tools\\xmake\\xmake\\xmake.exe",
+          "build",
+          "-r",
+          "-j",
+          "4",
+          "client"
+        ],
+        "ExitCode": 0,
+        "TargetPath": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\x86-final-002\\windows\\x86\\release\\CoopAndreasSA.dll",
+        "PCHPath": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\x86-final-002\\.objs\\client\\windows\\x86\\release\\client\\src\\cxx\\stdafx.h_v143.pch",
+        "ObjectDir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\x86-final-002\\.objs\\client",
+        "Log": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\x86-final-002\\client-build.log",
+        "LogSHA256": "AA96598200E93D461CBD35DE39087DCE2006148932C849D2E1BFB385D9EFD1C9",
+        "Bytes": 2549248,
+        "SHA256": "ABE842A3DE77F765FA1B1C4771AC5AB2E21CE341DC79C520C7882AB81B734E82"
+      },
+      "server": {
+        "Command": [
+          "C:\\Users\\Vu\\work\\gta-coop\\tools\\xmake\\xmake\\xmake.exe",
+          "build",
+          "-r",
+          "-j",
+          "4",
+          "server"
+        ],
+        "ExitCode": 0,
+        "TargetPath": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\x86-final-002\\windows\\x86\\release\\server.exe",
+        "PCHPath": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\x86-final-002\\.objs\\server\\windows\\x86\\release\\server\\src\\cxx\\stdafx.h_v143.pch",
+        "ObjectDir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\x86-final-002\\.objs\\server",
+        "Log": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\x86-final-002\\server-build.log",
+        "LogSHA256": "CC98763B0DBDFBB529318578ABE91D2A5827ED92EE789558A1A65515904B9184",
+        "Bytes": 1587712,
+        "SHA256": "6A01314B911C3AF4E6DEAE4468D14AA9CCA72E2647368E09FA3E904851015FF8"
+      }
+    },
+    "SourceInputsUnchanged": true
+  },
+  "DiagnosticPolicy": {
+    "Scopes": [
+      "pickup-native",
+      "pickup-client",
+      "pickup-server"
+    ],
+    "CallerJSONFragments": true,
+    "FixedReasonStringsOnly": true,
+    "NoFloatsNamesChatCredentialsOrPeerAddresses": true,
+    "PerFixedReasonPerStageCap": 8,
+    "PerServiceGlobalCap": 128,
+    "CommonSinkMaxBytes": 1048576,
+    "NoOwnFileSink": true
+  },
+  "ConcreteFindings": [
+    {
+      "Source": "client/src/CNetworkPed.cpp:60,74 and CPickupSync.cpp BeginDeath",
+      "Finding": "Native MISSION_CHAR lifetime marker differs from retained original wrapper provenance; using native marker rejects supported original random NPC output after transfer",
+      "Reproduction": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\provenance-red-001\\result.json",
+      "ExpectedRedFailures": 2,
+      "Corrected": "Read wrapper original creation only after authentic owner seal and full pool reference guards"
+    },
+    {
+      "Finding": "Stage-wide model-wait/row cap could hide generated and distinct receiver failure records",
+      "Reproduction": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\transitions-stage-final-red-001\\result.json",
+      "Corrected": "Fixed reason buckets plus bounded global cap; actual service transition probe passes"
+    }
+  ],
+  "RuntimeUnknowns": [
+    "No saved pickup activation/publication/replica records are present in the newest v0.8 crash logs. Console-only prior logger cannot prove hook execution.",
+    "The activation test runs actual NativeInit control flow with recorded A559 address reads; it does not execute game memory or prove live activation.",
+    "Overall confirmed killer/producer-only loot visibility remains unresolved until user-owned runtime records establish activation/capture/proof/replay path.",
+    "Native money can decline a recreated mission-marked actor; no temporary native flag rewrite or fabricated wad is made."
+  ],
+  "LogInventory": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\.cache\\pickup-runtime\\log-inventory-001\\result.json",
+    "SHA256": "D3B0EEF1B7D6D8BF22298296300CA26626177C75EE5D84911EDDC0F5B47C39DD"
+  },
+  "UntouchedInputs": {
+    "client/src/CNetworkPedManager.cpp": "5B18DC88D10071023D26D0857DC1CAF11A93EB6C3434310BFF4C38D97033445A",
+    "client/src/CNetworkPed.cpp": "33F896B4E151CE4F7F822BE7B597E56B0AD087944D541CB59071C6C4C335CDA1",
+    "server/src/CNetworkPedManager.cpp": "090CE15F9A2858E25AB00C40B88E10E66D1C1A011DCB00130928AF7B5948009D",
+    "shared/network/packets/pickups.h": "901831D53C4DC3DD7C409D3FED3EA8322E563A60A5131DC4440619B369658114",
+    "shared/network/pickup_lifecycle.h": "F87B80C042B82CC7F5C65C825821302D710322AC836034E91D718B421DB954DD",
+    "shared/config.h": "C5D839281D20D6F0DCBF37EE8BCCF51AFBBC373E54F2C5CDB2C7A4CE7A4CB9BA",
+    "shared/network/packet_types.h": "264DE4962237EA967BE23B2C265793F72E3248C8064EDC13AFBB7BF8410CD99B",
+    "client/src/Main.cpp": "8AC2F616336EF634B2607AEF9AD2A9E250366BB5E57590FC7041192F3BD504B0",
+    "client/src/CCore.cpp": "FB0C595F498D7A4049CF26D6F32E5C2DBBF194C0BCD4E1D36A328D87BC68722B"
+  },
+  "NativeRuntime": false,
+  "OverallGameplayFailureClaimedFixed": false,
+  "GameLaunched": false,
+  "ProcessAttachedOrStopped": false,
+  "SharedBuildPerformed": false,
+  "StagingOrInstallPerformed": false,
+  "Batch011Preserved": true,
+  "HumanDiagnosticGuide": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\pickup-runtime-diagnosis\\tests\\PICKUP_RUNTIME_DIAGNOSIS.md",
+    "SHA256": "CF9637D61D73233DA426799C10DD6079A4D20A913FA072C481BF9C2ACE97EDD8"
+  }
+}
