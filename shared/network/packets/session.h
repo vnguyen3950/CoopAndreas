@@ -48,7 +48,7 @@ private:
         serialize_int(stream, op.sequence, 1, SessionSync::MAX_COUNTER);
         int kind = int(op.kind), reason = int(op.reason);
         serialize_int(stream, kind, 0, int(SessionSync::Kind::CheatToggle)); op.kind = SessionSync::Kind(kind);
-        serialize_int(stream, reason, 0, int(SessionSync::Reason::Respray)); op.reason = SessionSync::Reason(reason);
+        serialize_int(stream, reason, 0, int(SessionSync::Reason::Resurrection)); op.reason = SessionSync::Reason(reason);
         // The full signed delta domain exceeds a signed serialize_int range.
         serialize_bytes(stream, reinterpret_cast<uint8_t*>(&op.delta), sizeof op.delta);
         serialize_int(stream, op.level, 0, 6); serialize_int(stream, op.cheat, 0, SessionSync::CHEATS - 1);

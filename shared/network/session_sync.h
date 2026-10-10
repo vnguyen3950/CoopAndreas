@@ -15,7 +15,7 @@ constexpr int32_t MONEY_LIMIT = 999999999, DELTA_LIMIT = 1999999998;
 constexpr uint32_t MAX_COUNTER = 0x7fffffff;
 constexpr size_t MAX_PENDING = 256;
 enum class Kind : uint8_t { Money, WantedRaise, WantedLower, WantedRules, CheatAction, CheatToggle };
-enum class Reason : uint8_t { Natural, HostScript, HostDecay, Bribe, Respray };
+enum class Reason : uint8_t { Natural, HostScript, HostDecay, Bribe, Respray, Resurrection };
 enum class CheatMode : uint8_t { Unsupported, Action, FlagToggle, FunctionToggle };
 inline CheatMode Mode(int id)
 {
@@ -42,12 +42,13 @@ struct Operation
     {
         if (!epoch || epoch > MAX_COUNTER || !incarnation || incarnation > MAX_COUNTER
             || !sequence || sequence > MAX_COUNTER || unsigned(kind) > unsigned(Kind::CheatToggle)
-            || unsigned(reason) > unsigned(Reason::Respray)) return false;
+            || unsigned(reason) > unsigned(Reason::Resurrection)) return false;
+        if (reason == Reason::Resurrection && kind != Kind::WantedLower) return false;
         switch (kind)
         {
         case Kind::Money: return delta >= -DELTA_LIMIT && delta <= DELTA_LIMIT && reason == Reason::Natural;
         case Kind::WantedRaise: return level <= 6 && reason == Reason::Natural;
-        case Kind::WantedLower: return level <= 6 && reason != Reason::Natural;
+        case Kind::WantedLower: return level <= 6 && reason != Reason::Natural && (reason != Reason::Resurrection || level == 0);
         case Kind::WantedRules: return level <= 6 && reason == Reason::HostScript;
         case Kind::CheatAction: return Mode(cheat) == CheatMode::Action;
         case Kind::CheatToggle: return Mode(cheat) == CheatMode::FlagToggle || Mode(cheat) == CheatMode::FunctionToggle;
@@ -151,7 +152,7 @@ public:
             break;
         case Kind::WantedLower:
             if (op.reason == Reason::Bribe) { if (state.wanted) --state.wanted; }
-            else if (op.reason == Reason::Respray) state.wanted = 0;
+            else if (op.reason == Reason::Respray || op.reason == Reason::Resurrection) state.wanted = 0;
             else if (sender != state.host) receipt.status = Status::Rejected;
             else if (op.reason == Reason::HostScript) state.wanted = state.toggles[65] ? 0 : std::min(op.level, state.maximumWanted);
             else if (op.level < state.wanted) state.wanted = op.level;
@@ -231,7 +232,7 @@ public:
             if (op.kind == Kind::WantedLower)
             {
                 if (op.reason == Reason::Bribe && s.wanted) --s.wanted;
-                else if (op.reason == Reason::Respray) s.wanted = 0;
+                else if (op.reason == Reason::Respray || op.reason == Reason::Resurrection) s.wanted = 0;
                 else if (s.recipient == s.host)
                 {
                     if (op.reason == Reason::HostScript) s.wanted = s.toggles[65] ? 0 : std::min(op.level, s.maximumWanted);

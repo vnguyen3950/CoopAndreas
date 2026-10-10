@@ -382,11 +382,28 @@ static void observation_helper_tests()
     expect(ApplyWantedLevel(6,read,ignored) == 2,
         "Wanted helper returns actual state after native early-return.");
 }
+static void resurrection_policy_tests()
+{
+    for(int actor=0;actor<2;++actor){
+        Server s;s.Join(0,0);s.Join(1,0);auto seed=s.For(0);seed.wanted=4;expect(s.Seed(0,seed),"Resurrection policy room seeded.");
+        auto reset=op(s,actor,1,Kind::WantedLower);reset.reason=Reason::Resurrection;reset.level=0;
+        Client client;expect(client.Accept(s.For(actor),actor),"Host/guest owns current session identity.");
+        Operation pending=reset;pending.epoch=pending.incarnation=pending.sequence=0;
+        expect(client.Queue(pending)&&client.Predicted().wanted==0,"Host/guest predicts native resurrection clear before receipt.");
+        auto bad=reset;bad.level=1;expect(!bad.Valid(),"Resurrection may only clear stars, never assign a partial level.");
+        expect(s.Apply(actor,reset).status==Status::Accepted&&s.state.wanted==0,"Host/guest resurrection clears canonical wanted.");
+        expect(s.Apply(actor,reset).status==Status::Duplicate&&s.state.wanted==0,"Same resurrection receipt is applied once.");
+        auto crime=op(s,1-actor,1,Kind::WantedRaise);crime.level=2;
+        expect(s.Apply(1-actor,crime).status==Status::Accepted&&s.state.wanted==2,"Later authenticated crime can raise stars after a clear.");
+        auto wrong=reset;wrong.incarnation++;expect(s.Apply(actor,wrong).status==Status::Invalid,"Old/new identity cannot replay a resurrection clear.");
+    }
+}
 int main()
 {
     transaction_tests(); client_tests(); lifetime_tests(); wanted_tests(); cheat_tests(); atomicity_and_host_tests();
     prediction_and_validation_tests();
     observation_helper_tests();
+    resurrection_policy_tests();
     std::cout << checks << " assertions, " << failures << " failures\n";
     return failures ? 1 : 0;
 }

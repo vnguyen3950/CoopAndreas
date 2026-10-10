@@ -60,7 +60,7 @@ struct CPools
     static uint32_t GetPedRef(CPed*) { return nativePedRef; }
 };
 struct PlayerInfo { int32_t m_nMoney = 0, m_nDisplayMoney = 0; int m_nPlayerState = 0; };
-struct CWorld { static inline std::array<PlayerInfo,1> Players{}; };
+struct CWorld { static inline std::array<PlayerInfo,1> Players{}; static inline int PlayerInFocus=0; };
 struct CCheat
 {
     static inline std::array<void(*)(),92> m_aCheatFunctions{};

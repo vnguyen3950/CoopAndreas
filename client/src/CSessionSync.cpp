@@ -251,8 +251,19 @@ void __fastcall HostParoleHook(CWanted* wanted, void*)
 void __fastcall ResurrectionResetHook(CWanted* wanted, void*)
 {
     auto* ped = FindPlayerPed(0);
-    bool local = ped && ped->m_pPlayerData && wanted == FindPlayerWanted(0);
+    bool local = CashReady() && CWorld::PlayerInFocus == 0 && ped && ped->m_pPlayerData && wanted == FindPlayerWanted(0);
+    bool publish = local && !g_suppress && EnsureSession() && g_client.state.ready && g_client.Predicted().wanted > 0;
     wanted->Reset();
+    if (publish)
+    {
+        // This verified native boundary covers both hospital and arrest recovery.
+        // Publish the clear before ApplyCurrent can restore the old room stars.
+        SessionSync::Operation op;
+        op.kind = SessionSync::Kind::WantedLower;
+        op.reason = SessionSync::Reason::Resurrection;
+        op.level = 0;
+        StageOrSubmit(op);
+    }
     if (local)
     {
         // The native resurrection path reuses the ped and may complete within

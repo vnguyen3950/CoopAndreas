@@ -227,8 +227,12 @@ static void same_frame_resurrection()
     if (!found) localWanted.Reset();
     // No not-ready Process call occurs between the reset and this tick.
     CSessionSync::Process();
-    expect(operations().empty() && localWanted.m_nWantedLevel == 4,
-        "Same-frame reused-ped resurrection restores stars without submitting a lowering operation.");
+    auto ops=unique_operations();
+    expect(ops.size()==1 && ops[0].kind==Kind::WantedLower && ops[0].level==0 && localWanted.m_nWantedLevel==0,
+        "Same-frame reused-ped resurrection submits one canonical clear and keeps native stars zero.");
+    for(const auto& op:ops)expect(s.Apply(0,op).status==Status::Accepted,"Resurrection clear reaches canonical room policy.");
+    receipt(s,0);CSessionSync::Process();
+    expect(s.state.wanted==0 && localWanted.m_nWantedLevel==0,"Canonical receipt cannot restore pre-death stars.");
 }
 static void native_wanted()
 {
@@ -239,6 +243,24 @@ static void native_wanted()
         "Actual wanted application clears stale initialized stars even under never-wanted.");
     unsigned calls = CWanted::setterCalls; CSessionSync::Process(); CSessionSync::Process();
     expect(CWanted::setterCalls == calls, "Actual service avoids repeated SetWantedLevel calls once stars are correct.");
+}
+static void resurrection_actor(int id,bool arrest)
+{
+    auto s=room(100,4);boot(s,id);
+    CWorld::Players[0].m_nPlayerState=arrest?2:1;if(!arrest)localPed.m_fHealth=0;
+    bool found=false;for(const auto& hook:patch::wantedHooks)if(hook.first==0x4421A3){found=true;hook.second(&localWanted);}
+    expect(found,"Native resurrection boundary is installed for host and guest.");
+    localPed.m_fHealth=100;CWorld::Players[0].m_nPlayerState=0;CSessionSync::Process();
+    auto ops=unique_operations();
+    expect(ops.size()==1&&ops[0].kind==Kind::WantedLower&&ops[0].reason==Reason::Resurrection&&ops[0].level==0,
+        "Death or arrest issues exactly one actor resurrection clear.");
+    expect(localWanted.m_nWantedLevel==0&&CWorld::Players[0].m_nMoney==100,"Pending clear holds native stars zero and leaves cash unchanged.");
+    for(const auto& hook:patch::wantedHooks)if(hook.first==0x4421A3)hook.second(&localWanted);
+    CSessionSync::Process();expect(unique_operations().size()==1,"Repeated native reset cannot duplicate a pending clear.");
+    for(const auto& op:ops){expect(s.Apply(id,op).status==Status::Accepted,"Authenticated host or guest resurrection clear is accepted.");
+        expect(s.Apply(id,op).status==Status::Duplicate,"Exact clear retry has one canonical receipt.");}
+    receipt(s,id);CSessionSync::Process();
+    expect(s.state.wanted==0&&localWanted.m_nWantedLevel==0&&CWorld::Players[0].m_nMoney==100,"Death/arrest receipt keeps shared stars cleared without a fee invention.");
 }
 static void reset_same_ped()
 {
@@ -258,13 +280,14 @@ static void punishment_fee(int fee, bool arrest, bool observeDead)
     ExtractedPunishment(fee); reset_same_ped();
     localPed.m_fHealth = 100; CWorld::Players[0].m_nPlayerState = 0; CSessionSync::Process();
     auto ops = unique_operations();
-    expect(ops.size() == 1 && ops[0].kind == Kind::Money && ops[0].delta == -fee,
+    unsigned fees=0,clears=0;for(const auto& op:ops){if(op.kind==Kind::Money&&op.delta==-fee)++fees;if(op.kind==Kind::WantedLower&&op.level==0)++clears;}
+    expect(ops.size()==2 && fees==1 && clears==1,
         "Initialized cash observation retains the real hospital/arrest fee across death and Reset.");
     for (const auto& operation : ops) expect(s.Apply(0,operation).status == Status::Accepted, "Punishment delta is accepted once by canonical ledger.");
     receipt(s,0); CSessionSync::Process();
     expect(s.state.money == 1000-fee && CWorld::Players[0].m_nMoney == 1000-fee
-        && localWanted.m_nWantedLevel == 4 && localPed.weaponsCleared == 1,
-        "Fee remains deducted after receipt without lowering shared wanted or replaying native punishment.");
+        && localWanted.m_nWantedLevel == 0 && s.state.wanted==0 && localPed.weaponsCleared == 1,
+        "Fee remains deducted while canonical stars clear without replaying native punishment.");
 }
 static void debt_budget()
 {
@@ -331,6 +354,8 @@ int main(int argc, char** argv)
         else if (name == "deferred_action") deferred_action(); else if (name == "rapid_toggle") rapid_toggle();
         else if (name == "flags_reset") flags_reset(); else if (name == "death_preservation") death_preservation();
         else if (name == "same_frame_resurrection") same_frame_resurrection(); else if (name == "migration") migration();
+        else if(name=="host_death_clear")resurrection_actor(0,false);else if(name=="guest_death_clear")resurrection_actor(1,false);
+        else if(name=="host_arrest_clear")resurrection_actor(0,true);else if(name=="guest_arrest_clear")resurrection_actor(1,true);
         else if (name == "native_wanted") native_wanted();
         else if (name == "hospital_fee") punishment_fee(100,false,true);
         else if (name == "arrest_fee") punishment_fee(600,true,true);

@@ -178,7 +178,11 @@ static void operation_tests()
             p.op.level = 6; p.op.cheat = CHEATS-1; p.op.active = p.op.policeIgnore = p.op.everyoneIgnore = true; }
         expect(equal(p.op, roundtrip(p).op), "Transaction preserves full signed delta and every field without compression loss.");
     }
-    for (int kind = 0; kind <= int(Kind::CheatToggle); ++kind) for (int reason = 0; reason <= int(Reason::Respray); ++reason) {
+    P::Transaction reset;reset.op=normal_op();reset.op.kind=Kind::WantedLower;reset.op.reason=Reason::Resurrection;reset.op.level=0;
+    expect(equal(reset.op,roundtrip(reset).op),"Resurrection clear roundtrips through unchanged transaction layout.");
+    reset.op.level=1;serialize::MeasureStream rejectedReset;
+    expect(!static_cast<Packet&>(reset).SerializeMeasure(rejectedReset),"Nonzero resurrection level cannot be written.");
+    for (int kind = 0; kind <= int(Kind::CheatToggle); ++kind) for (int reason = 0; reason <= int(Reason::Resurrection); ++reason) {
         P::Transaction p; p.op = normal_op(); p.op.kind = Kind(kind); p.op.reason = Reason(reason);
         p.op.level = 6; p.op.cheat = p.op.kind == Kind::CheatToggle ? 65 : 3;
         p.op.active = p.op.policeIgnore = p.op.everyoneIgnore = true;
