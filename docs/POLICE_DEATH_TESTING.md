@@ -11,11 +11,26 @@ clear if the transaction queue is full. Guest natural decay still cannot change
 the room's wanted level. Death or arrest recovery by either player clears shared
 stars; a later crime can raise them again.
 
-The NPC/pickup lanes are implementing a reliable owner-sealed death, one native
-death task on each replica, and one authenticated stock firearm drop manifest
-from the original NPC death producer. Observer cops should use base native
-physics/tasks instead of choosing pursuit behavior from the observer's local
-wanted state. Their independent source/build handoffs remain pending.
+The source now applies a reliable owner-sealed death and one native death task
+on each replica through the shared NPC handlers. This includes civilians and
+gang members: explicit male/female and Ballas/Families regressions cover both
+death-seal/SYNC orders, delayed alive packets and original-owner behavior.
+Observer cops use base native physics/tasks instead of choosing pursuit behavior
+from the observer's local wanted state. This does not reproduce full AI or task
+history.
+
+Loot publication currently admits one authenticated stock firearm manifest from
+the original cop death producer. The host and other guests create replicas of
+that canonical item. The normal server tick releases a queued manifest when its
+death proof arrives. Other NPCs' weapon/money publication is the next separate
+increment after this path is validated; shared corpse synchronization already
+applies to them. Supported drops remain exterior and outside active missions.
+
+The combined client, server, proxy and launcher compile. The actual ENet server
+fixture passes 66 checks, including guest-origin loot, delayed death proof,
+late-join corpse/item replay and resurrection wanted clear. Native-function
+tests use recorded collaborators; gameplay and in-process hook execution still
+need the two-client checks below. Build 008 remains unchanged during preparation.
 
 When the matched follow-up is ready, use two clients and test each player as host
 and guest:
