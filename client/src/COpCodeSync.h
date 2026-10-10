@@ -57,6 +57,8 @@ struct OpcodeParameter
     };
 };
 
+class CRunningScript;
+
 class COpCodeSync
 {
 public:
@@ -71,6 +73,7 @@ public:
     static inline bool ms_bProcessingTaskSequence = false;
     static inline bool bProcessingNetworkOpcode = false;
 
+    static CRunningScript* GetActiveScript();
 	static void Init();
 	static void HandlePacket(const uint8_t* buffer, int bufferSize);
 	static std::vector<uint8_t> COpCodeSync::SerializeOpcode(int idx, int& outSize);

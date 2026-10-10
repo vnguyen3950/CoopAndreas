@@ -2,6 +2,7 @@
 #include "CPlayerAnimationSync.h"
 #include "CNetworkObjectManager.h"
 #include "PlayerHooks.h"
+#include "CGuestShopAccess.h"
 #include "CPlayerVitalsSync.h"
 #include "CKeySync.h"
 #include "CAimSync.h"
@@ -268,6 +269,19 @@ bool __fastcall CPlayerPed__CanPlayerStartMission_Hook(CPlayerPed* This, SKIP_ED
     return CLocalPlayer::m_bIsHost && This->CanPlayerStartMission();
 }
 
+// Native SCM 03EE call site: ECX is player; ESI is the current running script.
+static bool __declspec(naked) CPlayerPed__CanPlayerStartMission_ScriptHook()
+{
+    __asm
+    {
+        push esi
+        push ecx
+        call CGuestShopAccess::CanStartFromScript
+        add esp, 8
+        ret
+    }
+}
+
 void __fastcall CPlayerPed__ProcessWeaponSwitch_Hook(CPlayerPed* This, SKIP_EDX, CPad* pad)
 {
     if (CWorld::PlayerInFocus == 0)
@@ -436,7 +450,12 @@ void PlayerHooks::InjectHooks()
     patch::RedirectCall(0x4B5B27, CPedDamageResponseCalculator__ComputeWillKillPed_Hook);
 
     patch::RedirectCall(0x4577E6, CPlayerPed__CanPlayerStartMission_Hook);
-    patch::RedirectCall(0x4895B0, CPlayerPed__CanPlayerStartMission_Hook);
+    if (CGuestShopAccess::NativeRetailBindingMatches())
+        patch::RedirectCall(0x4895B0, CPlayerPed__CanPlayerStartMission_ScriptHook);
+    else {
+        logger::warn("Guest retail permission disabled: native binding mismatch");
+        patch::RedirectCall(0x4895B0, CPlayerPed__CanPlayerStartMission_Hook);
+    }
 
     patch::RedirectCall(
         0x60F2E0, CPlayerPed__ProcessWeaponSwitch_Hook);  // disable switching weapon for network players

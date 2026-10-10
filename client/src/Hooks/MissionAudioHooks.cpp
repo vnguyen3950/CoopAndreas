@@ -1,5 +1,7 @@
 #include "stdafx.h"
 #include "MissionAudioHooks.h"
+#include "CGuestShopAccess.h"
+#include "COpCodeSync.h"
 
 static int aiLoadedAudioId[4];
 
@@ -7,7 +9,7 @@ void __fastcall CAudioEngine__PreloadMissionAudio_Hook(CAudioEngine* This, SKIP_
 {
 	plugin::CallMethod<0x507290>(This, slot, audioid);
 
-	if (CLocalPlayer::m_bIsHost)
+	if (CLocalPlayer::m_bIsHost && !CGuestShopAccess::IsLocalServiceScript(COpCodeSync::GetActiveScript()))
 	{
 		aiLoadedAudioId[slot] = audioid;
 	}
@@ -17,7 +19,7 @@ void __fastcall CAudioEngine__PlayLoadedMissionAudio_Hook(CAudioEngine* This, SK
 {
 	plugin::CallMethod<0x5072B0>(This, slot);
 
-	if (CLocalPlayer::m_bIsHost)
+	if (CLocalPlayer::m_bIsHost && !CGuestShopAccess::IsLocalServiceScript(COpCodeSync::GetActiveScript()))
 	{
 		Packets::Scripts::PlayMissionAudio packet{};
 		packet.audioid = aiLoadedAudioId[slot];

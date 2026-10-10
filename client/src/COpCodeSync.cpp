@@ -41,6 +41,7 @@
 #include <CNetworkAnimQueue.h>
 #include "CNetworkObjectManager.h"
 #include "CSessionSync.h"
+#include "CGuestShopAccess.h"
 
 static_assert(sizeof(OpcodeSyncHeader) == 4 && sizeof(OpcodeParameter) == 4, "Object opcode wire layout changed");
 
@@ -199,6 +200,11 @@ static uint16_t textParamCount = 0;
 static uint32_t lastOpCodeProcessed;
 static CRunningScript* lastProcessedScript;
 static bool activeOpcodeScope = false;
+
+CRunningScript* COpCodeSync::GetActiveScript()
+{
+    return activeOpcodeScope && !bProcessingNetworkOpcode ? lastProcessedScript : nullptr;
+}
 
 static uint8_t currentStringIdx = 0;
 
@@ -402,6 +408,19 @@ std::vector<uint8_t> COpCodeSync::SerializeOpcode(int idx, int& outSize)
 
 void BuildAndSendOpcode()
 {
+    if (CGuestShopAccess::IsLocalServiceScript(COpCodeSync::GetActiveScript()))
+    {
+        // Retail VM effects stay local, including unconditionally synced tasks.
+        // Keep canonical wallet observation for native/script ADD_SCORE effects.
+        CSessionSync::ConsumeOpcode(uint16_t(lastOpCodeProcessed),
+            reinterpret_cast<const int*>(COpCodeSync::scriptParamsBuffer), scriptParamCount);
+        memset(textParamBuffer, 0, sizeof textParamBuffer);
+        memset(textLengthBuffer, 0, sizeof textLengthBuffer);
+        scriptParamCount = 0;
+        textParamCount = 0;
+        return;
+    }
+
     if (!CTaskSequenceSync::OnOpCodeExecuted((eScriptCommands)lastOpCodeProcessed))
     {
         memset(textParamBuffer, 0, sizeof textParamBuffer);
