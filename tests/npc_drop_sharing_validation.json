@@ -1,0 +1,213 @@
+{
+  "READY": true,
+  "Passed": true,
+  "Status": "AUTHOR READY for independent review and matching protocol integration",
+  "SourceCommit": "e464ca7e3d37ff281d226895885d3fdc44298979",
+  "BaseCommit": "17cca42a9028f2acd87ad6123a7c068890b88c3d",
+  "SourceRoot": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing",
+  "NativeRuntime": false,
+  "RuntimeValidated": false,
+  "GameLaunched": false,
+  "StagingPerformed": false,
+  "ProductionHashes": {
+    "client/src/CPickupSync.cpp": "7540D3D24BEA53CC3E4E5BD2E0FC4063B13E05FD1B49C9099B14127169DB5CAB",
+    "client/src/CPickupSync.h": "9C7579063826FBF87694E56F9F3AE753E927A2989B87E4B056C568D5BD3F61C8",
+    "client/src/CPickupSyncNative.cpp": "044DF8033F61BFCCB1EEEA1BEBB395F22754C4B6F848C37282B8874F8EDDE963",
+    "server/src/CPickupSync.cpp": "F34C0B241640CF3A77130943383AFE372DAF6AB3C4D7BCB881CB9E6BC813FC03",
+    "shared/network/pickup_lifecycle.h": "F87B80C042B82CC7F5C65C825821302D710322AC836034E91D718B421DB954DD",
+    "shared/network/packets/pickups.h": "901831D53C4DC3DD7C409D3FED3EA8322E563A60A5131DC4440619B369658114"
+  },
+  "GitBlobHashes": {
+    "client/src/CPickupSync.cpp": "98F6D994F9976CB0562F844D457835614613864E5AFDDA125637D4BEC848AD27",
+    "client/src/CPickupSync.h": "FC79AA6E5D296D17783FF1DA20BA7BF6D87FF206D8C8BE2B79E6D9D567682C2A",
+    "client/src/CPickupSyncNative.cpp": "ABB91CA5BE208347AF9EB7B4301A8B914ABB4B9654FC8901C9F74F07041F8F98",
+    "server/src/CPickupSync.cpp": "BDCD0D367AC19ED7E433355CD2E2C381EFACE5FF6753084F8BBF73D49AA4E85C",
+    "shared/network/pickup_lifecycle.h": "372B75595FC6C26603544D1FEFDC94892A8C37F79C0CE69C8B441307E27275BE",
+    "shared/network/packets/pickups.h": "D217B7BB358912E421CDF748AD6F05CAA2FC734B69AC5CCFB76BCFAC6B758E2E"
+  },
+  "PrimaryTests": {
+    "native": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\final-native-002\\result.json",
+      "SHA256": "9D5AAF5CAAA6179343AE19B9DA3526183DCF80620FA76BFDCF2FE635CC48D1BD",
+      "Assertions": 134,
+      "Passed": true,
+      "ProductionHashes": {
+        "shared/network/pickup_lifecycle.h": "F87B80C042B82CC7F5C65C825821302D710322AC836034E91D718B421DB954DD",
+        "shared/network/npc_sync.h": "431BE1E72CA8D9725E8D2DBA30D6F8140D9B51764FF96D749B5666D6FA20D61C",
+        "shared/network/packets/pickups.h": "901831D53C4DC3DD7C409D3FED3EA8322E563A60A5131DC4440619B369658114",
+        "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+        "shared/network/packet_types.h": "264DE4962237EA967BE23B2C265793F72E3248C8064EDC13AFBB7BF8410CD99B",
+        "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E",
+        "client/src/CPickupSync.h": "9C7579063826FBF87694E56F9F3AE753E927A2989B87E4B056C568D5BD3F61C8",
+        "client/src/CPickupSync.cpp": "7540D3D24BEA53CC3E4E5BD2E0FC4063B13E05FD1B49C9099B14127169DB5CAB",
+        "client/src/CPickupSyncNative.cpp": "044DF8033F61BFCCB1EEEA1BEBB395F22754C4B6F848C37282B8874F8EDDE963",
+        "client/src/PickupNativeOutcome.h": "80D3A8DD00EA332436465F773D2757AEABB8CBDA9400E3CADBD449E93596E605",
+        "third_party/plugin-sdk/plugin_sa/game_sa/eWeaponType.h": "C7A3170581A559BD0D91B7410E91CFBDB4A2E27B77AA6B3AE99F43E994EEC182",
+        "third_party/plugin-sdk/plugin_sa/game_sa/CPickup.h": "EC567AE4C1DF89990570926633ACFC525753505ED3934F6498AE3CFA217CA4B1",
+        "third_party/plugin-sdk/plugin_sa/game_sa/CWeaponInfo.h": "94DAB0E01E8D6423582B3B10C1B8B7B47B11C9F0F0406DC46914CF420EFEC4B0",
+        "third_party/plugin-sdk/plugin_sa/game_sa/ePedType.h": "DEFCA649596BC035374417CB8F3B7914BB47D91070F17CC59A0DD4D0C89F7D40",
+        "shared/network/player_animation_sync.h": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038"
+      }
+    },
+    "server": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\final-server-002\\result.json",
+      "SHA256": "C0D8C34752150D4507C7EFB08AE781224163700D45AAC9857043F48E892340D5",
+      "Assertions": 585,
+      "Passed": true,
+      "ProductionHashes": {
+        "shared/network/pickup_lifecycle.h": "F87B80C042B82CC7F5C65C825821302D710322AC836034E91D718B421DB954DD",
+        "shared/network/npc_sync.h": "431BE1E72CA8D9725E8D2DBA30D6F8140D9B51764FF96D749B5666D6FA20D61C",
+        "shared/network/packets/pickups.h": "901831D53C4DC3DD7C409D3FED3EA8322E563A60A5131DC4440619B369658114",
+        "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+        "shared/network/packet_types.h": "264DE4962237EA967BE23B2C265793F72E3248C8064EDC13AFBB7BF8410CD99B",
+        "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E",
+        "server/src/CPickupSync.h": "2F4958FB73BAA4B4F5D3B7DDDBB48F2D8C4E5AC7ECCC402613A3B674AF9D2856",
+        "server/src/CPickupSync.cpp": "F34C0B241640CF3A77130943383AFE372DAF6AB3C4D7BCB881CB9E6BC813FC03",
+        "shared/network/player_animation_sync.h": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038"
+      }
+    },
+    "codec": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\final-codec-002\\result.json",
+      "SHA256": "26DC9873C2600BA5A0D7FC0834E29139B9EF14A29C873A22CFB4215CBA024EC5",
+      "Assertions": 2967,
+      "Passed": true,
+      "ProductionHashes": {
+        "shared/network/pickup_lifecycle.h": "F87B80C042B82CC7F5C65C825821302D710322AC836034E91D718B421DB954DD",
+        "shared/network/npc_sync.h": "431BE1E72CA8D9725E8D2DBA30D6F8140D9B51764FF96D749B5666D6FA20D61C",
+        "shared/network/packets/pickups.h": "901831D53C4DC3DD7C409D3FED3EA8322E563A60A5131DC4440619B369658114",
+        "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+        "shared/network/packet_types.h": "264DE4962237EA967BE23B2C265793F72E3248C8064EDC13AFBB7BF8410CD99B",
+        "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E"
+      }
+    },
+    "merge": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\final-merge-002\\result.json",
+      "SHA256": "385CDC2C17742E39582CDDFEA6200A21C539548CB6784C0B2B3EFEF1BA7698C2",
+      "Assertions": 8,
+      "Passed": true,
+      "ProductionHashes": {
+        "shared/network/pickup_lifecycle.h": "F87B80C042B82CC7F5C65C825821302D710322AC836034E91D718B421DB954DD",
+        "shared/network/npc_sync.h": "431BE1E72CA8D9725E8D2DBA30D6F8140D9B51764FF96D749B5666D6FA20D61C",
+        "shared/network/packets/pickups.h": "901831D53C4DC3DD7C409D3FED3EA8322E563A60A5131DC4440619B369658114",
+        "shared/network/packet.h": "D793D33984FCAF8C5756414F82765C10552AB0FFCCF652590C57C21E59FDE750",
+        "shared/network/packet_types.h": "264DE4962237EA967BE23B2C265793F72E3248C8064EDC13AFBB7BF8410CD99B",
+        "third_party/serialize.h": "54D66ABAEEFD4CD5385D8A7B717BE8A1440DD32FFA7840856A0F09663EB3084E",
+        "client/src/CPickupSync.h": "9C7579063826FBF87694E56F9F3AE753E927A2989B87E4B056C568D5BD3F61C8",
+        "client/src/CPickupSync.cpp": "7540D3D24BEA53CC3E4E5BD2E0FC4063B13E05FD1B49C9099B14127169DB5CAB",
+        "client/src/CPickupSyncNative.cpp": "044DF8033F61BFCCB1EEEA1BEBB395F22754C4B6F848C37282B8874F8EDDE963",
+        "client/src/PickupNativeOutcome.h": "80D3A8DD00EA332436465F773D2757AEABB8CBDA9400E3CADBD449E93596E605",
+        "third_party/plugin-sdk/plugin_sa/game_sa/eWeaponType.h": "C7A3170581A559BD0D91B7410E91CFBDB4A2E27B77AA6B3AE99F43E994EEC182",
+        "third_party/plugin-sdk/plugin_sa/game_sa/CPickup.h": "EC567AE4C1DF89990570926633ACFC525753505ED3934F6498AE3CFA217CA4B1",
+        "third_party/plugin-sdk/plugin_sa/game_sa/CWeaponInfo.h": "94DAB0E01E8D6423582B3B10C1B8B7B47B11C9F0F0406DC46914CF420EFEC4B0",
+        "third_party/plugin-sdk/plugin_sa/game_sa/ePedType.h": "DEFCA649596BC035374417CB8F3B7914BB47D91070F17CC59A0DD4D0C89F7D40",
+        "shared/network/player_animation_sync.h": "101EF8C2B1683268A3642B8F20F7A31F6621C5FC145EA12F2456043E4DD73038"
+      }
+    }
+  },
+  "PrimaryAssertions": 3694,
+  "ExpectedMutations": {
+    "ordinal": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\final-ordinal-mutant-001\\result.json",
+      "SHA256": "DF15A8AA3482C37D1EBEF0A8D7355815652FE866E2B779A583D81BF15A05E024",
+      "ExpectedFailures": 29,
+      "CountedInPrimary": false
+    },
+    "metadata": {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\final-metadata-mutant-001\\result.json",
+      "SHA256": "D4E213D4225B3254B9E2846E9AEEA3A3DDF0E0FD1F9361E910398BB27174AE3F",
+      "ExpectedFailures": 5,
+      "CountedInPrimary": false
+    }
+  },
+  "SDKBuild": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-003\\build-result.json",
+    "SHA256": "02B8B6B313A0F2A01339201E8E97F29F3EE8244E7742DC5870A79173A83D3A09",
+    "Passed": true,
+    "Targets": {
+      "client": {
+        "Command": [
+          "C:\\Users\\Vu\\work\\gta-coop\\tools\\xmake\\xmake\\xmake.exe",
+          "build",
+          "-r",
+          "-j",
+          "4",
+          "client"
+        ],
+        "ExitCode": 0,
+        "TargetPath": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-003\\windows\\x86\\release\\CoopAndreasSA.dll",
+        "PCHPath": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-003\\.objs\\client\\windows\\x86\\release\\client\\src\\cxx\\stdafx.h_v143.pch",
+        "ObjectDir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-003\\.objs\\client",
+        "Log": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-003\\client-build.log",
+        "LogSHA256": "51121B8BBA43EDC1FD0030CAF4EC0B0C8EB978901D4308A8690FBD786B87B0CC",
+        "Bytes": 2543616,
+        "SHA256": "A639EDD5BB08D4B5EF30896390D659583983A162A8134CAB0A5599FF13854EC6"
+      },
+      "server": {
+        "Command": [
+          "C:\\Users\\Vu\\work\\gta-coop\\tools\\xmake\\xmake\\xmake.exe",
+          "build",
+          "-r",
+          "-j",
+          "4",
+          "server"
+        ],
+        "ExitCode": 0,
+        "TargetPath": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-003\\windows\\x86\\release\\server.exe",
+        "PCHPath": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-003\\.objs\\server\\windows\\x86\\release\\server\\src\\cxx\\stdafx.h_v143.pch",
+        "ObjectDir": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-003\\.objs\\server",
+        "Log": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-003\\server-build.log",
+        "LogSHA256": "6B2E030E945428D93F7EF8D6CB1488A829671B7B4831D471E27A022349939BA2",
+        "Bytes": 1577472,
+        "SHA256": "3C1B8F25C43D4D372953D0F583B34C45001114359D7F488097AF6C626CF7DD2E"
+      }
+    },
+    "ConfigPath": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.xmake\\windows\\x64\\xmake.conf"
+  },
+  "NativeBoundary": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\native-boundary-001\\result.json",
+    "SHA256": "CDF38C76DAAEEA0E4C8C20E70281B8A1A867BE8375AB8F2C816A90643B10E3D4",
+    "DiskOnly": true,
+    "NativeExecution": false
+  },
+  "UntouchedInputs": {
+    "shared/config.h": "8F27EC79C4508EB5D64E9250C5AEE4BCA30E07D8F211B311AF2C206FB7A36833",
+    "shared/network/packet_types.h": "264DE4962237EA967BE23B2C265793F72E3248C8064EDC13AFBB7BF8410CD99B",
+    "client/src/CNetworkPedManager.cpp": "5B18DC88D10071023D26D0857DC1CAF11A93EB6C3434310BFF4C38D97033445A",
+    "client/src/CNetworkPedManager.h": "B5279EE62084DBB2A25FAF7187EAD08F93D6C3C9C93F208FC9A43EB02BDDB938",
+    "server/src/CNetworkPedManager.cpp": "090CE15F9A2858E25AB00C40B88E10E66D1C1A011DCB00130928AF7B5948009D",
+    "client/src/Hooks/PlayerHooks.cpp": "74EC42431DA1B8B1947D129838FAFC311A0F792A5AC2C05D04B5E5619E075C7B",
+    "client/src/CSessionSync.cpp": "2841A38FA8153D04571A8E882EF03A76536CE8405CDEFAEF8E87008701FD4B9A",
+    "client/src/CCutsceneVotes.cpp": "56B6892BA1E46C6203A7EB263068E751AC9FAFF158D9494BB4A4346143543531"
+  },
+  "ProtocolIntegrationRequired": "Root-owned matching 0.8.0-alpha; adds output ordinal on existing pickup packets, unchanged names/channels",
+  "Wire": "Legacy cop origin field extends to ordinary NPC; adds ordinal range 1..20, weapons1..13/cash14..20. All origin fields retain exact producer incarnation and immutable NPC generation/epoch/sealed sequence.",
+  "Scope": "Supported random-created exterior NPC firearm models346-353/355-358, type4; original native-eligible money1212/type8, max7 wads. Stock cop model restriction preserved, no cop/medic/fireman money.",
+  "ConcreteReproductions": [
+    {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\merge-red-001\\result.json",
+      "ExpectedFailures": 3,
+      "Finding": "Actual successful native same-handle TryToMerge bypasses Generate/publication and changes potential held metadata"
+    },
+    {
+      "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\persistent-red-001\\result.json",
+      "ExpectedFailures": 1,
+      "Finding": "Native type4 merge occurs before persistent flag selection; suppressing it altered unsupported type22 path"
+    }
+  ],
+  "PreservedFailedCheckpoint": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\.cache\\npc-drops\\x86-final-001\\build-result.json",
+    "Reason": "Client passed; server failed Windows near macro. Corrected and superseded, never counted as passing."
+  },
+  "Limitations": [
+    "Headless recorded doubles and native disk/source evidence do not prove gameplay visibility or execution.",
+    "Unconfirmed/nonowner/recycled NPC, mission-created actors, interiors, player deaths and unsupported/persistent/melee/thrown/heavy pickups are excluded.",
+    "Native quantity is captured and bounded from authenticated producer; server has no native inventory oracle or invented task history.",
+    "No full native merge arithmetic: narrow supported death-context merge is declined before mutation, original caller generates independent native output; other merges remain native with prior conservative retirement.",
+    "Pre-apply terminal declines retire without benefit; model/pool absence stays inert where exact identity survives.",
+    "Root owns combined protocol/build/package and independent review; user owns runtime test."
+  ],
+  "HumanChecklist": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\npc-drop-sharing\\tests\\NPC_DROP_SHARING.md",
+    "SHA256": "5C4A82B6442E7757ACD649495302FF7590E925072CDD79CD4E639D2BAE3D4A97"
+  }
+}
