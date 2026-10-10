@@ -1,0 +1,90 @@
+{
+  "READY": true,
+  "Passed": true,
+  "SourceCommit": "7938f8d64245356d47f8f45dd9a0a3ce568dcddf",
+  "BaseCommit": "17cca42a9028f2acd87ad6123a7c068890b88c3d",
+  "ProductionChangedFiles": [
+    "client/src/CCutsceneVotes.cpp"
+  ],
+  "ProductionDiskHashes": {
+    "client/src/CCutsceneVotes.cpp": "6F339846785ED385B06ABF4C0FF94782185A95707BE0FA4E9C336290F70992F1"
+  },
+  "ProductionGitBlobHashes": {
+    "client/src/CCutsceneVotes.cpp": "6A231B76E1E7E6F87539370AF3BE9AA8ABCF8A40249F09CA0129964979E05794"
+  },
+  "UnchangedQuorumWireVersionAndJoinAdapter": {
+    "shared/network/cutscene_votes.h": "4F38508D7BC9B1C2217ACA00A8D18C6AF7323DF690F9BF8E4CC8385993A6E4F3",
+    "shared/network/packets/cutscene.h": "483BD671A3EA475245147C8F2555EA1D1621FE5D7FC23262E30975DC19481848",
+    "shared/config.h": "8F27EC79C4508EB5D64E9250C5AEE4BCA30E07D8F211B311AF2C206FB7A36833",
+    "client/src/PacketHandlers/peds.cpp": "B52FC8886527234169DFF32C7B498CC50A771219B2D4C6C1590DF5E419231F26"
+  },
+  "SupportHashes": {
+    "native_doubles.h": "445905a45974c568ee5ccb309b851f7e0c6a39d89e0ecdbdd6dd292721208b05",
+    "cutscene_votes_tests.cpp": "b7e67cc5cd5d639d9294778fb3b34990d1589617de05ff53f4637f4954b4e692",
+    "cutscene_packet_tests.cpp": "885b352fca4d394cc1106d0749b3563519285ea5ff460117ed9b0bb452299269",
+    "cutscene_client_tests.cpp": "a0973f4804d2e95d4a6a943f5749379c29669e22f9e8f614f12fa045cb15db5d",
+    "cutscene_server_tests.cpp": "8d1b51baacfcfc56038dd000c24291b35af3fbb069c9a5be898cf94ac1f54d35",
+    "cutscene_migration_tests.cpp": "2d0d628eff039448ca080ef717189688274902ea14bb11e4e74f8b6d97d171fe",
+    "cutscene_relay_tests.cpp": "370b9164c04d2bf9849cc1d6c0162acfafdd6e4fb5782f58cb1f91fc1168c7db",
+    "cutscene_input_tests.cpp": "c423442c9bb7597190bc1315f3c1aac000c7d2f2d37ec514b472aa92c3033bf2"
+  },
+  "RunnerSHA256": "CE648560B73C00C37D25CA779708EEDBF63663133FFA545DD327D93135EBDBE1",
+  "NativeInput": {
+    "ExeSHA256": "a559aa772fd136379155efa71f00c47aad34bbfeae6196b0fe1047d0645cbd26",
+    "SpaceCell": "0xB731E8",
+    "NewKeyboardReference": "0xB73190",
+    "KeyboardABI": "SDK class size 0x270; standardKeys offset 0x18; WORD cell 32 at offset 0x58",
+    "Foreground": "DWORD 0xC920EC, nonzero test at native helper 0x746070",
+    "FallbackQuery": "bool __cdecl() 0x4D5D10, never read in managed scenes",
+    "RawNativeProofSHA256": "9FBAD920ADDC5CB913722696071EB196F7591B7648870B231B5DF3E2A539AC6B"
+  },
+  "Assertions": 12396,
+  "SuiteCounts": {
+    "cutscene_votes_tests": 60,
+    "cutscene_packet_tests": 12206,
+    "cutscene_client_tests": 22,
+    "cutscene_server_tests": 27,
+    "cutscene_migration_tests": 15,
+    "cutscene_relay_tests": 13,
+    "cutscene_input_tests": 53
+  },
+  "OtherKeyCases": 255,
+  "Red": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\space-skip-vote\\.cache\\cutscene-headless\\space-baseline-final-001\\result.json",
+    "SHA256": "5DFB2DC4CB59BFF716B14EA1B92B4FB5D766048FD1BF625FC7BCDA8B2D1A18B2",
+    "AssertionCount": 53,
+    "Failures": 41,
+    "ExactInputTestMatchesGreen": true,
+    "NonshippingBaselineSnapshot": true
+  },
+  "Green": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\space-skip-vote\\.cache\\cutscene-headless\\space-green-001\\result.json",
+    "SHA256": "5366A0961A8B1A903C58B28C71460332AEF3638A0436DC306F87960C4C71799A",
+    "InputsStable": true
+  },
+  "SDKClientBuild": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\space-skip-vote\\.cache\\space-sdk-build-001\\result.json",
+    "SHA256": "0720E928CA25097F4D6FF913D3EE189DE37D2CEE0049116D19F9DD4EC40BCDC4",
+    "ClientSHA256": "E575A7753A4CD3A51C823C7C9FDF723421D3F5BF5E1FBB4B1C9BD558E247D331",
+    "SourceCommit": "7938f8d64245356d47f8f45dd9a0a3ce568dcddf",
+    "InputsStable": true,
+    "GTA_SA_DIR_Cleared": true,
+    "XMAKE_CONFIGDIR": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\space-skip-vote\\.cache\\space-sdk-build-001\\config",
+    "BuildExitCode": 0,
+    "BuildLog": "C:\\Users\\Vu\\work\\gta-coop\\worktrees\\space-skip-vote\\.cache\\space-sdk-build-001\\client.log",
+    "BuildLogSHA256": "4B4B2092207E5863F3F140F36D751F54B36B6814B7B0022E3B2DAD002AB3F5CE"
+  },
+  "IndependentReview": {
+    "Path": "C:\\Users\\Vu\\work\\gta-coop\\checks\\services-shops-drops-review\\space-001\\result.json",
+    "SHA256": "E918567369520CDD593D4F9BAF6F898285F85C1CAD0486C5D21579882C37C0C0",
+    "AdditionalChecks": 14
+  },
+  "PreservedSetupFailures": {
+    "space-red-001": "Foreground proof assertion assumed direct byte read; stopped before service tests",
+    "space-red-002": "Foreground helper MOV opcode/width assumption; stopped before service tests",
+    "space-red-003": "Baseline assertions followed by new-fixture empty-vector access, not a game crash",
+    "space-red-004": "Baseline assertions include fallback counting and pre-ack overlay fixture expectations; final matched tests corrected both"
+  },
+  "Ownership": "CCutsceneVotes.cpp and tests/cutscene only. No SDK/shared quorum/config/wire/shop/pickup edits; no game or staging actions.",
+  "NativeRuntimeValidated": false
+}
