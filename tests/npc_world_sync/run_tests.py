@@ -23,12 +23,12 @@ def block(text,pattern):
   if not depth:return text[m.start():end+2]
  raise ValueError('Unbalanced extraction')
 def main():
- p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client','passenger','police','noncop','deathserver'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');p.add_argument('--mutate-death-producer',action='store_true');p.add_argument('--mutate-replica-loot',action='store_true');p.add_argument('--null-cop',action='store_true');p.add_argument('--native-source',type=Path,default=WORKSPACE/'gta-reversed/source/game_sa/Entity/Ped/CopPed.cpp');a=p.parse_args();out=a.output.resolve()
+ p=argparse.ArgumentParser();p.add_argument('--output',type=Path,required=True);p.add_argument('--suite',choices=['codec','server','client','passenger','police','noncop','moveabi','deathserver'],default='codec');p.add_argument('--mutate-generation',action='store_true');p.add_argument('--mutate-replay-time',action='store_true');p.add_argument('--mutate-death-producer',action='store_true');p.add_argument('--mutate-replica-loot',action='store_true');p.add_argument('--supported-exe',type=Path,default=WORKSPACE/'game-lab/gta_sa.exe');p.add_argument('--null-cop',action='store_true');p.add_argument('--native-source',type=Path,default=WORKSPACE/'gta-reversed/source/game_sa/Entity/Ped/CopPed.cpp');a=p.parse_args();out=a.output.resolve()
  if out.exists() or ROOT/'.cache' not in out.parents:p.error('Fresh worktree .cache directory required')
- inputs=INPUTS+(SERVER_INPUTS if a.suite in ('server','deathserver') else CLIENT_INPUTS if a.suite in ('client','passenger','police','noncop') else [])
+ inputs=([SDK+'CPed.cpp'] if a.suite=='moveabi' else [])+INPUTS+(SERVER_INPUTS if a.suite in ('server','deathserver') else CLIENT_INPUTS if a.suite in ('client','passenger','police','noncop','moveabi') else [])
  out.mkdir(parents=True);before={n:sha(ROOT/n) for n in inputs}
- test_name='non_cop_death_tests.cpp' if a.suite=='noncop' else 'death_server_tests.cpp' if a.suite=='deathserver' else 'police_tests.cpp' if a.suite=='police' else 'server_tests.cpp' if a.suite in ('server','deathserver') else 'passenger_counterexamples.cpp' if a.suite=='passenger' else 'client_tests.cpp' if a.suite=='client' else 'tests.cpp'
- support=['run_tests.py',test_name]+(['server_doubles.h'] if a.suite in ('server','deathserver') else ['client_doubles.h'] if a.suite in ('client','passenger','police','noncop') else [])
+ test_name='move_animation_abi_tests.cpp' if a.suite=='moveabi' else 'non_cop_death_tests.cpp' if a.suite=='noncop' else 'death_server_tests.cpp' if a.suite=='deathserver' else 'police_tests.cpp' if a.suite=='police' else 'server_tests.cpp' if a.suite in ('server','deathserver') else 'passenger_counterexamples.cpp' if a.suite=='passenger' else 'client_tests.cpp' if a.suite=='client' else 'tests.cpp'
+ support=['run_tests.py',test_name]+(['server_doubles.h'] if a.suite in ('server','deathserver') else ['client_doubles.h'] if a.suite in ('client','passenger','police','noncop','moveabi') else [])
  support_before={n:sha(HERE/n) for n in support}
  for n in inputs:
   target=out/'source'/n;target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(ROOT/n,target)
@@ -64,7 +64,7 @@ def main():
   (out/'server_factory.inc').write_text('static uint8_t packetBuffer[10*1024];\n'+block(read('server/src/CPacketFactory.cpp'),r'static void BuildPacketStream\([^{}]*\{'))
   (out/'client_buffer.inc').write_text(block(read('client/src/CPacketBuffer.cpp'),r'void CPacketBuffer::Receive\([^{}]*\{'))
   shutil.copyfile(HERE/'server_doubles.h',out/'server_doubles.h')
- if a.suite in ('client','passenger','police','noncop'):
+ if a.suite in ('client','passenger','police','noncop','moveabi'):
   fragments += [block(read(SDK+'eCopType.h'),r'enum\s+(?:PLUGIN_API\s+)?eCopType\b[^{}]*\{')]
   (out/'extracted_packet.h').write_text('\n'.join(fragments))
   for name,path in [('client_ped_decl','client/src/CNetworkPed.h'),('client_manager_decl','client/src/CNetworkPedManager.h')]:
@@ -79,18 +79,34 @@ def main():
   methods += [block(mgr,re.escape(signature)+r'[^{}]*\{') for signature in ('CNetworkPed* CNetworkPedManager::GetPed(int','CNetworkPed* CNetworkPedManager::GetPed(CEntity*','void CNetworkPedManager::Add(','void CNetworkPedManager::Remove(','void CNetworkPedManager::HandlePedDestruction(','void CNetworkPedManager::RemoveInvalidPeds()','unsigned char CNetworkPedManager::AddToTempList(','bool CNetworkPedManager::AcceptSpawn(','bool CNetworkPedManager::AcceptRemoval(','bool CNetworkPedManager::PinGangWarPedToHost(','void CNetworkPedManager::RequestReset()','void CNetworkPedManager::ProcessPendingReset()','void CNetworkPedManager::Clear()','void CNetworkPedManager::Init()','bool CNetworkPedManager::NativeReady()','bool CNetworkPedManager::GetOwnerDeathIdentity(','bool CNetworkPedManager::Defer(','void CNetworkPedManager::ProcessPendingNative()')]
   for packet in ('PED_SPAWN','PED_CONFIRM','PED_REMOVE','ASSIGN_PED','PED_ONFOOT','PED_DRIVER_UPDATE','PED_PASSENGER_UPDATE','PED_REPLAY','PED_PIN','PED_DEATH'):
    methods += [block(handlers,r'PACKET_HANDLER\(\s*ePacketType::'+packet+r'\b[^{}]*\{')]
+  if 'void SetNPCMoveAnimation(' in handlers:
+   methods.insert(0,block(handlers,r'void SetNPCMoveAnimation\([^{}]*\{'))
   prefix=includes_only(mgr[:mgr.index('CNetworkPed* CNetworkPedManager::GetPed(int')])
   (out/'client_functions.inc').write_text(prefix+'\n\n'+'\n\n'.join(methods))
   shutil.copyfile(HERE/'client_doubles.h',out/'client_doubles.h')
   hook=read('client/src/Hooks/PedHooks.cpp');(out/'cop_control.inc').write_text(block(hook,r'void PedHooks::ProcessCopControl\([^{}]*\{'))
  native_hashes={}
- if a.suite in ('client','passenger','police','noncop'):
+ if a.suite=='moveabi':
+  import struct
+  exe=a.supported_exe.resolve();native_hashes[str(exe)]=sha(exe)
+  assert sha(exe)=='A559AA772FD136379155EFA71F00C47AAD34BBFEAE6196B0FE1047D0645CBD26'
+  disk=exe.read_bytes();pe=struct.unpack_from('<I',disk,0x3c)[0];count=struct.unpack_from('<H',disk,pe+6)[0];opsize=struct.unpack_from('<H',disk,pe+20)[0];imagebase=struct.unpack_from('<I',disk,pe+52)[0];sections=[struct.unpack_from('<8sIIII',disk,pe+24+opsize+40*i) for i in range(count)]
+  def offset(va):
+   for _,vsz,rva,rawsize,raw in sections:
+    if rva<=va-imagebase<rva+max(vsz,rawsize):return raw+va-imagebase-rva
+   raise ValueError(va)
+  tables={name:list(struct.unpack_from('<26I',disk,offset(va))) for name,va in [('Civilian',0x86C0A8),('Cop',0x86C120),('Base',0x86C358)]}
+  assert all(t[23]==0x5E4A00 and t[24]==0x5D5730 for t in tables.values())
+  (out/'disk_vtables.h').write_text('\n'.join('static constexpr uint32_t k'+name+'Table[26]={'+','.join(hex(v) for v in values)+'};' for name,values in tables.items()))
+  (out/'disk-vtable-proof.json').write_text(json.dumps({'ExeSHA256':sha(exe),'Tables':tables,'SetMoveAnimPrefix':disk[offset(0x5E4A00):offset(0x5E4A00)+12].hex()},indent=2))
+  (out/'sdk_move_anim.inc').write_text(block(read(SDK+'CPed.cpp'),r'\nvoid CPed::SetMoveAnim\([^{}]*\{'))
+ if a.suite in ('client','passenger','police','noncop','moveabi'):
   reference=a.native_source.resolve();native_hashes[str(reference)]=sha(reference)
   shutil.copyfile(reference,out/'cop_native_source.cpp')
   native=(out/'cop_native_source.cpp').read_text(encoding='utf-8-sig')
   (out/'cop_native_models.inc').write_text(block(native,r'eModelID CCopPed::GetPedModelForCopType\([^{}]*\{')+'\n'+block(native,r'eModelID ResolveModelForCopType\([^{}]*\{'))
  shutil.copyfile(HERE/test_name,out/'tests.cpp')
- cmd=['cl.exe','/nologo','/std:c++17','/EHsc','/W4','/DNDEBUG','/DNOMINMAX','/DCOOP_CLIENT' if a.suite in ('client','passenger','police','noncop') else '/DCOOP_SERVER','tests.cpp','/I'+str(out/'source/shared'),'/I'+str(out/'source/third_party'),'/Fe:tests.exe','/Fo:tests.obj']
+ cmd=['cl.exe','/nologo','/std:c++17','/EHsc','/W4','/DNDEBUG','/DNOMINMAX','/DCOOP_CLIENT' if a.suite in ('client','passenger','police','noncop','moveabi') else '/DCOOP_SERVER','tests.cpp','/I'+str(out/'source/shared'),'/I'+str(out/'source/third_party'),'/Fe:tests.exe','/Fo:tests.obj']
  env=r'C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvarsall.bat'
  (out/'compile.cmd').write_text('@echo off\ncall "'+env+'" x64_x86 > environment.log 2>&1\nif errorlevel 1 exit /b 1\n'+subprocess.list2cmdline(cmd)+'\n')
  processEnv=os.environ.copy();processEnv.pop('GTA_SA_DIR',None)

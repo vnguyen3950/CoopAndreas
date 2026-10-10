@@ -55,7 +55,13 @@ public:
     CPed(int type=PED_TYPE_CIVMALE,int model=MODEL_MALE01):m_nPedType(type),m_nModelIndex(model){++nativeCreates;}
     ~CPed();bool IsPlayer(){return m_nPedType<4;}bool IsVTableValid(){return true;}
     CVector&GetPosition(){return matrix.pos;}void SetPosn(CVector p){matrix.pos=p;}void SetOrientation(float,float,float){}void SetCharCreatedBy(int c){m_nCreatedBy=c;}
-    void SetModelIndex(int model){++copModelWrites;m_nModelIndex=model;}void SetPedState(ePedState state){m_ePedState=state;}void SetMoveState(eMoveState){}void SetMoveAnim(){}
+    void SetModelIndex(int model){++copModelWrites;m_nModelIndex=model;}void SetPedState(ePedState state){m_ePedState=state;}void SetMoveState(eMoveState){}
+#ifdef NPC_SDK_MOVE_ANIM_TEST
+    void SetMoveAnim();
+#else
+    void SetMoveAnim(){}
+#endif
+
     void Remove(){}Weapon&GetWeapon(){return m_aWeapons[m_nActiveWeaponSlot];}
 };
 class CCopPed:public CPed {public:static void*operator new(size_t n)noexcept{return copAllocationFails?nullptr:std::malloc(n);}static void operator delete(void*p){std::free(p);}static eModelID GetPedModelForCopType(eCopType);CCopPed(eCopType type);};
@@ -91,7 +97,11 @@ struct CAutoPilot{};struct CRadar {static void ClearBlipForEntity(int,int){}};st
 namespace Commands {constexpr int WARP_CHAR_FROM_CAR_TO_COORD=1;}
 namespace plugin {template<int Op,class...A>void Command(A...){}}
 static int baseCopControls=0,ownerCopControls=0;
-namespace plugin {template<int Address,class...A>void CallMethod(A...){if(Address==0x5E8CD0)++baseCopControls;if(Address==0x5DE160)++ownerCopControls;}}
+static int nativeMoveCalls=0,sdkSaveCalls=0;static CPed*lastNativeMovePed=nullptr;
+namespace plugin {template<int Address,class P>void CallMethod(P ped){if(Address==0x5E8CD0)++baseCopControls;if(Address==0x5DE160)++ownerCopControls;if(Address==0x5E4A00){++nativeMoveCalls;lastNativeMovePed=ped;}}}
+#ifdef NPC_SDK_MOVE_ANIM_TEST
+#include "sdk_move_anim.inc"
+#endif
 struct PedHooks {static void ProcessCopControl(CCopPed*);static inline char ms_aszLoadedSpecialModels[10][8]{};};
 struct Phase {std::vector<std::function<void()>>callbacks;template<class T>void operator+=(T callback){callbacks.emplace_back(callback);}void Fire(){for(auto&callback:callbacks)callback();}};
 struct Event {Phase before,after;};namespace Events {static Event initScriptsEvent,processScriptsEvent;}static Event gameShutdownEvent;

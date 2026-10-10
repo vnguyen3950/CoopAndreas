@@ -4,6 +4,15 @@
 #include <CCarEnterExit.h>
 #include <CTaskSimpleCarSetPedInAsPassenger.h>
 
+namespace {
+void SetNPCMoveAnimation(CPed* ped)
+{
+    // Supported 1.0 US native thiscall. The SDK's slot 24 is CPed::Save;
+    // movement animation occupies slot 23 in the native NPC vtables.
+    plugin::CallMethod<0x5E4A00, CPed*>(ped);
+}
+}
+
 PACKET_HANDLER(ePacketType::PED_SPAWN, Packets::Peds::PedSpawn* pPedSpawn)
 {
 #ifdef PACKET_DEBUG_MESSAGES
@@ -144,7 +153,7 @@ PACKET_HANDLER(ePacketType::PED_ONFOOT, Packets::Peds::PedOnFoot* pPedOnFoot)
     pNetworkPed->m_vecVelocity = pPedOnFoot->velocity;
     pNetworkPed->m_nMoveState = pNetworkPed->m_replicaDeath ? PEDMOVE_STILL : pPedOnFoot->moveState;
     if (!pNetworkPed->m_replicaDeath) {
-        pPed->SetMoveState(pPedOnFoot->moveState); pPed->SetMoveAnim();
+        pPed->SetMoveState(pPedOnFoot->moveState); SetNPCMoveAnimation(pPed);
     }
 
     if (CUtil::IsDucked(pPed) != pPedOnFoot->bDucked)
