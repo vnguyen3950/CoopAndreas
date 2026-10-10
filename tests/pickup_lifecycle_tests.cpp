@@ -94,6 +94,31 @@ int main(){
   if(mutate==3)bad.ammo=16;if(mutate==4)bad.type=22;if(mutate==5)bad.model=334;
   expect(!bad.ValidMetadata(),"Malformed seal, amount, persistent or melee cop metadata is rejected");
  }
+ for(int ordinal=1;ordinal<=MaxDeathOutputs;++ordinal){
+  auto item=cop;item.cop.ordinal=uint8_t(ordinal);item.creation=item.cop.sequence=uint32_t(ordinal);
+  item.type=ordinal<=MaxDeathWeapons?4:8;item.model=ordinal<=MaxDeathWeapons?346:1212;item.ammo=ordinal<=MaxDeathWeapons?15:9365;
+  expect(item.ValidMetadata(),"Every bounded native weapon/money ordinal is accepted by actual metadata validator");
+  copCreate.item=item;copCreate.sequence=ordinal;Roundtrip(copCreate);
+  std::array<uint32_t,512>words{};serialize::WriteStream write(reinterpret_cast<uint8_t*>(words.data()),sizeof(words));
+  static_cast<Packet&>(copCreate).SerializeWrite(write);write.Flush();Packets::Pickups::Action restored;
+  serialize::ReadStream stream(reinterpret_cast<uint8_t*>(words.data()),write.GetBytesProcessed());static_cast<Packet&>(restored).SerializeRead(stream);
+  expect(restored.item.cop.ordinal==ordinal&&restored.item.ammo==item.ammo&&restored.item.cop.producerGeneration==item.cop.producerGeneration&&SameSeal(restored.item.cop.death,item.cop.death),"Real codec preserves exact ordinal, producer incarnation, seal and captured amount");
+ }
+ for(int model:{346,347,348,349,350,351,352,353,355,356,357,358}){
+  auto item=cop;item.model=model;item.ammo=DeathWeaponLimit(model);expect(item.ValidMetadata(),"Verified supported firearm native limit accepted");
+  ++item.ammo;expect(!item.ValidMetadata(),"Above-native firearm bound rejected by actual validator");
+ }
+ for(int kind=0;kind<7;++kind){auto item=cop;
+  if(kind==0)item.cop.ordinal=0;if(kind==1)item.cop.ordinal=21;
+  if(kind==2){item.cop.ordinal=14;item.type=8;item.model=1212;item.ammo=9366;}
+  if(kind==3){item.cop.ordinal=1;item.type=8;item.model=1212;}
+  if(kind==4){item.cop.ordinal=14;item.type=4;}
+  if(kind==5)item.position.x=std::numeric_limits<float>::quiet_NaN();
+  if(kind==6)item.cop.death.epoch=0;
+  expect(!item.ValidMetadata(),"Malformed ordinal/kind/quantity/position/death rejected");
+  Packets::Pickups::Action bad=copCreate;bad.item=item;serialize::MeasureStream measure;
+  expect(!static_cast<Packet&>(bad).SerializeMeasure(measure),"Actual writer rejects malformed origin metadata");
+ }
  hello.position.y=std::numeric_limits<float>::infinity();serialize::MeasureStream measure;
  expect(!static_cast<Packet&>(hello).SerializeMeasure(measure),"Invalid finite envelope fails actual writer before native calls");
  std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;

@@ -4,6 +4,10 @@
 #include "pickup_native_merge.inc"
 #include "pickup_native_hooks.inc"
 #include <cstring>
+// Model-index values bind the ordinary gate fixture; the predicate body itself
+// is extracted unchanged from native Pickup.cpp and disk branches corroborate it.
+constexpr int MI_PICKUP_SAVEGAME=1277,MI_PICKUP_2P_KILLFRENZY=1313,MI_PICKUP_2P_COOP=1314;
+#include "pickup_native_touch.inc"
 static unsigned checks=0,failures=0;
 static void expect(bool value,const char*text){++checks;if(!value){++failures;std::cout<<"FAIL: "<<text<<'\n';}}
 static CObject object;
@@ -23,7 +27,7 @@ static void CopCases(){
     auto method=&CPed::RecordedWeaponDrops;static_assert(sizeof(method)==sizeof(weaponDropsOriginal));std::memcpy(&weaponDropsOriginal,&method,sizeof method);
     generateOriginal=reinterpret_cast<void*>(&RecordedGenerate);
     auto prepare=[&](int owner){Setup();CNetworkPlayerManager::m_nMyId=owner;CLocalPlayer::m_bIsHost=owner==0;
-        hasGrant=false;view.rows={};mappings={};capturedDeaths={};copContext={};deathIdentityAvailable=true;deathIdentity={9,2,6};
+        hasGrant=false;view.rows={};mappings={};capturedDeaths={};capturedKinds={};copContext={};deathIdentityAvailable=true;deathIdentity={9,2,6};
         CPools::pedRefs={{cop.poolRef,&cop}};nativeWeaponDropCalls=generated=0;dropIndex=2;replicaGenerate={};
         recordedWeaponDrops=[](CPed*){GenerateHook({},346,4,15,0,false,nullptr);};};
     for(int owner:{0,1}){
@@ -31,7 +35,7 @@ static void CopCases(){
         expect(nativeWeaponDropCalls==1&&CopCreates()==1&&mappings[2].copItem.ammo==15,"Actual original native hook captures one unchanged cop quantity for either host or guest producer");
         unsigned ambient=0;for(const auto&p:GetPacketFactory().sent){auto*a=dynamic_cast<const Packets::Pickups::Action*>(p.get());if(a&&a->operation==Packets::Pickups::Operation::Create&&!a->item.cop.Present())++ambient;}
         expect(ambient==0,"A host cop-origin hook never also publishes ambient Create");
-        dropIndex=3;WeaponDropsHook(&cop,nullptr);expect(CopCreates()==1&&nativeRemoves==1,"Repeated native death context cannot publish another manifest for its immutable seal");
+        dropIndex=3;WeaponDropsHook(&cop,nullptr);expect(CopCreates()==1&&nativeWeaponDropCalls==1,"Repeated native death context cannot publish another manifest for its immutable seal");
     }
     prepare(0);deathIdentityAvailable=false;WeaponDropsHook(&cop,nullptr);
     expect(nativeWeaponDropCalls==0&&generated==0&&GetPacketFactory().sent.empty(),"Rejected replica/nonowner cop cannot execute native loot or fall back to host publication");
@@ -60,6 +64,53 @@ static void CopCases(){
         CPickupSync::Removed(&CPickups::aPickUps[4]);expect(mappings[4].id==55,"Replica cleanup cannot publish original producer removal");
     }
     replicaGenerate={};CNetworkPlayerManager::m_nMyId=0;CLocalPlayer::m_bIsHost=true;localLife.generation=10;
+}
+static void GeneralDeathCases(){
+    auto method=&CPed::RecordedMoneyDrops;std::memcpy(&moneyDropsOriginal,&method,sizeof method);
+    for(int pedType:{PED_TYPE_CIVMALE,PED_TYPE_CIVFEMALE,PED_TYPE_GANG1,PED_TYPE_GANG2})for(int owner:{0,1}){
+        Setup();hasGrant=false;view.rows={};mappings={};capturedDeaths={};capturedKinds={};
+        CPed ped;ped.m_nPedType=pedType;ped.m_nModelIndex=pedType>=PED_TYPE_GANG1?102:7;
+        CPools::pedRefs={{ped.poolRef,&ped}};CNetworkPlayerManager::m_nMyId=owner;CLocalPlayer::m_bIsHost=owner==0;
+        nativeWeaponDropCalls=nativeMoneyDropCalls=generated=0;generateOriginal=reinterpret_cast<void*>(&RecordedGenerate);
+        recordedWeaponDrops=[](CPed*){dropIndex=2;GenerateHook({},346,4,15,0,false,nullptr);dropIndex=3;GenerateHook({},355,4,40,0,false,nullptr);};
+        recordedMoneyDrops=[](CPed*){for(int i=0;i<7;++i){dropIndex=4+i;GenerateHook({float(i),0,0},1212,8,uint32_t(20+i),0,false,nullptr);}};
+        WeaponDropsHook(&ped,nullptr);MoneyDropsHook(&ped,nullptr);
+        expect(CopCreates()==9&&nativeWeaponDropCalls==1&&nativeMoneyDropCalls==1,"Host or guest original civilian/gang producer publishes two captured firearms plus seven native money wads");
+        uint32_t expectedOrdinal=1;unsigned cash=0;bool identities=true;
+        for(const auto&packet:GetPacketFactory().sent)if(auto*a=dynamic_cast<Packets::Pickups::Action*>(packet.get()))if(a->operation==Packets::Pickups::Operation::Create&&a->item.cop.Present()){
+            identities&=a->item.owner==owner&&a->item.cop.producerGeneration==10&&PickupSync::SameSeal(a->item.cop.death,deathIdentity);
+            if(a->item.type==8){identities&=a->item.cop.ordinal==14+cash&&a->item.ammo==20+cash;++cash;}
+            else identities&=a->item.cop.ordinal==expectedOrdinal++;
+        }
+        expect(identities&&cash==7,"Every captured output retains original exact seal/incarnation, native amount and unique kind ordinal");
+        WeaponDropsHook(&ped,nullptr);MoneyDropsHook(&ped,nullptr);
+        expect(CopCreates()==9&&generated==9&&nativeWeaponDropCalls==1&&nativeMoneyDropCalls==1,"Repeated owner death entries never rerun native routines or mint another ordinal");
+        // Produce an actual owner packet, then feed it unchanged to a different
+        // client's real service with native model/pool doubles.
+        Packets::Pickups::State state;state.reset=false;state.epoch=1;state.host=0;
+        for(const auto&packet:GetPacketFactory().sent)if(auto*a=dynamic_cast<Packets::Pickups::Action*>(packet.get()))if(a->operation==Packets::Pickups::Operation::Create&&a->item.type==8){state.row.item=a->item;break;}
+        state.row.item.id=71;state.row.item.epoch=1;state.row.item.revision=1;state.row.stage=PickupSync::Stage::Active;
+        const int remote=owner==0?1:0;CPickupSync::Reset();view.Reset(1,0);expectedHost=0;authenticated=true;connection=10;
+        CNetworkPlayerManager::m_nMyId=remote;CLocalPlayer::m_bIsHost=remote==0;localLife.generation=20;state.recipient={20,2,7,0,0};
+        replicaGenerate=[](CVector pos,uint32_t model,uint8_t type,uint32_t ammo){dropIndex=11;return RecordedGenerate(pos,model,type,ammo,0,false,nullptr);};
+        const auto beforeGenerated=generated;CPickupSync::Receive(state);CPickupSync::Process();
+        expect(generated==beforeGenerated+1&&mappings[11].replica&&!dropObject.m_nObjectFlags.bDoNotRender,"Actual foreign host/guest service renders captured money visibly without collecting it");
+        expect(nativeCalls==0&&nativeQueryFlags==0,"Replica visibility never substitutes a resource benefit or native query flag");
+        state.row.stage=PickupSync::Stage::Removed;state.row.reason=PickupSync::Reason::OwnerLeft;++state.row.item.revision;CPickupSync::Receive(state);CPickupSync::Process();
+        expect(CPickups::aPickUps[11].m_nPickupType==0,"Retained terminal state removes the visible foreign replica");
+        replicaGenerate={};CNetworkPlayerManager::m_nMyId=0;CLocalPlayer::m_bIsHost=true;
+    }
+    for(int kind:{0,1}){
+        Setup();hasGrant=false;view.rows={};mappings={};capturedDeaths={};capturedKinds={};CPed replica;
+        replica.m_nPedType=PED_TYPE_GANG1;replica.m_nModelIndex=102;CPools::pedRefs={{replica.poolRef,&replica}};
+        nativeWeaponDropCalls=nativeMoneyDropCalls=0;deathIdentityAvailable=false;
+        if(kind)MoneyDropsHook(&replica,nullptr);else WeaponDropsHook(&replica,nullptr);
+        expect(nativeWeaponDropCalls==0&&nativeMoneyDropCalls==0&&CopCreates()==0,"A generic tracked nonowner on host cannot fall back to ambient death creation");deathIdentityAvailable=true;
+    }
+    Setup();hasGrant=false;view.rows={};mappings={};capturedDeaths={};capturedKinds={};CPed cop;cop.m_nPedType=PED_TYPE_COP;
+    CPools::pedRefs={{cop.poolRef,&cop}};recordedMoneyDrops=[](CPed*){dropIndex=4;GenerateHook({},1212,8,100,0,false,nullptr);};MoneyDropsHook(&cop,nullptr);
+    expect(CopCreates()==0,"Even a contradictory money callback cannot advertise fabricated cop cash");
+    Setup();localLife.generation=10;hasGrant=false;view.rows={};mappings={};capturedDeaths={};capturedKinds={};
 }
 static unsigned Removes(){unsigned count=0;for(const auto&packet:GetPacketFactory().sent){const auto*p=dynamic_cast<const Packets::Pickups::Action*>(packet.get());
     if(p&&p->operation==Packets::Pickups::Operation::Remove&&p->reason==PickupSync::Reason::Ambiguous)++count;}return count;}
@@ -139,6 +190,13 @@ int main(){
         unsigned creates=0;for(const auto&packet:GetPacketFactory().sent){const auto*p=dynamic_cast<const Packets::Pickups::Action*>(packet.get());if(p&&p->operation==Packets::Pickups::Operation::Create)++creates;}
         expect(nativeRemoves==1&&creates==0,"Retired merged full pile is never automatically republished or re-reserved");
     }
-    HeldViewCases();CopCases();
+    for(int model:{346,347,348,349,350,351,352,353,355,356,357,358,1212,1240,1242}){
+        testPlayer.alive=true;testPlayer.missionChecks=0;testPlayer.CLocalPlayerHostForGate=false;
+        expect(ActualNativeTouch(model,&testPlayer,nullptr,0,0)&&testPlayer.missionChecks==0,"Actual native ordinary touch predicate does not call the host-only mission readiness gate");
+    }
+    for(int model:{MI_PICKUP_SAVEGAME,MI_PICKUP_2P_KILLFRENZY,MI_PICKUP_2P_COOP}){
+        testPlayer.missionChecks=0;expect(!ActualNativeTouch(model,&testPlayer,nullptr,0,0)&&testPlayer.missionChecks==1,"Actual special save/two-player gate remains native and denied");
+    }
+    HeldViewCases();CopCases();GeneralDeathCases();
     std::cout<<checks<<" assertions, "<<failures<<" failures\n";return failures?1:0;
 }

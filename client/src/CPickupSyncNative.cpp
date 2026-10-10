@@ -7,6 +7,7 @@ void*generateOriginal=nullptr;
 void*removeOriginal=nullptr;
 void*weaponDropsOriginal=nullptr;
 void*mergeOriginal=nullptr;
+void*moneyDropsOriginal=nullptr;
 using GenerateFn=int(__cdecl*)(CVector,uint32_t,uint8_t,uint32_t,uint32_t,bool,char*);
 using RemoveFn=void(__thiscall*)(CPickup*);
 using MergeFn=bool(__cdecl*)(CVector,eWeaponType,uint8_t,uint32_t,bool);
@@ -34,11 +35,17 @@ void __fastcall WeaponDropsHook(CPed*ped,void*){
     if(CPickupSync::BeginCopDrops(ped))reinterpret_cast<WeaponDropsFn>(weaponDropsOriginal)(ped);
     CPickupSync::EndCopDrops();
 }
+void __fastcall MoneyDropsHook(CPed*ped,void*){
+    if(CPickupSync::BeginMoneyDrops(ped))reinterpret_cast<WeaponDropsFn>(moneyDropsOriginal)(ped);
+    CPickupSync::EndCopDrops();
+}
 bool Calls(uintptr_t source,uintptr_t target){const auto*p=reinterpret_cast<const uint8_t*>(source);int32_t relative=0;std::memcpy(&relative,p+1,4);return p[0]==0xE8&&source+5+relative==target;}
 }
 void CPickupSync::NativeInit(){
     // Disk-verified supported executable A559AA... . Prefixes end at complete
     // instructions before relative transfers; the native Update entry stays callable.
+    const uint8_t money[]={0xE9,0x4B,0xB0,0x10,0x01};
+    const uint8_t moneyTarget[]={0x56,0x8B,0xF1};
     const uint8_t generate[]={0x8A,0x4C,0x24,0x14,0x80,0xF9,0x0D};
     const uint8_t remove[]={0x56,0x8B,0xF1,0x8B,0xC6};
     const uint8_t merge[]={0x8B,0x44,0x24,0x10,0x83,0xEC,0x1C};
@@ -47,15 +54,18 @@ void CPickupSync::NativeInit(){
         ||std::memcmp(reinterpret_cast<const void*>(0x4556C0),remove,sizeof remove)
         ||std::memcmp(reinterpret_cast<const void*>(0x4555A0),merge,sizeof merge)
         ||std::memcmp(reinterpret_cast<const void*>(0x4591D0),weapons,sizeof weapons)
+        ||std::memcmp(reinterpret_cast<const void*>(0x4590F0),money,sizeof money)
+        ||std::memcmp(reinterpret_cast<const void*>(0x1564140),moneyTarget,sizeof moneyTarget)
         ||!Calls(0x45902E,0x457410)||!Calls(0x459095,0x457410)){
         logger::warn("Ordinary pickup sharing disabled: native prefix/call mismatch");return;
     }
+    moneyDropsOriginal=reinterpret_cast<void*>(0x1564140); // Follow verified relative JMP; never trampoline-copy it.
     generateOriginal=Trampoline(0x456F20,sizeof generate);removeOriginal=Trampoline(0x4556C0,sizeof remove);
     weaponDropsOriginal=Trampoline(0x4591D0,sizeof weapons);mergeOriginal=Trampoline(0x4555A0,sizeof merge);
     if(!generateOriginal||!removeOriginal||!weaponDropsOriginal||!mergeOriginal){logger::warn("Ordinary pickup sharing disabled: trampoline allocation failed");return;}
     patch::RedirectJump(0x456F20,GenerateHook);patch::RedirectJump(0x4556C0,RemoveHook);
     patch::RedirectCall(0x45902E,UpdateHook);patch::RedirectCall(0x459095,UpdateHook);EnableNative();
-    patch::RedirectJump(0x4591D0,WeaponDropsHook);patch::RedirectJump(0x4555A0,MergeHook);
+    patch::RedirectJump(0x4590F0,MoneyDropsHook);patch::RedirectJump(0x4591D0,WeaponDropsHook);patch::RedirectJump(0x4555A0,MergeHook);
 }
 int CPickupSync::Generate(CVector position,uint32_t model,uint8_t type,uint32_t ammo,uint32_t money,bool empty,char*message){
     return generateOriginal?reinterpret_cast<GenerateFn>(generateOriginal)(position,model,type,ammo,money,empty,message)

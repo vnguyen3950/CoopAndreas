@@ -18,7 +18,8 @@ template<class Stream>bool Item(Stream&stream,PickupSync::Item&i) {
     bool cop=i.cop.Present();serialize_bool(stream,cop);
     if(cop){serialize_int(stream,i.cop.ped,0,254);serialize_int(stream,i.cop.death.generation,1,PickupSync::MaxCounter);
         serialize_int(stream,i.cop.death.epoch,1,PickupSync::MaxCounter);serialize_int(stream,i.cop.death.sequence,1,PickupSync::MaxCounter);
-        serialize_int(stream,i.cop.sequence,1,PickupSync::MaxCounter);serialize_int(stream,i.cop.producerGeneration,1,PickupSync::MaxCounter);}
+        serialize_int(stream,i.cop.sequence,1,PickupSync::MaxCounter);serialize_int(stream,i.cop.producerGeneration,1,PickupSync::MaxCounter);
+        serialize_int(stream,i.cop.ordinal,1,PickupSync::MaxDeathOutputs);}
     else if(Stream::IsReading)i.cop={};
     return Position(stream,i.position)&&i.ValidMetadata();
 }

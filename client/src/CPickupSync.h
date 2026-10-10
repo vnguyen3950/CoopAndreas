@@ -21,6 +21,7 @@ public:
     static bool Replay();
     static void EnableNative();
     static bool BeginCopDrops(CPed* ped);
+    static bool BeginMoneyDrops(CPed* ped);
     static void EndCopDrops();
     static bool SeparateDeathWeapon(int model,uint8_t type,uint32_t ammo);
 };

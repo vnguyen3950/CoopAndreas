@@ -25,9 +25,12 @@ struct CObject{int m_nAreaCode=0,m_nModelIndex=346;struct{bool bDoNotRender=fals
 struct CWeapon{eWeaponType m_eWeaponType=WEAPON_UNARMED;uint32_t m_nTotalAmmo=0,m_nAmmoInClip=0;};
 struct CPlayerData{uint32_t m_nLastHSMissileLOSTime=0;};
 class CPed;inline std::function<void(CPed*)>recordedWeaponDrops;inline unsigned nativeWeaponDropCalls=0;
-class CPed{public:int m_nPedType=PED_TYPE_CIVMALE,m_nModelIndex=280,m_nAreaCode=0,poolRef=20;bool poolValid=true;
+inline std::function<void(CPed*)>recordedMoneyDrops;inline unsigned nativeMoneyDropCalls=0;
+class CPed{public:int m_nPedType=PED_TYPE_CIVMALE,m_nModelIndex=280,m_nAreaCode=0,poolRef=20,m_nCreatedBy=1;bool poolValid=true;
+    void RecordedMoneyDrops(){++nativeMoneyDropCalls;if(recordedMoneyDrops)recordedMoneyDrops(this);}
     void RecordedWeaponDrops(){++nativeWeaponDropCalls;if(recordedWeaponDrops)recordedWeaponDrops(this);}};
-class CPlayerPed:public CPed{public:float m_fHealth=50,m_fArmour=0;bool alive=true,wants=true;CVector position;
+class CPlayerPed:public CPed{public:float m_fHealth=50,m_fArmour=0;bool alive=true,wants=true;unsigned missionChecks=0;bool CanPlayerStartMission(){++missionChecks;return CLocalPlayerHostForGate;}
+    inline static bool CLocalPlayerHostForGate=false;CVector position;
     CPlayerData data;CPlayerData*m_pPlayerData=&data;eWeaponType m_nDelayedWeapon=eWeaponType(55);uint32_t m_nDelayedWeaponAmmo=0;
     std::array<CWeapon,13>m_aWeapons;struct{bool bInVehicle=false;}m_nPedFlags;
     bool IsAlive(){return alive;}CVector GetPosition(){return position;}bool DoesPlayerWantNewWeapon(eWeaponType,bool){return wants;}};

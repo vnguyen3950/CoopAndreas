@@ -8,10 +8,10 @@
 #include "network/player_animation_sync.h"
 class CNetworkPlayer;
 class Packet;
-struct Factory{std::vector<std::unique_ptr<Packet>>sent;template<class T>void RegisterPacket(T*p){delete p;}void Send(Packet&,CNetworkPlayer*);};
+struct Factory{std::vector<std::unique_ptr<Packet>>sent;std::vector<CNetworkPlayer*>recipients;template<class T>void RegisterPacket(T*p){delete p;}void Send(Packet&,CNetworkPlayer*);};
 inline Factory&GetPacketFactory(){static Factory f;return f;}
 #include "network/packets/pickups.h"
-inline void Factory::Send(Packet&p,CNetworkPlayer*){sent.emplace_back(p.Clone());}
+inline void Factory::Send(Packet&p,CNetworkPlayer*recipient){sent.emplace_back(p.Clone());recipients.push_back(recipient);}
 constexpr int ENET_PEER_STATE_CONNECTED=5;struct PeerHandle{int state=5;};
 class CNetworkPlayer{public:PeerHandle*m_pPeer=nullptr;int m_iPlayerId=0,m_nVehicleId=-1;bool m_bIsHost=false;
     struct{uint32_t generation=10;}m_vitals;PlayerAnimation::Life life{10,2,7,0,0,10,true};bool known=true;};
@@ -22,7 +22,7 @@ struct CNetworkPlayerManager{inline static std::vector<CNetworkPlayer*>m_pPlayer
 struct CPlayerAnimationServer{static bool GetActorLife(const CNetworkPlayer*p,PlayerAnimation::Life&out){out=p->life;return p->known&&p->life.ready&&p->life.generation==p->m_vitals.generation;}};
 constexpr int PED_TYPE_COP=6;
 struct CVector{float x=0,y=0,z=0;};
-struct CNetworkPed{int m_nModelId=280,m_nPedType=PED_TYPE_COP;uint32_t m_generation=9,m_ownerEpoch=2;
+struct CNetworkPed{int m_nModelId=280,m_nPedType=PED_TYPE_COP,m_nCreatedBy=1;uint32_t m_generation=9,m_ownerEpoch=2;
     CNetworkPlayer*m_pSyncer=nullptr;NPCSync::Stamp m_deathStamp;CVector m_deathPosition,m_vecPos;
     uint8_t m_deathArea=0;uint32_t m_deathProducerGeneration=0;CNetworkPlayer*m_deathProducer=nullptr;};
 inline std::map<int,CNetworkPed*>nativePeds;inline bool sealAvailable=false;inline uint32_t serverTime=100;

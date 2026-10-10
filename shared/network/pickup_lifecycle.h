@@ -6,7 +6,7 @@
 
 namespace PickupSync {
 constexpr uint32_t MaxCounter=0x7fffffff;
-constexpr int MaxPlayers=8,MaxPickups=620;
+constexpr int MaxPlayers=8,MaxPickups=620,MaxDeathWeapons=13,MaxDeathMoney=7,MaxDeathOutputs=20;
 enum class Stage:uint8_t { Active,Reserved,Collected,Removed };
 enum class Outcome:uint8_t { Consumed,DeclinedBeforeApply,UnknownAfterApply };
 enum class Reason:uint8_t { None,Cleanup,Expired,OwnerLeft,CollectorLeft,Ambiguous,SceneEnded };
@@ -31,12 +31,21 @@ inline bool StockCopWeapon(int copModel,int weaponModel){
 // drops. The actual amount is captured unchanged from original native output.
 inline uint32_t StockCopAmmoLimit(int model){return model==346?15u:(model==352||model==353)?30u:model==356?40u:0u;}
 inline bool SameSeal(const NPCSync::Stamp&a,const NPCSync::Stamp&b){return a.State()&&b.State()&&a.generation==b.generation&&a.epoch==b.epoch&&a.sequence==b.sequence;}
-struct CopOrigin {
+// Receive bounds from A559 street-ammo table / native SHR. Capture quantities;
+// these limits never calculate a reward from the reversed implementation.
+inline uint32_t DeathWeaponLimit(int model){
+    switch(model){case 346:return 15;case 347:case 348:case 350:case 351:case 358:return 5;
+        case 349:return 7;case 352:case 353:return 30;case 355:case 356:return 40;case 357:return 10;default:return 0;}
+}
+inline bool OrdinaryNPC(int model,int type,int createdBy){return model>=0&&model<=299&&type>=4&&type<=31&&createdBy==1;}
+inline bool NativeMoneyNPC(int type){return type>=4&&type<=31&&type!=6&&type!=18&&type!=19;}
+struct CopOrigin { // Legacy field name on the existing pickup packets; now any ordinary NPC death.
     int ped=-1;
     NPCSync::Stamp death;
     uint32_t sequence=0,producerGeneration=0;
+    uint8_t ordinal=1; // 1..13 firearm outputs, 14..20 native money wads.
     bool Present()const{return ped!=-1;}
-    bool Valid()const{return ped>=0&&ped<255&&death.State()&&sequence&&sequence<=MaxCounter&&producerGeneration&&producerGeneration<=MaxCounter;}
+    bool Valid()const{return ped>=0&&ped<255&&death.State()&&sequence&&sequence<=MaxCounter&&producerGeneration&&producerGeneration<=MaxCounter&&ordinal>=1&&ordinal<=MaxDeathOutputs;}
 };
 struct Item {
     uint32_t id=0,epoch=0,revision=0,creation=0;
@@ -46,7 +55,13 @@ struct Item {
     CopOrigin cop;
     bool ValidMetadata()const {
         if(owner<0||owner>=MaxPlayers||area!=0||!position.Valid()||!creation||creation>MaxCounter||ammo>100000||remaining>600000)return false;
-        if(cop.Present())return cop.Valid()&&cop.sequence==creation&&type==4&&ammo>0&&ammo<=StockCopAmmoLimit(model);
+        if(cop.Present()){
+            if(!cop.Valid()||cop.sequence!=creation)return false;
+            if(cop.ordinal<=MaxDeathWeapons)return type==4&&ammo>0&&ammo<=DeathWeaponLimit(model);
+            // Native relocated money routine zero-extends a 16-bit amount, and
+            // CreateSomeMoney emits at most seven wads, amount/7 plus 0..3.
+            return type==8&&model==1212&&ammo>0&&ammo<=9365;
+        }
         if(type==8)return model==1212&&ammo>0;
         return (type==3||type==4||type==5)&&(model==1240||model==1242||(WeaponModel(model)&&ammo>0));
     }

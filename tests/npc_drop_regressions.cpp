@@ -7,7 +7,7 @@ int main(){
     mergeOriginal=reinterpret_cast<void*>(&RecordedMerge);
 #endif
     CPed cop;cop.m_nPedType=PED_TYPE_COP;cop.m_nModelIndex=280;
-    Setup(346,4,10);hasGrant=false;view.rows={};mappings={};capturedDeaths={};copContext={};
+    Setup(346,4,10);hasGrant=false;view.rows={};mappings={};capturedDeaths={};capturedKinds={};copContext={};
     CPools::pedRefs={{cop.poolRef,&cop}};deathIdentityAvailable=true;generated=0;dropIndex=2;
     auto method=&CPed::RecordedWeaponDrops;std::memcpy(&weaponDropsOriginal,&method,sizeof method);
     generateOriginal=reinterpret_cast<void*>(&RecordedGenerate);
@@ -26,7 +26,7 @@ int main(){
     #ifdef PICKUP_MERGE_HOOK
     CPickupSync::EndCopDrops();CPickups::aPickUps[0].m_nAmmo=10;
     expect(MergeHook({},WEAPON_PISTOL,4,5,false)&&CPickups::aPickUps[0].m_nAmmo==15,"Ordinary merge outside sealed death remains native");
-    copContext.active=true;copContext.origin={3,{9,2,6},1,10};copContext.model=280;copContext.area=0;
+    copContext.active=true;copContext.origin={3,{9,2,6},1,10};copContext.model=280;copContext.area=0;copContext.type=PED_TYPE_COP;copContext.createdBy=1;
     CPickups::aPickUps[0].m_nAmmo=10;CTheScripts::ScriptSpace[1]=1;
     expect(MergeHook({},WEAPON_PISTOL,4,5,false)&&CPickups::aPickUps[0].m_nAmmo==15,"Mission/out-of-slice merge remains native");
     CTheScripts::ScriptSpace[1]=0;CPickups::aPickUps[0].m_nAmmo=10;

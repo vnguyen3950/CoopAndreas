@@ -9,14 +9,18 @@ PickupSync::Room& Room(){static PickupSync::Room room;return room;}
 struct Peer {uint32_t sequence=0,copSequence=0;bool watching=false;};
 std::array<Peer,PickupSync::MaxPlayers> peers{};
 bool mission=false;
-struct CopManifest {
-    NPCSync::Stamp death;
-    uint32_t producerGeneration=0,itemId=0,epoch=0,started=0;
-    int producer=-1;
-    bool pending=false,spent=false,authorised=false,expired=false;
+struct DeathOutput {
+    uint32_t itemId=0,epoch=0,started=0;
+    bool used=false,pending=false,spent=false,authorised=false,expired=false;
     Packets::Pickups::Action request;
 };
-// Separate from room/host state: transfer cannot restore a spent death allowance.
+struct CopManifest { // One immutable original-producer death, bounded native outputs.
+    NPCSync::Stamp death;
+    uint32_t producerGeneration=0;
+    int producer=-1;
+    bool authorised=false;
+    std::array<DeathOutput,PickupSync::MaxDeathOutputs> outputs{};
+};
 std::array<CopManifest,255> copManifests{};
 bool Registered(CNetworkPlayer* player){return player&&player->m_pPeer&&player->m_pPeer->state==ENET_PEER_STATE_CONNECTED
     &&player->m_iPlayerId>=0&&player->m_iPlayerId<PickupSync::MaxPlayers
@@ -45,61 +49,76 @@ bool Owner(CNetworkPlayer* sender,const PickupSync::Actor& actor){return Registe
 bool SameManifest(const PickupSync::Item&a,const PickupSync::Item&b){
     return a.owner==b.owner&&a.creation==b.creation&&a.model==b.model&&a.type==b.type&&a.ammo==b.ammo&&a.remaining==b.remaining&&a.area==b.area
         &&a.position.x==b.position.x&&a.position.y==b.position.y&&a.position.z==b.position.z&&a.cop.ped==b.cop.ped
-        &&PickupSync::SameSeal(a.cop.death,b.cop.death)&&a.cop.sequence==b.cop.sequence&&a.cop.producerGeneration==b.cop.producerGeneration;
+        &&PickupSync::SameSeal(a.cop.death,b.cop.death)&&a.cop.sequence==b.cop.sequence&&a.cop.producerGeneration==b.cop.producerGeneration&&a.cop.ordinal==b.cop.ordinal;
+}
+bool NativeDeathItem(const CNetworkPed*ped,const PickupSync::Item&item){
+    if(!ped||!PickupSync::OrdinaryNPC(int(ped->m_nModelId),int(ped->m_nPedType),int(ped->m_nCreatedBy)))return false;
+    if(item.type==8)return PickupSync::NativeMoneyNPC(int(ped->m_nPedType));
+    return ped->m_nPedType!=PED_TYPE_COP||PickupSync::StockCopWeapon(int(ped->m_nModelId),item.model);
 }
 bool CopCreate(const Packets::Pickups::Action&packet,CNetworkPlayer*sender){
     const auto&item=packet.item;auto*ped=CNetworkPedManager::GetPed(item.cop.ped);
     if(!item.cop.Valid()||item.owner!=sender->m_iPlayerId||item.cop.producerGeneration!=packet.actor.generation
-        ||!ped||ped->m_generation!=item.cop.death.generation||ped->m_nPedType!=PED_TYPE_COP
-        ||!PickupSync::StockCopWeapon(int(ped->m_nModelId),item.model))return false;
+        ||!ped||ped->m_generation!=item.cop.death.generation||!NativeDeathItem(ped,item))return false;
     auto&entry=copManifests[item.cop.ped];auto&peer=peers[sender->m_iPlayerId];
     const bool proof=CNetworkPedManager::GetDeathProducer(sender,item.cop.ped,item.cop.death);
-    // A provisional SYSTEM-before-EVENT request cannot poison the actual
-    // authenticated seal or consume another original producer's allowance.
-    if(entry.death.generation==item.cop.death.generation&&!entry.spent&&!entry.authorised&&proof
+    // Unknown proof cannot poison a different actual producer. Once any output
+    // is authorised, retain this exact seal, incarnation and every spent ordinal.
+    if(entry.death.generation==item.cop.death.generation&&!entry.authorised&&proof
         &&(!PickupSync::SameSeal(entry.death,item.cop.death)||entry.producer!=sender->m_iPlayerId
-            ||entry.producerGeneration!=packet.actor.generation||!SameManifest(entry.request.item,item)))entry={};
-    if(entry.death.generation==item.cop.death.generation){
-        if(!PickupSync::SameSeal(entry.death,item.cop.death)||entry.producer!=sender->m_iPlayerId||entry.producerGeneration!=packet.actor.generation
-            ||!SameManifest(entry.request.item,item))return false;
-        if(entry.spent){
-            if(entry.epoch==Room().epoch)if(auto*row=Room().Find(entry.itemId)){peer.sequence=packet.sequence;Send(sender,row);return true;}
+            ||entry.producerGeneration!=packet.actor.generation))entry={};
+    if(entry.death.generation!=item.cop.death.generation){
+        if(entry.death.generation>item.cop.death.generation||item.cop.sequence<=peer.copSequence)return false;
+        if(!proof&&(ped->m_deathStamp.State()||ped->m_pSyncer!=sender||ped->m_ownerEpoch!=item.cop.death.epoch))return false;
+        entry={};entry.death=item.cop.death;entry.producer=sender->m_iPlayerId;entry.producerGeneration=packet.actor.generation;
+    }
+    if(!PickupSync::SameSeal(entry.death,item.cop.death)||entry.producer!=sender->m_iPlayerId||entry.producerGeneration!=packet.actor.generation)return false;
+    auto&output=entry.outputs[item.cop.ordinal-1];
+    if(output.used){
+        if(!SameManifest(output.request.item,item))return false;
+        if(output.spent){
+            if(output.epoch==Room().epoch)if(auto*row=Room().Find(output.itemId)){peer.sequence=packet.sequence;Send(sender,row);return true;}
             return false;
         }
-        if(entry.expired)return false;
-        entry.request=packet;peer.sequence=packet.sequence;CPickupServer::ProcessPending();return true;
+        if(output.expired)return false;
+    }else{
+        if(item.cop.sequence<=peer.copSequence)return false;
+        // Two ordinal slots cannot disguise a replayed creation nonce.
+        for(const auto&prior:entry.outputs)if(prior.used&&prior.request.item.creation==item.creation)return false;
+        output.used=true;output.pending=true;output.started=enet_time_get();
     }
-    if(entry.death.generation>item.cop.death.generation||item.cop.sequence<=peer.copSequence)return false;
-    if(!proof
-        &&(ped->m_deathStamp.State()||ped->m_pSyncer!=sender||ped->m_ownerEpoch!=item.cop.death.epoch))return false;
-    entry={};entry.death=item.cop.death;entry.producer=sender->m_iPlayerId;entry.producerGeneration=packet.actor.generation;
-    entry.request=packet;entry.started=enet_time_get();entry.pending=true;peer.sequence=packet.sequence;
-    CPickupServer::ProcessPending();return true;
+    output.request=packet;peer.sequence=packet.sequence;CPickupServer::ProcessPending();return true;
 }
 }
 void CPickupServer::ProcessPending(){
-    std::array<int,255> order{};for(int i=0;i<255;++i)order[i]=i;
-    std::sort(order.begin(),order.end(),[](int a,int b){const auto&x=copManifests[a];const auto&y=copManifests[b];
-        return x.producer!=y.producer?x.producer<y.producer:x.request.item.cop.sequence<y.request.item.cop.sequence;});
-    for(int index:order){auto&entry=copManifests[index];if(!entry.pending)continue;
-        auto*sender=CNetworkPlayerManager::GetPlayer(entry.producer);const auto&packet=entry.request;const auto&item=packet.item;
+    struct Pending {int ped,ordinal;};
+    std::array<Pending,255*PickupSync::MaxDeathOutputs> order{};size_t count=0;
+    for(int i=0;i<255;++i)for(int j=0;j<PickupSync::MaxDeathOutputs;++j)if(copManifests[i].outputs[j].pending)order[count++]={i,j};
+    std::sort(order.begin(),order.begin()+count,[](const Pending&a,const Pending&b){
+        const auto&x=copManifests[a.ped];const auto&y=copManifests[b.ped];
+        return x.producer!=y.producer?x.producer<y.producer:x.outputs[a.ordinal].request.item.cop.sequence<y.outputs[b.ordinal].request.item.cop.sequence;
+    });
+    for(size_t index=0;index<count;++index){auto&entry=copManifests[order[index].ped];auto&output=entry.outputs[order[index].ordinal];
+        auto*sender=CNetworkPlayerManager::GetPlayer(entry.producer);const auto&packet=output.request;const auto&item=packet.item;
         auto*ped=CNetworkPedManager::GetPed(item.cop.ped);
         if(!Registered(sender)||sender->m_vitals.generation!=entry.producerGeneration||packet.epoch!=Room().epoch
-            ||!ped||ped->m_generation!=entry.death.generation||enet_time_get()-entry.started>15000){entry.pending=false;entry.expired=true;continue;}
+            ||!ped||ped->m_generation!=entry.death.generation||enet_time_get()-output.started>15000){output.pending=false;output.expired=true;continue;}
         if(!CNetworkPedManager::GetDeathProducer(sender,item.cop.ped,entry.death))continue;
         PickupSync::Actor life;if(!Life(sender,life)||!PickupSync::CurrentActor(packet.actor,life))continue;
         const auto&pos=ped->m_deathPosition;const auto&drop=item.position;
         const double dx=double(pos.x)-drop.x,dy=double(pos.y)-drop.y,dz=double(pos.z)-drop.z;
-        if(mission||packet.mission||life.area!=0||ped->m_deathArea!=0||ped->m_nPedType!=PED_TYPE_COP
+        // Original CreateSomeMoney cumulatively scatters seven native wads.
+        // Do not recenter them or reconstruct their values. Admit only bounded
+        // exterior ground drops; long vertical falls remain outside this slice.
+        const bool near=item.type==8?dx*dx+dy*dy<=225.0&&std::abs(dz)<=10.0:dx*dx+dy*dy+dz*dz<=25.0;
+        if(mission||packet.mission||life.area!=0||ped->m_deathArea!=0
             ||ped->m_deathProducerGeneration!=entry.producerGeneration||!PickupSync::SameSeal(ped->m_deathStamp,entry.death)
-            ||!PickupSync::StockCopWeapon(int(ped->m_nModelId),item.model)||!NPCSync::Position(pos)||dx*dx+dy*dy+dz*dz>25.0){
-            entry.pending=false;entry.expired=true;continue;
-        }
+            ||!NativeDeathItem(ped,item)||!NPCSync::Position(pos)||!near){output.pending=false;output.expired=true;continue;}
         auto&peer=peers[entry.producer];
-        if(!entry.authorised&&item.cop.sequence<=peer.copSequence){entry.pending=false;entry.expired=true;continue;}
-        entry.authorised=true;peer.copSequence=(std::max)(peer.copSequence,item.cop.sequence);
+        if(!output.authorised&&item.cop.sequence<=peer.copSequence){output.pending=false;output.expired=true;continue;}
+        output.authorised=entry.authorised=true;peer.copSequence=(std::max)(peer.copSequence,item.cop.sequence);
         auto*row=Room().CreateCopDrop(entry.producer,packet.epoch,life,item);if(!row)continue;
-        entry.pending=false;entry.spent=true;entry.itemId=row->item.id;entry.epoch=Room().epoch;Broadcast(row);
+        output.pending=false;output.spent=true;output.itemId=row->item.id;output.epoch=Room().epoch;Broadcast(row);
     }
 }
 void CPickupServer::Join(CNetworkPlayer* player){if(Registered(player))peers[player->m_iPlayerId]={};}

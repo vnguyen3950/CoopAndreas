@@ -16,9 +16,10 @@ Packets::Pickups::Action pendingGrant;
 bool hasGrant=false,scriptsReady=false,nativeEnabled=false,receiving=false;
 bool authenticated=false;uint32_t connection=0,sequence=0,creation=0,lastHello=0,lastClaim=0;
 int expectedHost=-1;
-struct CopContext {bool active=false;PickupSync::CopOrigin origin;int model=-1,area=-1;};
+struct CopContext {bool active=false;PickupSync::CopOrigin origin;int model=-1,area=-1,type=-1,createdBy=0;bool money=false;unsigned output=0;};
 CopContext copContext;
 std::array<NPCSync::Stamp,255> capturedDeaths{};
+std::array<uint8_t,255> capturedKinds{};
 int Index(CPickup* pickup){const auto p=reinterpret_cast<uintptr_t>(pickup),b=reinterpret_cast<uintptr_t>(CPickups::aPickUps);
     return p>=b&&p<b+sizeof(CPickup)*PickupSync::MaxPickups&&(p-b)%sizeof(CPickup)==0?int((p-b)/sizeof(CPickup)):-1;}
 int Handle(int index){return int((uint32_t(uint16_t(CPickups::aPickUps[index].m_nReferenceIndex))<<16)|uint32_t(index));}
@@ -100,24 +101,32 @@ void Replicas(){
 }
 }
 bool CPickupSync::Replay(){return receiving;}
-bool CPickupSync::BeginCopDrops(CPed*ped){
+namespace {
+bool BeginDeath(CPed*ped,bool money){
     copContext={};
-    if(!nativeEnabled||!CNetwork::m_bAuthenticated)return true; // Offline native behavior.
+    if(!nativeEnabled||!CNetwork::m_bAuthenticated)return true;
     if(!ped||!CPools::ms_pPedPool)return false;
     const int reference=CPools::GetPedRef(ped);
     if(reference<0||CPools::GetPed(reference)!=ped)return false;
-    if(ped->m_nPedType!=PED_TYPE_COP)return true;
+    if(ped->m_nPedType<PED_TYPE_CIVMALE)return true; // Player death remains native, outside this slice.
     copContext.active=true;copContext.model=ped->m_nModelIndex;copContext.area=ped->m_nAreaCode;
-    // No replica/unknown-owner native loot. The getter publishes one immutable
-    // reliable death seal and validates the exact owner and full pool reference.
+    copContext.type=ped->m_nPedType;copContext.createdBy=ped->m_nCreatedBy;copContext.money=money;
+    // This gate applies to every NPC, including a nonowner on the room host.
     if(!Ready()||!CNetworkPedManager::GetOwnerDeathIdentity(ped,copContext.origin.ped,copContext.origin.death))return false;
     PickupSync::Actor life;if(!Life(life))return false;copContext.origin.producerGeneration=life.generation;
-    return copContext.origin.ped>=0&&copContext.origin.ped<255&&copContext.origin.death.State();
+    const int id=copContext.origin.ped;if(id<0||id>=255||!copContext.origin.death.State())return false;
+    if(!PickupSync::SameSeal(capturedDeaths[id],copContext.origin.death)){capturedDeaths[id]=copContext.origin.death;capturedKinds[id]=0;}
+    const uint8_t kind=money?2:1;if(capturedKinds[id]&kind)return false;
+    capturedKinds[id]|=kind;return true; // Execute each native routine at most once per exact death.
 }
+}
+bool CPickupSync::BeginCopDrops(CPed*ped){return BeginDeath(ped,false);}
+bool CPickupSync::BeginMoneyDrops(CPed*ped){return BeginDeath(ped,true);}
 void CPickupSync::EndCopDrops(){copContext={};}
 bool CPickupSync::SeparateDeathWeapon(int model,uint8_t type,uint32_t ammo){
-    return copContext.active&&copContext.origin.death.State()&&copContext.origin.producerGeneration&&!Mission()&&copContext.area==0&&type==4
-        &&PickupSync::StockCopWeapon(copContext.model,model)&&ammo>0&&ammo<=PickupSync::StockCopAmmoLimit(model);
+    return copContext.active&&!copContext.money&&copContext.origin.death.State()&&copContext.origin.producerGeneration
+        &&!Mission()&&copContext.area==0&&PickupSync::OrdinaryNPC(copContext.model,copContext.type,copContext.createdBy)&&type==4
+        &&(copContext.type!=PED_TYPE_COP||PickupSync::StockCopWeapon(copContext.model,model))&&ammo>0&&ammo<=PickupSync::DeathWeaponLimit(model);
 }
 void CPickupSync::EnableNative(){nativeEnabled=true;}
 void CPickupSync::Reset(){ClearMappings();view={};hasGrant=false;receipt={};lastHello=lastClaim=0;expectedHost=-1;}
@@ -145,16 +154,18 @@ void CPickupSync::Created(int handle,bool freshCreation){
         map={}; // A local replacement never deletes a foreign canonical item.
     }
     if(copContext.active){
-        // Actual non-merged native output only. This path never also becomes an
-        // ambient host Create; unsupported melee/persistent drops remain native.
-        if(Mission()||copContext.area!=0||pickup->m_nPickupType!=4||!PickupSync::StockCopWeapon(copContext.model,pickup->m_nModelIndex))return;
+        // Captured outputs, never reconstructed rewards or ambient host Create.
+        const unsigned ordinal=++copContext.output;
+        if(Mission()||copContext.area!=0||!PickupSync::OrdinaryNPC(copContext.model,copContext.type,copContext.createdBy))return;
+        if(copContext.money){
+            if(!PickupSync::NativeMoneyNPC(copContext.type)||ordinal>PickupSync::MaxDeathMoney||pickup->m_nPickupType!=8||pickup->m_nModelIndex!=1212)return;
+        }else if(ordinal>PickupSync::MaxDeathWeapons||pickup->m_nPickupType!=4
+            ||!PickupSync::WeaponModel(pickup->m_nModelIndex)
+            ||(copContext.type==PED_TYPE_COP&&!PickupSync::StockCopWeapon(copContext.model,pickup->m_nModelIndex)))return;
         if(!copContext.origin.death.State()||creation==PickupSync::MaxCounter)return;
         auto item=Metadata(pickup,creation+1);item.area=copContext.area;item.cop=copContext.origin;item.cop.sequence=item.creation;
+        item.cop.ordinal=uint8_t(ordinal+(copContext.money?PickupSync::MaxDeathWeapons:0));
         if(!item.ValidMetadata())return;
-        if(PickupSync::SameSeal(capturedDeaths[item.cop.ped],item.cop.death)){
-            const bool saved=receiving;receiving=true;NativeRemove(pickup);receiving=saved;return;
-        }
-        capturedDeaths[item.cop.ped]=item.cop.death;
         ++creation;map={0,creation,handle,false,item,GetTickCount()};
         Packets::Pickups::Action create;create.operation=Packets::Pickups::Operation::Create;create.item=item;Action(create);return;
     }
@@ -189,7 +200,7 @@ bool CPickupSync::Update(CPickup*pickup,CPlayerPed*player,CVehicle*vehicle,int p
 void CPickupSync::Process(){
     if(!CNetwork::m_bAuthenticated){if(authenticated)Reset();authenticated=false;return;}if(!Ready())return;
     const uint32_t current=CNetwork::m_pPeer?CNetwork::m_pPeer->connectID:0;
-    if(!authenticated||current!=connection){Reset();sequence=0;capturedDeaths={};authenticated=true;connection=current;}
+    if(!authenticated||current!=connection){Reset();sequence=0;capturedDeaths={};capturedKinds={};authenticated=true;connection=current;}
     PickupSync::Actor life;if(!Life(life))return;
     if(GetTickCount()-lastHello>=2000||!view.epoch){Packets::Pickups::Hello packet;packet.actor=life;const auto pos=FindPlayerPed(0)->GetPosition();
         packet.position={pos.x,pos.y,pos.z};packet.mission=Mission();GetPacketFactory().Send(packet);lastHello=GetTickCount();}
